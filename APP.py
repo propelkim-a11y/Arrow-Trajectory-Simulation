@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 # =========================
 # 1. Page Configuration
 # =========================
-VERSION = "v1.7.0"
+VERSION = "v1.7.1"
 st.set_page_config(page_title="Jumong-Jeong", layout="centered")
 
 # =========================
@@ -13,7 +13,7 @@ st.set_page_config(page_title="Jumong-Jeong", layout="centered")
 # =========================
 @st.cache_data
 def simulate(v0, m_g, d_mm, theta_deg, phi_deg,
-             launch_h, target_h, wx, wz, cd0):
+             launch_h, wx, wz, cd0):
 
     m = m_g / 1000.0
     d = d_mm / 1000.0
@@ -84,45 +84,61 @@ with col2:
 cd0 = st.number_input("Drag Coefficient Cd₀", 0.3, 2.0, 0.9, 0.05)
 
 # =========================
-# 4. Simulation
+# 4. Constants
 # =========================
 TARGET_X = 145.0
+TARGET_HEIGHT = 2.67
 TILT = math.radians(15)
 
 def target_plane_y(x):
     return target_h - math.tan(TILT) * (x - TARGET_X)
 
+# =========================
+# 5. Simulation
+# =========================
 xs, ys, zs = simulate(
     v0, m_g, 8.0, theta_deg, phi_deg,
-    launch_h, target_h, wx, wz, cd0
+    launch_h, wx, wz, cd0
 )
 
 # =========================
-# 5. Collision Detection
+# 6. Collision Detection (Plane Crossing)
 # =========================
 hit = None
 for i in range(len(xs) - 1):
-    y1 = ys[i] - target_plane_y(xs[i])
-    y2 = ys[i+1] - target_plane_y(xs[i+1])
+    d1 = ys[i] - target_plane_y(xs[i])
+    d2 = ys[i + 1] - target_plane_y(xs[i + 1])
 
-    if y1 * y2 < 0:
-        r = abs(y1) / (abs(y1) + abs(y2))
-        hit_x = xs[i] + r * (xs[i+1] - xs[i])
-        hit_y = ys[i] + r * (ys[i+1] - ys[i])
-        hit_z = zs[i] + r * (zs[i+1] - zs[i])
+    if d1 * d2 < 0:
+        r = abs(d1) / (abs(d1) + abs(d2))
+        hit_x = xs[i] + r * (xs[i + 1] - xs[i])
+        hit_y = ys[i] + r * (ys[i + 1] - ys[i])
+        hit_z = zs[i] + r * (zs[i + 1] - zs[i])
         hit = (hit_x, hit_y, hit_z)
         break
 
 # =========================
-# 6. Visualization
+# 7. Visualization
 # =========================
 fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10, 16))
 
 # --- Side View ---
 ax1.plot(xs, ys, label="Trajectory")
-x_plane = [TARGET_X - 5, TARGET_X + 5]
-y_plane = [target_plane_y(x_plane[0]), target_plane_y(x_plane[1])]
-ax1.plot(x_plane, y_plane, lw=3, color="saddlebrown", label="Target Plane (15°)")
+
+# Correct target visualization (line, real height)
+x_t = [
+    TARGET_X,
+    TARGET_X - TARGET_HEIGHT * math.tan(TILT)
+]
+y_t = [
+    target_h,
+    target_h + TARGET_HEIGHT
+]
+
+ax1.plot(x_t, y_t, lw=4, color="saddlebrown", label="Target Plane (15°)")
+
+if hit:
+    ax1.plot(hit[0], hit[1], "ro")
 
 ax1.set_xlim(0, 160)
 ax1.set_ylim(-5, 15)
@@ -145,11 +161,15 @@ ax2.legend()
 ax2.grid(True)
 
 # --- Front View ---
-ax3.add_patch(plt.Rectangle((-1, 0), 2, 2.67, ec="black", fc="#C4A484", lw=2))
+ax3.add_patch(
+    plt.Rectangle((-1, 0), 2, TARGET_HEIGHT,
+                  ec="black", fc="#C4A484", lw=2)
+)
+
 if hit:
     rel_y = hit[1] - target_h
     ax3.plot(hit[2], rel_y, "ro", ms=10)
-    status = "HIT" if (-1 <= hit[2] <= 1 and 0 <= rel_y <= 2.67) else "MISS"
+    status = "HIT" if (-1 <= hit[2] <= 1 and 0 <= rel_y <= TARGET_HEIGHT) else "MISS"
     ax3.set_title(f"Front View : {status}")
 else:
     ax3.set_title("Front View : No Impact")
