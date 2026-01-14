@@ -3,21 +3,20 @@ import math
 import matplotlib.pyplot as plt
 
 # =========================
-# Page Config
+# 1. Page Configuration
 # =========================
-VERSION = "v1.9.3"
+VERSION = "v1.7.0"
 st.set_page_config(page_title="Jumong-Jeong", layout="centered")
 
 # =========================
-# Physics Simulation
+# 2. Physics Simulation
 # =========================
 @st.cache_data
 def simulate(v0, m_g, d_mm, theta_deg, phi_deg,
-             launch_h, target_h, wx, wz,
-             cd0, cl0):
+             launch_h, target_h, wx, wz, cd0):
 
-    m = m_g / 1000
-    d = d_mm / 1000
+    m = m_g / 1000.0
+    d = d_mm / 1000.0
     g = 9.80665
     rho = 1.225
     dt = 0.001
@@ -44,11 +43,10 @@ def simulate(v0, m_g, d_mm, theta_deg, phi_deg,
 
         Cd = cd0 * (1 + 0.15 * (v / 60) ** 2)
         Fd = 0.5 * rho * Cd * A * v**2
-        Fl = 0.5 * rho * cl0 * A * v**2
 
         ax = -Fd * vrx / (m * v)
+        ay = -g - (Fd * vry / (m * v))
         az = -Fd * vrz / (m * v)
-        ay = -g - (Fd * vry / (m * v)) + (Fl / m)
 
         vx += ax * dt
         vy += ay * dt
@@ -65,7 +63,7 @@ def simulate(v0, m_g, d_mm, theta_deg, phi_deg,
     return xs, ys, zs
 
 # =========================
-# UI
+# 3. UI
 # =========================
 st.title("🏹 Jumong-Jeong")
 st.caption(f"Korean Archery Trajectory Simulator {VERSION}")
@@ -75,70 +73,57 @@ with col1:
     v0 = st.number_input("Muzzle Velocity (m/s)", 30.0, 100.0, 60.0)
     m_g = st.number_input("Arrow Weight (g)", 15.0, 40.0, 26.25)
     theta_deg = st.number_input("Launch Angle θ (°)", 0.0, 45.0, 13.5)
-    launch_h = st.number_input("Launch Height (m)", 0.0, 2.0, 1.5)
+    launch_h = st.number_input("Launch Height (m)", 0.0, 3.0, 1.5)
 
 with col2:
     phi_deg = st.number_input("Azimuth Angle φ (°)", -5.0, 5.0, 0.0)
-    wx = st.slider("Head(-) / Tail(+) Wind (m/s)", -15.0, 15.0, 0.0)
-    wz = st.slider("Crosswind L(+) / R(-) (m/s)", -10.0, 10.0, 0.0)
+    wx = st.slider("Tail(+)/Head(-) Wind (m/s)", -15.0, 15.0, 0.0)
+    wz = st.slider("Crosswind L(+)/R(-) (m/s)", -10.0, 10.0, 0.0)
+    target_h = st.number_input("Target Height (m)", -5.0, 20.0, 0.0)
 
-target_h = st.number_input("Target Base Height (m)", -2.0, 2.0, 0.0)
 cd0 = st.number_input("Drag Coefficient Cd₀", 0.3, 2.0, 0.9, 0.05)
-cl0 = st.number_input("Lift Coefficient Cl₀", 0.0, 0.3, 0.05, 0.01)
 
 # =========================
-# Run Simulation
-# =========================
-xs, ys, zs = simulate(
-    v0, m_g, 8.0,
-    theta_deg, phi_deg,
-    launch_h, target_h,
-    wx, wz, cd0, cl0
-)
-
-# =========================
-# Target Definition
+# 4. Simulation
 # =========================
 TARGET_X = 145.0
-TARGET_H = 2.67
-TARGET_W = 2.0
 TILT = math.radians(15)
-
-# =========================
-# Hit Detection
-# =========================
-hit = None
 
 def target_plane_y(x):
     return target_h - math.tan(TILT) * (x - TARGET_X)
 
+xs, ys, zs = simulate(
+    v0, m_g, 8.0, theta_deg, phi_deg,
+    launch_h, target_h, wx, wz, cd0
+)
+
+# =========================
+# 5. Collision Detection
+# =========================
+hit = None
 for i in range(len(xs) - 1):
-    y_plane = target_plane_y(xs[i])
-    if ys[i] >= y_plane and ys[i+1] <= y_plane:
-        r = (y_plane - ys[i]) / (ys[i+1] - ys[i])
-        hit = {
-            "x": xs[i] + r * (xs[i+1] - xs[i]),
-            "y": ys[i] + r * (ys[i+1] - ys[i]),
-            "z": zs[i] + r * (zs[i+1] - zs[i])
-        }
+    y1 = ys[i] - target_plane_y(xs[i])
+    y2 = ys[i+1] - target_plane_y(xs[i+1])
+
+    if y1 * y2 < 0:
+        r = abs(y1) / (abs(y1) + abs(y2))
+        hit_x = xs[i] + r * (xs[i+1] - xs[i])
+        hit_y = ys[i] + r * (ys[i+1] - ys[i])
+        hit_z = zs[i] + r * (zs[i+1] - zs[i])
+        hit = (hit_x, hit_y, hit_z)
         break
 
 # =========================
-# Visualization
+# 6. Visualization
 # =========================
-fig, (ax1, ax2, ax3) = plt.subplots(
-    3, 1, figsize=(12, 14),
-    gridspec_kw={"height_ratios": [2, 1, 1]}
-)
+fig, (ax1, ax2, ax3) = plt.subplots(3, 1, figsize=(10, 16))
 
 # --- Side View ---
 ax1.plot(xs, ys, label="Trajectory")
+x_plane = [TARGET_X - 5, TARGET_X + 5]
+y_plane = [target_plane_y(x_plane[0]), target_plane_y(x_plane[1])]
+ax1.plot(x_plane, y_plane, lw=3, color="saddlebrown", label="Target Plane (15°)")
 
-xt = [TARGET_X - 2, TARGET_X + 2]
-yt = [target_plane_y(x) for x in xt]
-ax1.plot(xt, yt, "r-", lw=4, label="Target (15° tilt)")
-
-ax1.axhline(0, color="gray", ls="--", lw=1)
 ax1.set_xlim(0, 160)
 ax1.set_ylim(-5, 15)
 ax1.set_xlabel("Distance X (m)")
@@ -148,37 +133,29 @@ ax1.legend()
 ax1.grid(True)
 
 # --- Top View ---
-ax2.plot(xs, zs, label="Trajectory")
-ax2.axvline(TARGET_X, color="r", ls="--")
+ax2.plot(xs, zs, label="Top View Path")
+ax2.axvline(TARGET_X, color="r", ls="--", label="Target X")
 ax2.set_xlim(0, 160)
 ax2.set_ylim(-2, 2)
 ax2.set_xlabel("Distance X (m)")
-ax2.set_ylabel("Z (m)")
+ax2.set_ylabel("Left(+) / Right(-) Z (m)")
 ax2.set_title("Top View")
 ax2.invert_yaxis()
+ax2.legend()
 ax2.grid(True)
 
 # --- Front View ---
-ax3.add_patch(
-    plt.Rectangle(
-        (-TARGET_W / 2, target_h),
-        TARGET_W, TARGET_H,
-        ec="black", fc="#D2B48C", lw=3
-    )
-)
-
+ax3.add_patch(plt.Rectangle((-1, 0), 2, 2.67, ec="black", fc="#C4A484", lw=2))
 if hit:
-    ax3.plot(hit["z"], hit["y"], "ro", ms=10)
-    inside = (
-        -TARGET_W / 2 <= hit["z"] <= TARGET_W / 2 and
-        target_h <= hit["y"] <= target_h + TARGET_H
-    )
-    ax3.set_title("Front View - HIT" if inside else "Front View - MISS")
+    rel_y = hit[1] - target_h
+    ax3.plot(hit[2], rel_y, "ro", ms=10)
+    status = "HIT" if (-1 <= hit[2] <= 1 and 0 <= rel_y <= 2.67) else "MISS"
+    ax3.set_title(f"Front View : {status}")
 else:
-    ax3.set_title("Front View")
+    ax3.set_title("Front View : No Impact")
 
 ax3.set_xlim(-2, 2)
-ax3.set_ylim(target_h - 0.5, target_h + TARGET_H + 0.5)
+ax3.set_ylim(-0.5, 3.5)
 ax3.set_aspect("equal")
 ax3.grid(True)
 
