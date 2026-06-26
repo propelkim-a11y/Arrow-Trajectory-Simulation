@@ -1,25 +1,28 @@
-<!-- [Part 1: iOS 네이티브 아키텍처 및 SF Pro 기반 애플 프리미엄 글래스모피즘 CSS 스타일 정의 - index.html] -->
+<!-- [Part 1: 갤럭시 One UI 디자인 시스템 및 PWA 모바일 전체 화면 CSS 선언 - index.html] -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Jumong-jeong - Gungdo Simulator</title>
     <script src="https://jsdelivr.net"></script>
     <style>
         @import url('https://cdnfonts.com');
 
         :root {
-            --ios-bg: #000000;
-            --ios-card: rgba(28, 28, 30, 0.65);
-            --ios-border: rgba(255, 255, 255, 0.12);
-            --ios-accent: #0A84FF;
-            --ios-success: #30D158;
-            --ios-destructive: #FF453A;
-            --ios-text-main: #FFFFFF;
-            --ios-text-secondary: #8E8E93;
-            --safe-top: env(safe-area-inset-top, 47px);
-            --safe-bottom: env(safe-area-inset-bottom, 34px);
+            --oneui-bg: #000000;
+            --oneui-card: #121214;
+            --oneui-border: rgba(255, 255, 255, 0.08);
+            --oneui-accent: #60A5FA;
+            --oneui-success: #34D399;
+            --oneui-destructive: #F87171;
+            --oneui-text-main: #F3F4F6;
+            --oneui-text-secondary: #9CA3AF;
+            --safe-top: env(safe-area-inset-top, 24px);
+            --safe-bottom: env(safe-area-inset-bottom, 16px);
         }
 
         * {
@@ -32,163 +35,166 @@
         }
 
         body {
-            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif !important;
-            background-color: var(--ios-bg) !important;
-            color: var(--ios-text-main) !important;
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Roboto', 'Noto Sans KR', sans-serif !important;
+            background-color: var(--oneui-bg) !important;
+            color: var(--oneui-text-main) !important;
             min-height: 100vh;
             display: flex;
             flex-direction: column;
-            overflow-x: hidden;
-            padding-top: var(--safe-top);
-            padding-bottom: calc(var(--safe-bottom) + 85px);
+            overflow: hidden;
+            padding-top: calc(var(--safe-top) + 56px);
+            padding-bottom: calc(var(--safe-bottom) + 340px);
         }
 
-        /* iOS Navigation Bar Standard */
+        /* Galaxy One UI App Bar Standard */
         header {
-            height: 52px;
+            height: 56px;
             display: flex;
             align-items: center;
-            justify-content: center;
+            justify-content: flex-start;
             position: fixed;
             top: 0;
             left: 0;
             right: 0;
-            background: rgba(0, 0, 0, 0.8);
-            backdrop-filter: blur(20px);
-            -webkit-backdrop-filter: blur(20px);
-            border-bottom: 0.5px solid var(--ios-border);
+            background: #000000;
+            border-bottom: 1px solid var(--oneui-border);
             z-index: 1000;
             padding-top: var(--safe-top);
-            box-content: content-box;
+            padding-left: 20px;
+            box-sizing: content-box;
         }
 
         header h1 {
-            font-size: 17px;
-            font-weight: 600;
-            letter-spacing: -0.02em;
+            font-size: 20px;
+            font-weight: 500;
+            letter-spacing: -0.01em;
         }
 
-        /* Core Application Layout Elasticity */
+        /* Main Dashboard Fluid Framework */
         main {
             width: 100%;
             max-width: 600px;
-            margin: 20px auto 0 auto;
-            padding: 0 16px;
+            margin: 0 auto;
+            padding: 16px;
             display: flex;
             flex-direction: column;
-            gap: 16px;
+            gap: 12px;
+            overflow-y: auto;
+            height: calc(100vh - var(--safe-top) - 56px - var(--safe-bottom) - 340px);
+            -webkit-overflow-scrolling: touch;
         }
 
-        /* Apple Premium Crystal Panel */
-        .ios-card {
-            background: var(--ios-card);
-            backdrop-filter: blur(30px) saturate(210%);
-            -webkit-backdrop-filter: blur(30px) saturate(210%);
-            border: 0.5px solid var(--ios-border);
-            border-radius: 14px;
-            padding: 16px;
-            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
+        /* One UI Rounded Container Design */
+        .oneui-card {
+            background: var(--oneui-card);
+            border: 1px solid var(--oneui-border);
+            border-radius: 24px;
+            padding: 20px;
         }
 
         .dashboard-header {
             display: grid;
             grid-template-columns: 85px 1fr;
-            gap: 14px;
+            gap: 16px;
             align-items: center;
         }
 
         #windCanvas {
-            background: rgba(255, 255, 255, 0.02);
+            background: rgba(255, 255, 255, 0.01);
             border-radius: 50%;
-            border: 0.5px solid var(--ios-border);
+            border: 1px solid var(--oneui-border);
         }
 
-        /* Tabular Nums & iOS Typography Rules */
         .tabular-nums {
             font-variant-numeric: tabular-nums !important;
             font-feature-settings: "tnum" !important;
         }
 
         .perfect-level {
-            color: var(--ios-success) !important;
-            font-weight: 700;
-            font-size: 22px;
+            color: var(--oneui-success) !important;
+            font-weight: 600;
+            font-size: 24px;
             letter-spacing: -0.02em;
         }
 
         .recording {
-            color: var(--ios-destructive) !important;
-            font-weight: 700;
-            font-size: 22px;
+            color: var(--oneui-destructive) !important;
+            font-weight: 600;
+            font-size: 24px;
             letter-spacing: -0.02em;
         }
 
         .chart-container {
-            height: 200px;
+            height: 170px;
             position: relative;
             width: 100%;
         }
 
-        /* iOS Segmented Control Tab Navigation */
-        .ios-segmented-control {
+        /* One UI Flat Tab Control */
+        .oneui-tab-container {
             display: flex;
-            background: rgba(118, 118, 128, 0.24);
-            border-radius: 9px;
-            padding: 2px;
-            margin-bottom: 8px;
+            border-bottom: 2px solid var(--oneui-border);
+            margin-bottom: 16px;
         }
 
-        .segment-btn {
+        .tab-btn {
             flex: 1;
             background: transparent;
             border: none;
-            color: var(--ios-text-main);
-            font-size: 13px;
+            color: var(--oneui-text-secondary);
+            font-size: 15px;
             font-weight: 500;
-            padding: 6px 0;
-            border-radius: 7px;
+            padding: 12px 0;
             outline: none;
             cursor: pointer;
-            transition: all 0.2s ease;
+            position: relative;
+            transition: color 0.2s ease;
         }
 
-        .segment-btn.active {
-            background: rgba(255, 255, 255, 0.12);
+        .tab-btn.active {
+            color: var(--oneui-accent);
             font-weight: 600;
-            box-shadow: 0 1px 3px rgba(0,0,0,0.4);
         }
 
-        /* Bottom Fixed iOS Modality Panel */
-        .ios-bottom-sheet {
+        .tab-btn.active::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            right: 0;
+            height: 2px;
+            background-color: var(--oneui-accent);
+        }
+
+        /* Bottom Sheet Interaction Frame */
+        .oneui-bottom-sheet {
             position: fixed;
             bottom: 0;
             left: 0;
             right: 0;
-            background: rgba(28, 28, 30, 0.94);
-            backdrop-filter: blur(30px);
-            -webkit-backdrop-filter: blur(30px);
-            border-top: 0.5px solid var(--ios-border);
-            padding: 12px 16px calc(var(--safe-bottom) + 8px) 16px;
+            background: #161618;
+            border-top: 1px solid var(--oneui-border);
+            padding: 8px 20px calc(var(--safe-bottom) + 12px) 20px;
             z-index: 900;
-            border-radius: 20px 20px 0 0;
-            box-shadow: 0 -8px 24px rgba(0,0,0,0.5);
+            border-radius: 28px 28px 0 0;
+            box-shadow: 0 -8px 32px rgba(0,0,0,0.6);
         }
 
         .sheet-handle {
-            width: 36px;
-            height: 5px;
-            background: rgba(255, 255, 255, 0.24);
-            border-radius: 2.5px;
+            width: 40px;
+            height: 4px;
+            background: rgba(255, 255, 255, 0.15);
+            border-radius: 2px;
             margin: 0 auto 12px auto;
         }
 
         .control-scroll-area {
-            max-height: 280px;
+            max-height: 250px;
             overflow-y: auto;
             display: none;
             flex-direction: column;
-            gap: 14px;
-            padding-bottom: 10px;
+            gap: 16px;
+            padding-bottom: 8px;
             -webkit-overflow-scrolling: touch;
         }
 
@@ -196,70 +202,58 @@
             display: flex;
         }
 
-        /* iOS Form Element Polish */
-        .ios-row {
+        /* One UI Form Element Layout */
+        .oneui-row {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            border-bottom: 0.5px solid rgba(255,255,255,0.05);
-            padding-bottom: 10px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--oneui-border);
+            border-radius: 16px;
+            padding: 12px 16px;
         }
 
-        .ios-row:last-child {
-            border-bottom: none;
-            padding-bottom: 0;
-        }
-
-        .ios-row label {
-            font-size: 14px;
-            color: var(--ios-text-main);
+        .oneui-row label {
+            font-size: 15px;
+            color: var(--oneui-text-main);
             font-weight: 400;
         }
 
-        .ios-input-wrapper {
-            display: flex;
-            align-items: center;
-            gap: 8px;
-        }
-
         input[type="number"] {
-            width: 75px;
-            background: rgba(118, 118, 128, 0.24);
-            border: none;
-            border-radius: 6px;
-            padding: 6px 8px;
+            width: 85px;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--oneui-border);
+            border-radius: 10px;
+            padding: 8px 12px;
             color: #FFFFFF;
-            font-size: 14px;
+            font-size: 15px;
             text-align: right;
             outline: none;
             -webkit-user-select: text;
             user-select: text;
         }
 
-        .ios-slider-box {
+        .oneui-slider-box {
             display: flex;
             flex-direction: column;
-            gap: 4px;
+            gap: 8px;
             width: 100%;
-            border-bottom: 0.5px solid rgba(255,255,255,0.05);
-            padding-bottom: 10px;
+            background: rgba(255, 255, 255, 0.02);
+            border: 1px solid var(--oneui-border);
+            border-radius: 16px;
+            padding: 14px 16px;
         }
 
-        .ios-slider-box:last-child {
-            border-bottom: none;
-            padding-bottom: 0;
-        }
-
-        .ios-slider-meta {
+        .oneui-slider-meta {
             display: flex;
             justify-content: space-between;
-            font-size: 13px;
+            font-size: 14px;
         }
 
-        .ios-slider-wrapper {
+        .oneui-slider-wrapper {
             display: flex;
             align-items: center;
-            gap: 12px;
+            gap: 14px;
             width: 100%;
         }
 
@@ -267,27 +261,31 @@
             flex: 1;
             -webkit-appearance: none;
             appearance: none;
-            background: rgba(255, 255, 255, 0.16);
-            height: 4px;
-            border-radius: 2px;
+            background: rgba(255, 255, 255, 0.1);
+            height: 6px;
+            border-radius: 3px;
             outline: none;
         }
 
         input[type="range"]::-webkit-slider-thumb {
             -webkit-appearance: none;
             appearance: none;
-            width: 22px;
-            height: 22px;
+            width: 20px;
+            height: 20px;
             border-radius: 50%;
-            background: #FFFFFF;
-            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            background: var(--oneui-accent);
             cursor: pointer;
+            transition: transform 0.1s ease;
         }
 
-        .ios-slider-val {
-            font-size: 14px;
+        input[type="range"]::-webkit-slider-thumb:active {
+            transform: scale(1.2);
+        }
+
+        .oneui-slider-val {
+            font-size: 15px;
             font-weight: 500;
-            color: var(--ios-accent);
+            color: var(--oneui-accent);
             width: 50px;
             text-align: right;
         }
@@ -296,52 +294,241 @@
 <body>
 
 <header>
-    <h1>JUMONG-JEONG</h1>
+    <h1>🏹 주몽정 시뮬레이터</h1>
 </header>
-// [Part 2: iOS 단일 스크롤 및 고정밀 수치해석 엔진 통합 모듈 - GungdoEngine.js 구동부]
+// [Part 2: 국궁 정밀 수치해석 실시간 물리 연산 핵심 가중치 모듈 - GungdoEngine.js]
 <main>
-    <div class="ios-card dashboard-header">
+    <div class="oneui-card dashboard-header">
         <canvas id="windCanvas" width="85" height="85"></canvas>
-        <div id="resultPanel"></div>
+        <div id="resultPanel" class="tabular-nums"></div>
     </div>
-    <div class="ios-card"><div class="chart-container"><canvas id="sideViewChart"></canvas></div></div>
-    <div class="ios-card"><div class="chart-container"><canvas id="topViewChart"></canvas></div></div>
-    <div class="ios-card" style="display: flex; justify-content: center; background: rgba(255,255,255,0.01);">
-        <div style="width: 100%; max-width: 340px; height: 240px;"><canvas id="frontViewChart"></canvas></div>
+    <div class="oneui-card"><div class="chart-container"><canvas id="sideViewChart"></canvas></div></div>
+    <div class="oneui-card"><div class="chart-container"><canvas id="topViewChart"></canvas></div></div>
+    <div class="oneui-card" style="display: flex; justify-content: center; background: rgba(255,255,255,0.01); padding: 12px;">
+        <div style="width: 100%; max-width: 340px; height: 210px;"><canvas id="frontViewChart"></canvas></div>
     </div>
 </main>
 
-<div class="ios-bottom-sheet">
+<div class="oneui-bottom-sheet">
     <div class="sheet-handle"></div>
-    <div class="ios-segmented-control">
-        <button class="segment-btn active" onclick="switchTab('specsTab')">Specs</button>
-        <button class="segment-btn" onclick="switchTab('envTab')">Environment</button>
+    <div class="oneui-tab-container">
+        <button id="btnSpecs" class="tab-btn active" onclick="switchTab('specsTab')">화살 사양</button>
+        <button id="btnEnv" class="tab-btn" onclick="switchTab('envTab')">환경 변수</button>
     </div>
+    
     <div id="specsTab" class="control-scroll-area active">
-        <!-- Input fields omitted for brevity, see original code for full structure -->
-        <div class="ios-row"><label>Velocity (m/s)</label><input type="number" id="v0" value="60"></div>
-        <div class="ios-row"><label>Weight (g)</label><input type="number" id="m_g" value="26.25"></div>
-        <!-- Add other specs here -->
+        <div class="oneui-row"><label>초기 속도 (m/s)</label><input type="number" id="v0" value="60" min="30" max="100" step="1"></div>
+        <div class="oneui-row"><label>화살 무게 (g)</label><input type="number" id="m_g" value="26.25" min="15" max="40" step="0.05"></div>
+        <div class="oneui-row"><label>화살 직경 (mm)</label><input type="number" id="d_mm" value="8.0" min="5" max="15" step="0.1"></div>
+        <div class="oneui-row"><label>vertical 발사각 (°)</label><input type="number" id="theta_deg" value="13.0" min="0" max="45" step="0.1"></div>
+        <div class="oneui-row"><label>Horizontal 편각 (°)</label><input type="number" id="phi_deg" value="-0.5" min="-5" max="5" step="0.1"></div>
+        <div class="oneui-row"><label>출전 높이 (m)</label><input type="number" id="h0" value="1.5" min="0" max="5" step="0.1"></div>
     </div>
+    
     <div id="envTab" class="control-scroll-area">
-        <!-- Sliders omitted for brevity -->
-        <div class="ios-slider-box"><span id="cd0_val">0.9</span><input type="range" id="cd0"></div>
+        <div class="oneui-slider-box">
+            <div class="oneui-slider-meta"><label>항력 계수 (Cd)</label><span class="oneui-slider-val" id="cd0_val">0.9</span></div>
+            <div class="oneui-slider-wrapper"><input type="range" id="cd0" min="0.1" max="1.5" step="0.05" value="0.9"></div>
+        </div>
+        <div class="oneui-slider-box">
+            <div class="oneui-slider-meta"><label>양력 계수 (Cl)</label><span class="oneui-slider-val" id="cl0_val">0.05</span></div>
+            <div class="oneui-slider-wrapper"><input type="range" id="cl0" min="0.0" max="0.5" step="0.01" value="0.05"></div>
+        </div>
+        <div class="oneui-slider-box">
+            <div class="oneui-slider-meta"><label>정풍(+) / 역풍(-) (m/s)</label><span class="oneui-slider-val" id="wx_val">11</span></div>
+            <div class="oneui-slider-wrapper"><input type="range" id="wx" min="-15" max="15" step="0.5" value="11"></div>
+        </div>
+        <div class="oneui-slider-box">
+            <div class="oneui-slider-meta"><label>측풍 (좌:-, 우:+) (m/s)</label><span class="oneui-slider-val" id="wz_val">8</span></div>
+            <div class="oneui-slider-wrapper"><input type="range" id="wz" min="-10" max="10" step="0.5" value="8"></div>
+        </div>
+        <div class="oneui-row"><label>과녁 상대 고도 (m)</label><input type="number" id="target_dh" value="2.0" min="-10" max="10" step="0.5"></div>
     </div>
 </div>
 
 <script>
-    // Simplified simulation logic (RK4 or similar needed for high precision)
+    function switchTab(tabId) {
+        document.getElementById('specsTab').classList.remove('active');
+        document.getElementById('envTab').classList.remove('active');
+        document.getElementById('btnSpecs').classList.remove('active');
+        document.getElementById('btnEnv').classList.remove('active');
+        
+        document.getElementById(tabId).classList.add('active');
+        if(tabId === 'specsTab') document.getElementById('btnSpecs').classList.add('active');
+        else document.getElementById('btnEnv').classList.add('active');
+    }
+
     function simulate(v0, m_g, d_mm, theta_deg, phi_deg, h0, target_dh, wx, wz, cd0, cl0) {
-        // ... (Simulation physics code)
-        return { xs: [0, 10], ys: [1.5, 2], zs: [0, 0] };
+        const m = m_g / 1000.0;
+        const d = d_mm / 1000.0;
+        const g = 9.80665;
+        const rho = 1.225;
+        const dt = 0.01;
+        
+        const theta = theta_deg * Math.PI / 180.0;
+        const phi = phi_deg * Math.PI / 180.0;
+        const A = Math.PI * Math.pow(d / 2.0, 2);
+        
+        let vx = v0 * Math.cos(theta) * Math.cos(phi);
+        let vy = v0 * Math.sin(theta);
+        let vz = v0 * Math.cos(theta) * Math.sin(phi);
+        
+        let x = 0.0, y = h0, z = 0.0;
+        let xs = [x], ys = [y], zs = [z];
+        let maxSteps = 5000;
+        
+        while (y >= (target_dh - 5.0) && x <= 165.0 && maxSteps > 0) {
+            maxSteps--;
+            let vrx = vx - wx;
+            let vry = vy;
+            let vrz = vz - wz;
+            let v = Math.sqrt(vrx*vrx + vry*vry + vrz*vrz);
+            if (v < 1e-6) break;
+            
+            let Fd = 0.5 * rho * (cd0 * (1 + 0.15 * Math.pow(v / 60.0, 2))) * A * v*v;
+            let Fl = 0.5 * rho * cl0 * A * v*v;
+            
+            let ax = -Fd * vrx / (m * v);
+            let az = -Fd * vrz / (m * v);
+            let ay = -g - (Fd * vry / (m * v)) + (Fl / m);
+            
+            vx += ax * dt; vy += ay * dt; vz += az * dt;
+            x += vx * dt; y += vy * dt; z += vz * dt;
+            
+            xs.push(x); ys.push(y); zs.push(z);
+        }
+        return { xs, ys, zs };
     }
 </script>
-// [Part 3: Chart.js 모바일 가변 해상도 최적화 렌더링]
+// [Part 3: Chart.js 하드웨어 가속 동기화 및 3축 가독성 뷰 실시간 시각화 처리]
 <script>
-    // ... (Event listeners and Chart.js rendering logic)
-    function runSimulation() {
-        // ... (Data processing and Chart.js updates)
+    const sliders = ['cd0', 'cl0', 'wx', 'wz'];
+    sliders.forEach(id => {
+        const input = document.getElementById(id);
+        const valSpan = document.getElementById(id + '_val');
+        input.addEventListener('input', () => {
+            valSpan.textContent = input.value;
+            runSimulation();
+        });
+    });
+
+    const inputs = ['v0', 'm_g', 'd_mm', 'theta_deg', 'phi_deg', 'h0', 'target_dh'];
+    inputs.forEach(id => {
+        document.getElementById(id).addEventListener('change', runSimulation);
+    });
+
+    let sideChart = null, topChart = null, frontChart = null;
+
+    function drawWindVector(wx, wz) {
+        const canvas = document.getElementById('windCanvas');
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const cx = canvas.width / 2, cy = canvas.height / 2, r = 35;
+        
+        ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(cx, cy, r, 0, 2*Math.PI); ctx.stroke();
+        
+        const norm = Math.sqrt(wx*wx + wz*wz);
+        if (norm > 0) {
+            const nx = wx / norm, nz = wz / norm;
+            ctx.strokeStyle = '#60A5FA';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + nx * r * 0.8, cy - nz * r * 0.8); ctx.stroke();
+            ctx.fillStyle = '#60A5FA';
+            ctx.beginPath(); ctx.arc(cx + nx * r * 0.8, cy - nz * r * 0.8, 3.5, 0, 2*Math.PI); ctx.fill();
+        }
     }
+
+    function runSimulation() {
+        const v0 = parseFloat(document.getElementById('v0').value);
+        const m_g = parseFloat(document.getElementById('m_g').value);
+        const d_mm = parseFloat(document.getElementById('d_mm').value);
+        const theta_deg = parseFloat(document.getElementById('theta_deg').value);
+        const phi_deg = parseFloat(document.getElementById('phi_deg').value);
+        const h0 = parseFloat(document.getElementById('h0').value);
+        const cd0 = parseFloat(document.getElementById('cd0').value);
+        const cl0 = parseFloat(document.getElementById('cl0').value);
+        const wx = parseFloat(document.getElementById('wx').value);
+        const wz = parseFloat(document.getElementById('wz').value);
+        const target_dh = parseFloat(document.getElementById('target_dh').value);
+
+        drawWindVector(wx, wz);
+        const { xs, ys, zs } = simulate(v0, m_g, d_mm, theta_deg, phi_deg, h0, target_dh, wx, wz, cd0, cl0);
+
+        const t_base = 145.0, t_h = 2.67, t_w = 2.0, tilt = 15 * Math.PI / 180.0;
+        let hit_data = { y: ys[ys.length-1], z: zs[zs.length-1], hit: false };
+        
+        for (let i = 0; i < xs.length - 1; i++) {
+            let tx = t_base + (ys[i] - target_dh) * Math.tan(tilt);
+            if (xs[i] <= tx && tx <= xs[i+1]) {
+                let ay = (ys[i] - target_dh) / Math.cos(tilt);
+                hit_data = { y: ay, z: zs[i], hit: (ay >= 0 && ay <= t_h && Math.abs(zs[i]) <= t_w / 2) };
+                break;
+            }
+        }
+
+        const resultPanel = document.getElementById('resultPanel');
+        if (hit_data.hit) {
+            resultPanel.innerHTML = `
+                <span style="font-size:12px; color:var(--oneui-text-secondary); text-transform:uppercase; letter-spacing:0.05em;">시뮬레이션 결과</span>
+                <h2 class="perfect-level">🎯 HIT (관중)</h2>
+                <p style="font-size:14px; color:#E5E7EB; margin-top:2px;">표적 위치 &rarr; 높이: <b>${hit_data.y.toFixed(2)}m</b> | 좌우: <b>${hit_data.z.toFixed(2)}m</b></p>
+            `;
+        } else {
+            resultPanel.innerHTML = `
+                <span style="font-size:12px; color:var(--oneui-text-secondary); text-transform:uppercase; letter-spacing:0.05em;">시뮬레이션 결과</span>
+                <h2 class="recording">❌ MISS (불관중)</h2>
+                <p style="font-size:14px; color:#E5E7EB; margin-top:2px;">종단 위치 &rarr; 높이: <b>${hit_data.y.toFixed(2)}m</b> | 좌우: <b>${hit_data.z.toFixed(2)}m</b></p>
+            `;
+        }
+
+        const chartOptions = {
+            responsive: true, maintainAspectRatio: false, animation: { duration: 0 },
+            plugins: { legend: { display: false } },
+            scales: { x: { type: 'linear', grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#9CA3AF', font: { size: 11 } } }, y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#9CA3AF', font: { size: 11 } } } }
+        };
+
+        if (sideChart) sideChart.destroy();
+        sideChart = new Chart(document.getElementById('sideViewChart').getContext('2d'), {
+            type: 'line',
+            data: {
+                datasets: [
+                    { data: xs.map((x, idx) => ({ x: x, y: ys[idx] })), borderColor: '#34D399', borderWidth: 2, pointRadius: 0, fill: false },
+                    { data: [{x: t_base, y: target_dh}, {x: t_base + t_h*Math.sin(tilt), y: target_dh + t_h*Math.cos(tilt)}], borderColor: '#F87171', borderWidth: 3, pointRadius: 0, fill: false }
+                ]
+            },
+            options: chartOptions
+        });
+
+        if (topChart) topChart.destroy();
+        topChart = new Chart(document.getElementById('topViewChart').getContext('2d'), {
+            type: 'line',
+            data: { datasets: [{ data: xs.map((x, idx) => ({ x: x, y: zs[idx] })), borderColor: '#FB923C', borderWidth: 2, pointRadius: 0, fill: false }] },
+            options: { ...chartOptions, scales: { ...chartOptions.scales, y: { ...chartOptions.scales.y, min: -4, max: 4, reverse: true } } }
+        });
+
+        if (frontChart) frontChart.destroy();
+        frontChart = new Chart(document.getElementById('frontViewChart').getContext('2d'), {
+            type: 'scatter',
+            data: { datasets: [{ data: [{ x: hit_data.z, y: hit_data.y }], backgroundColor: hit_data.hit ? '#34D399' : '#F87171', radius: 6 }] },
+            options: {
+                ...chartOptions,
+                plugins: {
+                    ...chartOptions.plugins,
+                    beforeDraw: (chart) => {
+                        const ctx = chart.ctx, xAxis = chart.scales.x, yAxis = chart.scales.y;
+                        const xLeft = xAxis.getPixelForValue(-1.0), xRight = xAxis.getPixelForValue(1.0);
+                        const yBottom = yAxis.getPixelForValue(0), yTop = yAxis.getPixelForValue(2.67);
+                        ctx.save(); ctx.fillStyle = 'rgba(248, 113, 113, 0.05)'; ctx.strokeStyle = '#F87171'; ctx.lineWidth = 1.5;
+                        ctx.fillRect(xLeft, yTop, xRight - xLeft, yBottom - yTop); ctx.strokeRect(xLeft, yTop, xRight - xLeft, yBottom - yTop); ctx.restore();
+                    }
+                },
+                scales: { x: { min: -2.5, max: 2.5, grid: { color: 'rgba(255,255,255,0.03)' } }, y: { min: -0.5, max: 3.5, grid: { color: 'rgba(255,255,255,0.03)' } } }
+            }
+        });
+    }
+
     window.addEventListener('load', runSimulation);
 </script>
 </body>
