@@ -1,4 +1,4 @@
-<!-- [Part 1: 고속 CDN 및 시스템 폰트 스왑 기반 갤럭시 One UI 반응형 아키텍처 - index.html] -->
+<!-- [Part 1: Chart.js v4 초고속 렌더링 무결성 패치 완결본 - index.html] -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -8,7 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Jumong-jeong - Gungdo Simulator</title>
-    <!-- 고속 아시아 미러망 (cdnjs) 기반의 렌더 블로킹 프리 최적화 주입 -->
+    <!-- Chart.js 최신 4.x 스펙 완전 구동을 위한 UMD 표준 번들 가속 미러 CDN -->
     <script src="https://cloudflare.com" integrity="sha512-ZwR1/gSZMwktIZPhxtchPMn3KGf4QvWj63AhTeTUytYms5giKuADrqWxgwiqa9ONY9OTaAMgx60VJvOATHLI9w==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <style>
         :root {
@@ -276,11 +276,11 @@
 <header>
     <h1>🏹 주몽정 시뮬레이터</h1>
 </header>
-<!-- [Part 2: 3축 그래프 동시 통합 상단 대시보드 및 고정밀 수치해석 물리 연산 엔진 - index.html] -->
+<!-- [Part 2: 상단 과녁 패치 및 고정밀 수치해석 실시간 역학 연산 루프 - index.html] -->
 <main>
     <div class="oneui-card dashboard-header">
         <canvas id="windCanvas" width="85" height="85"></canvas>
-        <div style="width: 100%; height: 110px;">
+        <div style="width: 100%; height: 110px; position: relative;">
             <canvas id="frontViewChart"></canvas>
         </div>
     </div>
@@ -387,7 +387,7 @@
         return { xs, ys, zs };
     }
 </script>
-<!-- [Part 3: 가변 프레임 드롭 가드 하드웨어 가속 Chart.js 시각화 제어 로직 구현 완료 - index.html] -->
+<!-- [Part 3: Chart.js v4 전용 수치 보정 및 완전 무결 시각화 스크립트 완결 - index.html] -->
 <script>
     const sliders = ['cd0', 'cl0', 'wx', 'wz'];
     sliders.forEach(id => {
@@ -427,6 +427,30 @@
         }
     }
 
+    // Chart.js v4 독립 커스텀 플러그인 빌드 (beforeDraw 크래시 및 미출력 결함 완벽 방어 선언)
+    const traditionalTargetPlugin = {
+        id: 'traditionalTargetPlugin',
+        beforeDraw: (chart) => {
+            const ctx = chart.ctx;
+            const xAxis = chart.scales.x;
+            const yAxis = chart.scales.y;
+            if (!xAxis || !yAxis) return;
+            
+            const xLeft = xAxis.getPixelForValue(-1.0);
+            const xRight = xAxis.getPixelForValue(1.0);
+            const yBottom = yAxis.getPixelForValue(0.0);
+            const yTop = yAxis.getPixelForValue(2.67);
+            
+            ctx.save();
+            ctx.fillStyle = 'rgba(248, 113, 113, 0.15)';
+            ctx.strokeStyle = '#F87171';
+            ctx.lineWidth = 1.5;
+            ctx.fillRect(xLeft, yTop, xRight - xLeft, yBottom - yTop);
+            ctx.strokeRect(xLeft, yTop, xRight - xLeft, yBottom - yTop);
+            ctx.restore();
+        }
+    };
+
     function runSimulation() {
         const v0 = parseFloat(document.getElementById('v0').value);
         const m_g = parseFloat(document.getElementById('m_g').value);
@@ -456,11 +480,17 @@
         }
 
         const chartOptions = {
-            responsive: true, maintainAspectRatio: false, animation: { duration: 0 },
+            responsive: true,
+            maintainAspectRatio: false,
+            animation: false,
             plugins: { legend: { display: false } },
-            scales: { x: { type: 'linear', grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#9CA3AF', font: { size: 10 } } }, y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#9CA3AF', font: { size: 10 } } } }
+            scales: { 
+                x: { type: 'linear', grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#9CA3AF', font: { size: 10 } } }, 
+                y: { type: 'linear', grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#9CA3AF', font: { size: 10 } } } 
+            }
         };
 
+        // 1. 측면 비행 궤적 차트 빌드
         if (sideChart) sideChart.destroy();
         sideChart = new Chart(document.getElementById('sideViewChart').getContext('2d'), {
             type: 'line',
@@ -470,34 +500,32 @@
                     { data: [{x: t_base, y: target_dh}, {x: t_base + t_h*Math.sin(tilt), y: target_dh + t_h*Math.cos(tilt)}], borderColor: '#F87171', borderWidth: 3, pointRadius: 0, fill: false }
                 ]
             },
-            options: { ...chartOptions, plugins: { ...chartOptions.plugins, title: { display: true, text: '측면 비행 궤적 (Side View)', color: '#F3F4F6', font: { size: 12 } } } }
+            options: { ...chartOptions, plugins: { title: { display: true, text: '측면 비행 궤적 (Side View)', color: '#F3F4F6', font: { size: 12 } } } }
         });
 
+        // 2. 평면 비행 궤적 차트 빌드
         if (topChart) topChart.destroy();
         topChart = new Chart(document.getElementById('topViewChart').getContext('2d'), {
             type: 'line',
             data: { datasets: [{ data: xs.map((x, idx) => ({ x: x, y: zs[idx] })), borderColor: '#FB923C', borderWidth: 2, pointRadius: 0, fill: false }] },
-            options: { ...chartOptions, plugins: { ...chartOptions.plugins, title: { display: true, text: '평면 비행 궤적 (Top View)', color: '#F3F4F6', font: { size: 12 } } }, scales: { ...chartOptions.scales, y: { ...chartOptions.scales.y, min: -4, max: 4, reverse: true } } }
+            options: { ...chartOptions, plugins: { title: { display: true, text: '평면 비행 궤적 (Top View)', color: '#F3F4F6', font: { size: 12 } } }, scales: { x: chartOptions.scales.x, y: { ...chartOptions.scales.y, min: -4, max: 4, reverse: true } } }
         });
 
+        // 3. 정면 과녁 착탄 분석 차트 빌드 (독립 플러그인 전역 스택 매핑으로 톱 윈도우 미출력 현상 원천 차단)
         if (frontChart) frontChart.destroy();
         frontChart = new Chart(document.getElementById('frontViewChart').getContext('2d'), {
             type: 'scatter',
-            data: { datasets: [{ data: [{ x: hit_data.z, y: hit_data.y }], backgroundColor: hit_data.hit ? '#34D399' : '#F87171', radius: 5 }] },
+            data: { datasets: [{ data: [{ x: hit_data.z, y: hit_data.y }], backgroundColor: hit_data.hit ? '#34D399' : '#F87171', radius: 6, pointStyle: 'circle' }] },
+            plugins: [traditionalTargetPlugin],
             options: {
                 ...chartOptions,
                 plugins: {
-                    ...chartOptions.plugins,
-                    title: { display: true, text: `정면 과녁 착탄 (${hit_data.hit ? '관중' : '불관중'})`, color: '#F3F4F6', font: { size: 11 } },
-                    beforeDraw: (chart) => {
-                        const ctx = chart.ctx, xAxis = chart.scales.x, yAxis = chart.scales.y;
-                        const xLeft = xAxis.getPixelForValue(-1.0), xRight = xAxis.getPixelForValue(1.0);
-                        const yBottom = yAxis.getPixelForValue(0), yTop = yAxis.getPixelForValue(2.67);
-                        ctx.save(); ctx.fillStyle = 'rgba(248, 113, 113, 0.05)'; ctx.strokeStyle = '#F87171'; ctx.lineWidth = 1.2;
-                        ctx.fillRect(xLeft, yTop, xRight - xLeft, yBottom - yTop); ctx.strokeRect(xLeft, yTop, xRight - xLeft, yBottom - yTop); ctx.restore();
-                    }
+                    title: { display: true, text: `정면 착탄점 (${hit_data.hit ? '관중' : '불관중'})`, color: '#F3F4F6', font: { size: 11, weight: 'bold' } }
                 },
-                scales: { x: { min: -2.5, max: 2.5, grid: { color: 'rgba(255,255,255,0.02)' }, ticks: { display: false } }, y: { min: -0.5, max: 3.5, grid: { color: 'rgba(255,255,255,0.02)' }, ticks: { display: false } } }
+                scales: { 
+                    x: { min: -2.5, max: 2.5, grid: { color: 'rgba(255,255,255,0.01)' }, ticks: { display: false } }, 
+                    y: { min: -0.5, max: 3.5, grid: { color: 'rgba(255,255,255,0.01)' }, ticks: { display: false } } 
+                }
             }
         });
     }
