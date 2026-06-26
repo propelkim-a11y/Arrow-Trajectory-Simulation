@@ -3,130 +3,208 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>화살 탄도 시뮬레이터</title>
+    <title>Arrow Trajectory Simulator</title>
     <style>
-        /* 기본 스타일 초기화 */
+        /* 애플 디자인 시스템 기반 초기화 */
         * { box-sizing: border-box; margin: 0; padding: 0; }
-        body { font-family: sans-serif; background: #f5f5f5; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        body { 
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; 
+            background: #f5f5f7; /* 애플 공익 웹 배경색 */
+            color: #1d1d1f; 
+            padding: 40px 20px; 
+            display: flex; 
+            flex-direction: column; 
+            align-items: center; 
+        }
         
-        /* 전체 컨테이너 (스케치 구조를 감싸는 틀) */
-        .app-container { width: 100%; max-width: 800px; display: flex; flex-direction: column; gap: 20px; }
+        .app-container { width: 100%; max-width: 900px; display: flex; flex-direction: column; gap: 24px; }
 
-        /* 공통 탭 스타일 */
-        .tab-container { display: flex; gap: 5px; }
-        .tab { padding: 8px 24px; border: 2px solid #000; border-bottom: none; background: #fff; cursor: pointer; font-weight: bold; font-size: 14px; }
-        .tab.active { background: #e0e0e0; } /* 선택된 탭 표시 */
+        /* 타이틀 */
+        h1 { font-size: 28px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 8px; text-align: center; }
 
-        /* 공통 메인 박스 스타일 */
-        .content-box { border: 3px solid #000; background: #fff; width: 100%; min-height: 250px; position: relative; }
+        /* 세그먼트 컨트롤 (애플 탭 스타일) */
+        .segmented-control { 
+            display: flex; 
+            background: #e3e3e6; 
+            padding: 4px; 
+            border-radius: 9px; 
+            margin-bottom: 12px;
+            align-self: center;
+            width: fit-content;
+        }
+        .segment-btn { 
+            border: none; 
+            background: none; 
+            padding: 6px 24px; 
+            font-size: 14px; 
+            font-weight: 500; 
+            color: #515154; 
+            border-radius: 7px; 
+            cursor: pointer; 
+            transition: all 0.2s ease;
+        }
+        .segment-btn.active { 
+            background: #ffffff; 
+            color: #1d1d1f; 
+            box-shadow: 0px 3px 8px rgba(0, 0, 0, 0.12); 
+            font-weight: 600;
+        }
 
-        /* --- 상단 시뮬레이션 영역 --- */
+        /* 애플 스타일 카드 컨테이너 */
+        .apple-card { 
+            background: #ffffff; 
+            border-radius: 16px; 
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05); 
+            border: 1px solid rgba(0, 0, 0, 0.04);
+            overflow: hidden;
+        }
+
+        /* --- 상단 시뮬레이션 화면 --- */
         .sim-section { display: flex; flex-direction: column; }
-        .sim-display { height: 400px; display: flex; justify-content: center; align-items: center; overflow: hidden; }
-        /* 시뮬레이션용 캔버스 크기 고정 */
-        canvas { width: 100%; height: 100%; background: #fafafa; }
+        .sim-display { height: 420px; background: #fafafa; position: relative; }
+        canvas { width: 100%; height: 100%; }
 
         /* --- 하단 설정 영역 --- */
-        .control-section { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
-        .control-group { display: flex; flex-direction: column; }
-        .control-content { padding: 20px; height: 100%; display: flex; flex-direction: column; gap: 12px; }
-
-        /* 입력창 폼 스타일 */
-        .form-group { display: flex; justify-content: space-between; align-items: center; }
-        .form-group label { font-weight: bold; font-size: 14px; }
-        .form-group input { width: 100px; padding: 5px; border: 1px solid #ccc; text-align: right; }
+        .control-section { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
         
-        /* 발사 버튼 (환경변수 아래나 여백에 배치 가능) */
-        .fire-btn { grid-column: span 2; padding: 15px; background: #000; color: #fff; font-size: 18px; font-weight: bold; border: none; cursor: pointer; border-radius: 4px; transition: 0.2s; }
-        .fire-btn:hover { background: #333; }
+        .card-header { 
+            padding: 16px 20px 0 20px; 
+            font-size: 16px; 
+            font-weight: 600; 
+            color: #1d1d1f; 
+        }
+        
+        .control-content { padding: 20px; display: flex; flex-direction: column; gap: 16px; }
+
+        /* 애플 스타일 입력 폼 */
+        .form-group { display: flex; justify-content: space-between; align-items: center; }
+        .form-group label { font-size: 14px; color: #515154; font-weight: 500; }
+        
+        .input-wrapper { display: flex; align-items: center; background: #f5f5f7; border-radius: 8px; padding: 6px 12px; border: 1px solid transparent; transition: 0.2s; }
+        .input-wrapper:focus-within { border-color: #0071e3; background: #fff; box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15); }
+        .input-wrapper input { width: 80px; border: none; background: transparent; text-align: right; font-size: 14px; font-weight: 600; color: #1d1d1f; outline: none; }
+        .input-wrapper .unit { font-size: 12px; color: #86868b; margin-left: 4px; width: 35px; text-align: left; }
+        
+        /* 애플 블루 컬러 발사 버튼 */
+        .fire-btn { 
+            grid-column: span 2; 
+            padding: 16px; 
+            background: #0071e3; /* Apple Blue */
+            color: #ffffff; 
+            font-size: 16px; 
+            font-weight: 600; 
+            border: none; 
+            border-radius: 12px; 
+            cursor: pointer; 
+            transition: all 0.2s cubic-bezier(0.25, 0.8, 0.25, 1); 
+        }
+        .fire-btn:hover { background: #0077ed; transform: scale(1.01); }
+        .fire-btn:active { background: #0062c4; transform: scale(0.99); }
+
+        /* 반응형 모바일 대응 */
+        @media (max-width: 768px) {
+            .control-section { grid-template-columns: 1fr; }
+            .fire-btn { grid-column: span 1; }
+        }
     </style>
 </head>
 <body>
 
     <div class="app-container">
+        <h1>Arrow Trajectory</h1>
         
         <!-- [상단 영역] 시점 선택 및 시뮬레이션 화면 -->
         <div class="sim-section">
-            <div class="tab-container">
-                <div class="tab" onclick="changeView('front')">정면</div>
-                <div class="tab active" onclick="changeView('side')">측면</div>
-                <div class="tab" onclick="changeView('top')">평면</div>
+            <div class="segmented-control">
+                <button class="segment-btn" onclick="changeView('front', this)">정면</button>
+                <button class="segment-btn active" onclick="changeView('side', this)">측면</button>
+                <button class="segment-btn" onclick="changeView('top', this)">평면</button>
             </div>
-            <div class="content-box sim-display">
-                <!-- 실제 시뮬레이션이 그려질 캔버스 엘리먼트 -->
+            <div class="apple-card sim-display">
                 <canvas id="simCanvas"></canvas>
             </div>
         </div>
 
-        <!-- [하단 영역] 화살 및 환경변수 설정창 (스케치대로 좌우 분할) -->
+        <!-- [하단 영역] 설정창 -->
         <div class="control-section">
             
             <!-- 왼쪽: 화살 설정 -->
-            <div class="control-group">
-                <div class="tab-container">
-                    <div class="tab active">화살</div>
-                </div>
-                <div class="content-box control-content">
+            <div class="apple-card">
+                <div class="card-header">화살 설정</div>
+                <div class="control-content">
                     <div class="form-group">
-                        <label>초기 속도 (m/s)</label>
-                        <input type="number" id="velocity" value="50">
+                        <label>초기 속도</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="velocity" value="50">
+                            <span class="unit">m/s</span>
+                        </div>
                     </div>
                     <div class="form-group">
-                        <label>발사 각도 (°)</label>
-                        <input type="number" id="angle" value="30">
+                        <label>발사 각도</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="angle" value="30">
+                            <span class="unit">°</span>
+                        </div>
                     </div>
                     <div class="form-group">
-                        <label>화살 무게 (g)</label>
-                        <input type="number" id="weight" value="25">
+                        <label>화살 무게</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="weight" value="25">
+                            <span class="unit">g</span>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- 오른쪽: 환경변수 설정 -->
-            <div class="control-group">
-                <div class="tab-container">
-                    <div class="tab active">환경변수</div>
-                </div>
-                <div class="content-box control-content">
+            <div class="apple-card">
+                <div class="card-header">환경 변수</div>
+                <div class="control-content">
                     <div class="form-group">
-                        <label>맞바람/뒷바람 (m/s)</label>
-                        <input type="number" id="windX" value="0">
+                        <label>종풍 (맞바람/뒷바람)</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="windX" value="0">
+                            <span class="unit">m/s</span>
+                        </div>
                     </div>
                     <div class="form-group">
-                        <label>옆바람 (m/s)</label>
-                        <input type="number" id="windY" value="0">
+                        <label>횡풍 (옆바람)</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="windY" value="0">
+                            <span class="unit">m/s</span>
+                        </div>
                     </div>
                     <div class="form-group">
-                        <label>공기 밀도 (kg/m³)</label>
-                        <input type="number" id="airDensity" value="1.225" step="0.001">
+                        <label>공기 밀도</label>
+                        <div class="input-wrapper">
+                            <input type="number" id="airDensity" value="1.225" step="0.001">
+                            <span class="unit">kg/m³</span>
+                        </div>
                     </div>
                 </div>
             </div>
 
             <!-- 시뮬레이션 실행 버튼 -->
-            <button class="fire-btn" onclick="fireArrow()">🏹 화살 발사하기</button>
+            <button class="fire-btn" onclick="fireArrow()">시뮬레이션 시작</button>
 
         </div>
 
     </div>
 
     <script>
-        // 시점 변경 기능 함수 정의 (추후 카메라 뷰 연동)
-        function changeView(viewType) {
-            const tabs = document.querySelectorAll('.sim-section .tab');
-            tabs.forEach(tab => tab.classList.remove('active'));
+        function changeView(viewType, element) {
+            // 모든 세그먼트 버튼에서 active 클래스 제거
+            const buttons = document.querySelectorAll('.segment-btn');
+            buttons.forEach(btn => btn.classList.remove('active'));
             
-            // 클릭한 탭 활성화 처리 예시
-            if(viewType === 'front') tabs[0].classList.add('active');
-            if(viewType === 'side') tabs[1].classList.add('active');
-            if(viewType === 'top') tabs[2].classList.add('active');
+            // 클릭된 버튼에 active 클래스 추가
+            element.classList.add('active');
             
             console.log(viewType + " 시점으로 전환됨");
-            // TODO: 여기에 각 시점별로 Canvas 그리기 함수 연결
         }
 
         function fireArrow() {
-            alert("화살이 발사되었습니다! (물리 로직 연결 필요)");
+            console.log("화살 발사 연산 시작");
         }
     </script>
 </body>
