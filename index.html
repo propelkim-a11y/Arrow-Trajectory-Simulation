@@ -1,536 +1,133 @@
-<!-- [Part 1: Chart.js v4 초고속 렌더링 무결성 패치 완결본 - index.html] -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
-    <meta name="mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <title>Jumong-jeong - Gungdo Simulator</title>
-    <!-- Chart.js 최신 4.x 스펙 완전 구동을 위한 UMD 표준 번들 가속 미러 CDN -->
-    <script src="https://cloudflare.com" integrity="sha512-ZwR1/gSZMwktIZPhxtchPMn3KGf4QvWj63AhTeTUytYms5giKuADrqWxgwiqa9ONY9OTaAMgx60VJvOATHLI9w==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>화살 탄도 시뮬레이터</title>
     <style>
-        :root {
-            --oneui-bg: #000000;
-            --oneui-card: #121214;
-            --oneui-border: rgba(255, 255, 255, 0.08);
-            --oneui-accent: #60A5FA;
-            --oneui-success: #34D399;
-            --oneui-destructive: #F87171;
-            --oneui-text-main: #F3F4F6;
-            --oneui-text-secondary: #9CA3AF;
-            --safe-top: env(safe-area-inset-top, 24px);
-            --safe-bottom: env(safe-area-inset-bottom, 16px);
-        }
+        /* 기본 스타일 초기화 */
+        * { box-sizing: border-box; margin: 0; padding: 0; }
+        body { font-family: sans-serif; background: #f5f5f5; padding: 20px; display: flex; flex-direction: column; align-items: center; }
+        
+        /* 전체 컨테이너 (스케치 구조를 감싸는 틀) */
+        .app-container { width: 100%; max-width: 800px; display: flex; flex-direction: column; gap: 20px; }
 
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            -webkit-tap-highlight-color: transparent;
-            -webkit-user-select: none;
-            user-select: none;
-        }
+        /* 공통 탭 스타일 */
+        .tab-container { display: flex; gap: 5px; }
+        .tab { padding: 8px 24px; border: 2px solid #000; border-bottom: none; background: #fff; cursor: pointer; font-weight: bold; font-size: 14px; }
+        .tab.active { background: #e0e0e0; } /* 선택된 탭 표시 */
 
-        body {
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, "Noto Sans KR", sans-serif;
-            font-display: swap;
-            background-color: var(--oneui-bg) !important;
-            color: var(--oneui-text-main) !important;
-            min-height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-            padding-top: calc(var(--safe-top) + 56px);
-            padding-bottom: calc(var(--safe-bottom) + 340px);
-        }
+        /* 공통 메인 박스 스타일 */
+        .content-box { border: 3px solid #000; background: #fff; width: 100%; min-height: 250px; position: relative; }
 
-        header {
-            height: 56px;
-            display: flex;
-            align-items: center;
-            justify-content: flex-start;
-            position: fixed;
-            top: 0;
-            left: 0;
-            right: 0;
-            background: #000000;
-            border-bottom: 1px solid var(--oneui-border);
-            z-index: 1000;
-            padding-top: var(--safe-top);
-            padding-left: 20px;
-            box-sizing: content-box;
-        }
+        /* --- 상단 시뮬레이션 영역 --- */
+        .sim-section { display: flex; flex-direction: column; }
+        .sim-display { height: 400px; display: flex; justify-content: center; align-items: center; overflow: hidden; }
+        /* 시뮬레이션용 캔버스 크기 고정 */
+        canvas { width: 100%; height: 100%; background: #fafafa; }
 
-        header h1 {
-            font-size: 20px;
-            font-weight: 500;
-            letter-spacing: -0.01em;
-        }
+        /* --- 하단 설정 영역 --- */
+        .control-section { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+        .control-group { display: flex; flex-direction: column; }
+        .control-content { padding: 20px; height: 100%; display: flex; flex-direction: column; gap: 12px; }
 
-        main {
-            width: 100%;
-            max-width: 600px;
-            margin: 0 auto;
-            padding: 16px;
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-            overflow-y: auto;
-            height: calc(100vh - var(--safe-top) - 56px - var(--safe-bottom) - 340px);
-            -webkit-overflow-scrolling: touch;
-        }
-
-        .oneui-card {
-            background: var(--oneui-card);
-            border: 1px solid var(--oneui-border);
-            border-radius: 24px;
-            padding: 16px;
-        }
-
-        .dashboard-header {
-            display: grid;
-            grid-template-columns: 85px 1fr;
-            gap: 16px;
-            align-items: center;
-        }
-
-        #windCanvas {
-            background: rgba(255, 255, 255, 0.01);
-            border-radius: 50%;
-            border: 1px solid var(--oneui-border);
-        }
-
-        .tabular-nums {
-            font-variant-numeric: tabular-nums !important;
-            font-feature-settings: "tnum" !important;
-        }
-
-        .chart-container {
-            height: 180px;
-            position: relative;
-            width: 100%;
-        }
-
-        .oneui-tab-container {
-            display: flex;
-            border-bottom: 2px solid var(--oneui-border);
-            margin-bottom: 16px;
-        }
-
-        .tab-btn {
-            flex: 1;
-            background: transparent;
-            border: none;
-            color: var(--oneui-text-secondary);
-            font-size: 15px;
-            font-weight: 500;
-            padding: 12px 0;
-            outline: none;
-            cursor: pointer;
-            position: relative;
-            transition: color 0.2s ease;
-        }
-
-        .tab-btn.active {
-            color: var(--oneui-accent);
-            font-weight: 600;
-        }
-
-        .tab-btn.active::after {
-            content: '';
-            position: absolute;
-            bottom: -2px;
-            left: 0;
-            right: 0;
-            height: 2px;
-            background-color: var(--oneui-accent);
-        }
-
-        .oneui-bottom-sheet {
-            position: fixed;
-            bottom: 0;
-            left: 0;
-            right: 0;
-            background: #161618;
-            border-top: 1px solid var(--oneui-border);
-            padding: 8px 20px calc(var(--safe-bottom) + 12px) 20px;
-            z-index: 900;
-            border-radius: 28px 28px 0 0;
-            box-shadow: 0 -8px 32px rgba(0,0,0,0.6);
-        }
-
-        .sheet-handle {
-            width: 40px;
-            height: 4px;
-            background: rgba(255, 255, 255, 0.15);
-            border-radius: 2px;
-            margin: 0 auto 12px auto;
-        }
-
-        .control-scroll-area {
-            max-height: 250px;
-            overflow-y: auto;
-            display: none;
-            flex-direction: column;
-            gap: 16px;
-            padding-bottom: 8px;
-            -webkit-overflow-scrolling: touch;
-        }
-
-        .control-scroll-area.active {
-            display: flex;
-        }
-
-        .oneui-row {
-            display: flex;
-            align-items: center;
-            justify-content: space-between;
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid var(--oneui-border);
-            border-radius: 16px;
-            padding: 12px 16px;
-        }
-
-        .oneui-row label {
-            font-size: 15px;
-            color: var(--oneui-text-main);
-            font-weight: 400;
-        }
-
-        input[type="number"] {
-            width: 85px;
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid var(--oneui-border);
-            border-radius: 10px;
-            padding: 8px 12px;
-            color: #FFFFFF;
-            font-size: 15px;
-            text-align: right;
-            outline: none;
-            -webkit-user-select: text;
-            user-select: text;
-        }
-
-        .oneui-slider-box {
-            display: flex;
-            flex-direction: column;
-            gap: 8px;
-            width: 100%;
-            background: rgba(255, 255, 255, 0.02);
-            border: 1px solid var(--oneui-border);
-            border-radius: 16px;
-            padding: 14px 16px;
-        }
-
-        .oneui-slider-meta {
-            display: flex;
-            justify-content: space-between;
-            font-size: 14px;
-        }
-
-        .oneui-slider-wrapper {
-            display: flex;
-            align-items: center;
-            gap: 14px;
-            width: 100%;
-        }
-
-        input[type="range"] {
-            flex: 1;
-            -webkit-appearance: none;
-            appearance: none;
-            background: rgba(255, 255, 255, 0.1);
-            height: 6px;
-            border-radius: 3px;
-            outline: none;
-        }
-
-        input[type="range"]::-webkit-slider-thumb {
-            -webkit-appearance: none;
-            appearance: none;
-            width: 20px;
-            height: 20px;
-            border-radius: 50%;
-            background: var(--oneui-accent);
-            cursor: pointer;
-            transition: transform 0.1s ease;
-        }
-
-        input[type="range"]::-webkit-slider-thumb:active {
-            transform: scale(1.2);
-        }
-
-        .oneui-slider-val {
-            font-size: 15px;
-            font-weight: 500;
-            color: var(--oneui-accent);
-            width: 50px;
-            text-align: right;
-        }
+        /* 입력창 폼 스타일 */
+        .form-group { display: flex; justify-content: space-between; align-items: center; }
+        .form-group label { font-weight: bold; font-size: 14px; }
+        .form-group input { width: 100px; padding: 5px; border: 1px solid #ccc; text-align: right; }
+        
+        /* 발사 버튼 (환경변수 아래나 여백에 배치 가능) */
+        .fire-btn { grid-column: span 2; padding: 15px; background: #000; color: #fff; font-size: 18px; font-weight: bold; border: none; cursor: pointer; border-radius: 4px; transition: 0.2s; }
+        .fire-btn:hover { background: #333; }
     </style>
 </head>
 <body>
 
-<header>
-    <h1>🏹 주몽정 시뮬레이터</h1>
-</header>
-<!-- [Part 2: 상단 과녁 패치 및 고정밀 수치해석 실시간 역학 연산 루프 - index.html] -->
-<main>
-    <div class="oneui-card dashboard-header">
-        <canvas id="windCanvas" width="85" height="85"></canvas>
-        <div style="width: 100%; height: 110px; position: relative;">
-            <canvas id="frontViewChart"></canvas>
+    <div class="app-container">
+        
+        <!-- [상단 영역] 시점 선택 및 시뮬레이션 화면 -->
+        <div class="sim-section">
+            <div class="tab-container">
+                <div class="tab" onclick="changeView('front')">정면</div>
+                <div class="tab active" onclick="changeView('side')">측면</div>
+                <div class="tab" onclick="changeView('top')">평면</div>
+            </div>
+            <div class="content-box sim-display">
+                <!-- 실제 시뮬레이션이 그려질 캔버스 엘리먼트 -->
+                <canvas id="simCanvas"></canvas>
+            </div>
         </div>
-    </div>
-    <div class="oneui-card">
-        <div class="chart-container">
-            <canvas id="sideViewChart"></canvas>
-        </div>
-    </div>
-    <div class="oneui-card">
-        <div class="chart-container">
-            <canvas id="topViewChart"></canvas>
-        </div>
-    </div>
-</main>
 
-<div class="oneui-bottom-sheet">
-    <div class="sheet-handle"></div>
-    <div class="oneui-tab-container">
-        <button id="btnSpecs" class="tab-btn active" onclick="switchTab('specsTab')">화살 사양</button>
-        <button id="btnEnv" class="tab-btn" onclick="switchTab('envTab')">환경 변수</button>
-    </div>
-    
-    <div id="specsTab" class="control-scroll-area active">
-        <div class="oneui-row"><label>초기 속도 (m/s)</label><input type="number" id="v0" value="60" min="30" max="100" step="1"></div>
-        <div class="oneui-row"><label>화살 무게 (g)</label><input type="number" id="m_g" value="26.25" min="15" max="40" step="0.05"></div>
-        <div class="oneui-row"><label>화살 직경 (mm)</label><input type="number" id="d_mm" value="8.0" min="5" max="15" step="0.1"></div>
-        <div class="oneui-row"><label>Vertical 발사각 (°)</label><input type="number" id="theta_deg" value="13.0" min="0" max="45" step="0.1"></div>
-        <div class="oneui-row"><label>Horizontal 편각 (°)</label><input type="number" id="phi_deg" value="-0.5" min="-5" max="5" step="0.1"></div>
-        <div class="oneui-row"><label>출전 높이 (m)</label><input type="number" id="h0" value="1.5" min="0" max="5" step="0.1"></div>
-    </div>
-    
-    <div id="envTab" class="control-scroll-area">
-        <div class="oneui-slider-box">
-            <div class="oneui-slider-meta"><label>항력 계수 (Cd)</label><span class="oneui-slider-val" id="cd0_val">0.9</span></div>
-            <div class="oneui-slider-wrapper"><input type="range" id="cd0" min="0.1" max="1.5" step="0.05" value="0.9"></div>
-        </div>
-        <div class="oneui-slider-box">
-            <div class="oneui-slider-meta"><label>양력 계수 (Cl)</label><span class="oneui-slider-val" id="cl0_val">0.05</span></div>
-            <div class="oneui-slider-wrapper"><input type="range" id="cl0" min="0.0" max="0.5" step="0.01" value="0.05"></div>
-        </div>
-        <div class="oneui-slider-box">
-            <div class="oneui-slider-meta"><label>정풍(+) / 역풍(-) (m/s)</label><span class="oneui-slider-val" id="wx_val">11</span></div>
-            <div class="oneui-slider-wrapper"><input type="range" id="wx" min="-15" max="15" step="0.5" value="11"></div>
-        </div>
-        <div class="oneui-slider-box">
-            <div class="oneui-slider-meta"><label>측풍 (좌:-, 우:+) (m/s)</label><span class="oneui-slider-val" id="wz_val">8</span></div>
-            <div class="oneui-slider-wrapper"><input type="range" id="wz" min="-10" max="10" step="0.5" value="8"></div>
-        </div>
-        <div class="oneui-row"><label>과녁 상대 고도 (m)</label><input type="number" id="target_dh" value="2.0" min="-10" max="10" step="0.5"></div>
-    </div>
-</div>
-
-<script>
-    function switchTab(tabId) {
-        document.getElementById('specsTab').classList.remove('active');
-        document.getElementById('envTab').classList.remove('active');
-        document.getElementById('btnSpecs').classList.remove('active');
-        document.getElementById('btnEnv').classList.remove('active');
-        
-        document.getElementById(tabId).classList.add('active');
-        if(tabId === 'specsTab') document.getElementById('btnSpecs').classList.add('active');
-        else document.getElementById('btnEnv').classList.add('active');
-    }
-
-    function simulate(v0, m_g, d_mm, theta_deg, phi_deg, h0, target_dh, wx, wz, cd0, cl0) {
-        const m = m_g / 1000.0;
-        const d = d_mm / 1000.0;
-        const g = 9.80665;
-        const rho = 1.225;
-        const dt = 0.01;
-        
-        const theta = theta_deg * Math.PI / 180.0;
-        const phi = phi_deg * Math.PI / 180.0;
-        const A = Math.PI * Math.pow(d / 2.0, 2);
-        
-        let vx = v0 * Math.cos(theta) * Math.cos(phi);
-        let vy = v0 * Math.sin(theta);
-        let vz = v0 * Math.cos(theta) * Math.sin(phi);
-        
-        let x = 0.0, y = h0, z = 0.0;
-        let xs = [x], ys = [y], zs = [z];
-        let maxSteps = 5000;
-        
-        while (y >= (target_dh - 5.0) && x <= 165.0 && maxSteps > 0) {
-            maxSteps--;
-            let vrx = vx - wx;
-            let vry = vy;
-            let vrz = vz - wz;
-            let v = Math.sqrt(vrx*vrx + vry*vry + vrz*vrz);
-            if (v < 1e-6) break;
+        <!-- [하단 영역] 화살 및 환경변수 설정창 (스케치대로 좌우 분할) -->
+        <div class="control-section">
             
-            let Fd = 0.5 * rho * (cd0 * (1 + 0.15 * Math.pow(v / 60.0, 2))) * A * v*v;
-            let Fl = 0.5 * rho * cl0 * A * v*v;
+            <!-- 왼쪽: 화살 설정 -->
+            <div class="control-group">
+                <div class="tab-container">
+                    <div class="tab active">화살</div>
+                </div>
+                <div class="content-box control-content">
+                    <div class="form-group">
+                        <label>초기 속도 (m/s)</label>
+                        <input type="number" id="velocity" value="50">
+                    </div>
+                    <div class="form-group">
+                        <label>발사 각도 (°)</label>
+                        <input type="number" id="angle" value="30">
+                    </div>
+                    <div class="form-group">
+                        <label>화살 무게 (g)</label>
+                        <input type="number" id="weight" value="25">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 오른쪽: 환경변수 설정 -->
+            <div class="control-group">
+                <div class="tab-container">
+                    <div class="tab active">환경변수</div>
+                </div>
+                <div class="content-box control-content">
+                    <div class="form-group">
+                        <label>맞바람/뒷바람 (m/s)</label>
+                        <input type="number" id="windX" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label>옆바람 (m/s)</label>
+                        <input type="number" id="windY" value="0">
+                    </div>
+                    <div class="form-group">
+                        <label>공기 밀도 (kg/m³)</label>
+                        <input type="number" id="airDensity" value="1.225" step="0.001">
+                    </div>
+                </div>
+            </div>
+
+            <!-- 시뮬레이션 실행 버튼 -->
+            <button class="fire-btn" onclick="fireArrow()">🏹 화살 발사하기</button>
+
+        </div>
+
+    </div>
+
+    <script>
+        // 시점 변경 기능 함수 정의 (추후 카메라 뷰 연동)
+        function changeView(viewType) {
+            const tabs = document.querySelectorAll('.sim-section .tab');
+            tabs.forEach(tab => tab.classList.remove('active'));
             
-            let ax = -Fd * vrx / (m * v);
-            let az = -Fd * vrz / (m * v);
-            let ay = -g - (Fd * vry / (m * v)) + (Fl / m);
+            // 클릭한 탭 활성화 처리 예시
+            if(viewType === 'front') tabs[0].classList.add('active');
+            if(viewType === 'side') tabs[1].classList.add('active');
+            if(viewType === 'top') tabs[2].classList.add('active');
             
-            vx += ax * dt; vy += ay * dt; vz += az * dt;
-            x += vx * dt; y += vy * dt; z += vz * dt;
-            
-            xs.push(x); ys.push(y); zs.push(z);
-        }
-        return { xs, ys, zs };
-    }
-</script>
-<!-- [Part 3: Chart.js v4 전용 수치 보정 및 완전 무결 시각화 스크립트 완결 - index.html] -->
-<script>
-    const sliders = ['cd0', 'cl0', 'wx', 'wz'];
-    sliders.forEach(id => {
-        const input = document.getElementById(id);
-        const valSpan = document.getElementById(id + '_val');
-        input.addEventListener('input', () => {
-            valSpan.textContent = input.value;
-            runSimulation();
-        });
-    });
-
-    const inputs = ['v0', 'm_g', 'd_mm', 'theta_deg', 'phi_deg', 'h0', 'target_dh'];
-    inputs.forEach(id => {
-        document.getElementById(id).addEventListener('change', runSimulation);
-    });
-
-    let sideChart = null, topChart = null, frontChart = null;
-
-    function drawWindVector(wx, wz) {
-        const canvas = document.getElementById('windCanvas');
-        const ctx = canvas.getContext('2d');
-        ctx.clearRect(0, 0, canvas.width, canvas.height);
-        const cx = canvas.width / 2, cy = canvas.height / 2, r = 35;
-        
-        ctx.strokeStyle = 'rgba(255,255,255,0.06)';
-        ctx.lineWidth = 1;
-        ctx.beginPath(); ctx.arc(cx, cy, r, 0, 2*Math.PI); ctx.stroke();
-        
-        const norm = Math.sqrt(wx*wx + wz*wz);
-        if (norm > 0) {
-            const nx = wx / norm, nz = wz / norm;
-            ctx.strokeStyle = '#60A5FA';
-            ctx.lineWidth = 2.5;
-            ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + nx * r * 0.8, cy - nz * r * 0.8); ctx.stroke();
-            ctx.fillStyle = '#60A5FA';
-            ctx.beginPath(); ctx.arc(cx + nx * r * 0.8, cy - nz * r * 0.8, 3.5, 0, 2*Math.PI); ctx.fill();
-        }
-    }
-
-    // Chart.js v4 독립 커스텀 플러그인 빌드 (beforeDraw 크래시 및 미출력 결함 완벽 방어 선언)
-    const traditionalTargetPlugin = {
-        id: 'traditionalTargetPlugin',
-        beforeDraw: (chart) => {
-            const ctx = chart.ctx;
-            const xAxis = chart.scales.x;
-            const yAxis = chart.scales.y;
-            if (!xAxis || !yAxis) return;
-            
-            const xLeft = xAxis.getPixelForValue(-1.0);
-            const xRight = xAxis.getPixelForValue(1.0);
-            const yBottom = yAxis.getPixelForValue(0.0);
-            const yTop = yAxis.getPixelForValue(2.67);
-            
-            ctx.save();
-            ctx.fillStyle = 'rgba(248, 113, 113, 0.15)';
-            ctx.strokeStyle = '#F87171';
-            ctx.lineWidth = 1.5;
-            ctx.fillRect(xLeft, yTop, xRight - xLeft, yBottom - yTop);
-            ctx.strokeRect(xLeft, yTop, xRight - xLeft, yBottom - yTop);
-            ctx.restore();
-        }
-    };
-
-    function runSimulation() {
-        const v0 = parseFloat(document.getElementById('v0').value);
-        const m_g = parseFloat(document.getElementById('m_g').value);
-        const d_mm = parseFloat(document.getElementById('d_mm').value);
-        const theta_deg = parseFloat(document.getElementById('theta_deg').value);
-        const phi_deg = parseFloat(document.getElementById('phi_deg').value);
-        const h0 = parseFloat(document.getElementById('h0').value);
-        const cd0 = parseFloat(document.getElementById('cd0').value);
-        const cl0 = parseFloat(document.getElementById('cl0').value);
-        const wx = parseFloat(document.getElementById('wx').value);
-        const wz = parseFloat(document.getElementById('wz').value);
-        const target_dh = parseFloat(document.getElementById('target_dh').value);
-
-        drawWindVector(wx, wz);
-        const { xs, ys, zs } = simulate(v0, m_g, d_mm, theta_deg, phi_deg, h0, target_dh, wx, wz, cd0, cl0);
-
-        const t_base = 145.0, t_h = 2.67, t_w = 2.0, tilt = 15 * Math.PI / 180.0;
-        let hit_data = { y: ys[ys.length-1], z: zs[zs.length-1], hit: false };
-        
-        for (let i = 0; i < xs.length - 1; i++) {
-            let tx = t_base + (ys[i] - target_dh) * Math.tan(tilt);
-            if (xs[i] <= tx && tx <= xs[i+1]) {
-                let ay = (ys[i] - target_dh) / Math.cos(tilt);
-                hit_data = { y: ay, z: zs[i], hit: (ay >= 0 && ay <= t_h && Math.abs(zs[i]) <= t_w / 2) };
-                break;
-            }
+            console.log(viewType + " 시점으로 전환됨");
+            // TODO: 여기에 각 시점별로 Canvas 그리기 함수 연결
         }
 
-        const chartOptions = {
-            responsive: true,
-            maintainAspectRatio: false,
-            animation: false,
-            plugins: { legend: { display: false } },
-            scales: { 
-                x: { type: 'linear', grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#9CA3AF', font: { size: 10 } } }, 
-                y: { type: 'linear', grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#9CA3AF', font: { size: 10 } } } 
-            }
-        };
-
-        // 1. 측면 비행 궤적 차트 빌드
-        if (sideChart) sideChart.destroy();
-        sideChart = new Chart(document.getElementById('sideViewChart').getContext('2d'), {
-            type: 'line',
-            data: {
-                datasets: [
-                    { data: xs.map((x, idx) => ({ x: x, y: ys[idx] })), borderColor: '#34D399', borderWidth: 2, pointRadius: 0, fill: false },
-                    { data: [{x: t_base, y: target_dh}, {x: t_base + t_h*Math.sin(tilt), y: target_dh + t_h*Math.cos(tilt)}], borderColor: '#F87171', borderWidth: 3, pointRadius: 0, fill: false }
-                ]
-            },
-            options: { ...chartOptions, plugins: { title: { display: true, text: '측면 비행 궤적 (Side View)', color: '#F3F4F6', font: { size: 12 } } } }
-        });
-
-        // 2. 평면 비행 궤적 차트 빌드
-        if (topChart) topChart.destroy();
-        topChart = new Chart(document.getElementById('topViewChart').getContext('2d'), {
-            type: 'line',
-            data: { datasets: [{ data: xs.map((x, idx) => ({ x: x, y: zs[idx] })), borderColor: '#FB923C', borderWidth: 2, pointRadius: 0, fill: false }] },
-            options: { ...chartOptions, plugins: { title: { display: true, text: '평면 비행 궤적 (Top View)', color: '#F3F4F6', font: { size: 12 } } }, scales: { x: chartOptions.scales.x, y: { ...chartOptions.scales.y, min: -4, max: 4, reverse: true } } }
-        });
-
-        // 3. 정면 과녁 착탄 분석 차트 빌드 (독립 플러그인 전역 스택 매핑으로 톱 윈도우 미출력 현상 원천 차단)
-        if (frontChart) frontChart.destroy();
-        frontChart = new Chart(document.getElementById('frontViewChart').getContext('2d'), {
-            type: 'scatter',
-            data: { datasets: [{ data: [{ x: hit_data.z, y: hit_data.y }], backgroundColor: hit_data.hit ? '#34D399' : '#F87171', radius: 6, pointStyle: 'circle' }] },
-            plugins: [traditionalTargetPlugin],
-            options: {
-                ...chartOptions,
-                plugins: {
-                    title: { display: true, text: `정면 착탄점 (${hit_data.hit ? '관중' : '불관중'})`, color: '#F3F4F6', font: { size: 11, weight: 'bold' } }
-                },
-                scales: { 
-                    x: { min: -2.5, max: 2.5, grid: { color: 'rgba(255,255,255,0.01)' }, ticks: { display: false } }, 
-                    y: { min: -0.5, max: 3.5, grid: { color: 'rgba(255,255,255,0.01)' }, ticks: { display: false } } 
-                }
-            }
-        });
-    }
-
-    window.addEventListener('load', runSimulation);
-</script>
+        function fireArrow() {
+            alert("화살이 발사되었습니다! (물리 로직 연결 필요)");
+        }
+    </script>
 </body>
 </html>
