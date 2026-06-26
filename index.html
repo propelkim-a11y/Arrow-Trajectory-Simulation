@@ -1,281 +1,300 @@
-<!-- [Part 1: UI HTML 레이아웃 및 프리미엄 비주얼 CSS 스타일 정의 - index.html] -->
+<!-- [Part 1: iOS 네이티브 아키텍처 및 SF Pro 기반 애플 프리미엄 글래스모피즘 CSS 스타일 정의 - index.html] -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
     <title>Jumong-jeong - Gungdo Simulator</title>
     <script src="https://jsdelivr.net"></script>
     <style>
         @import url('https://cdnfonts.com');
-        
+
         :root {
-            --safe-top: env(safe-area-inset-top, 20px);
-            --safe-bottom: env(safe-area-inset-bottom, 20px);
+            --ios-bg: #000000;
+            --ios-card: rgba(28, 28, 30, 0.65);
+            --ios-border: rgba(255, 255, 255, 0.12);
+            --ios-accent: #0A84FF;
+            --ios-success: #30D158;
+            --ios-destructive: #FF453A;
+            --ios-text-main: #FFFFFF;
+            --ios-text-secondary: #8E8E93;
+            --safe-top: env(safe-area-inset-top, 47px);
+            --safe-bottom: env(safe-area-inset-bottom, 34px);
         }
 
         * {
             box-sizing: border-box;
             margin: 0;
             padding: 0;
+            -webkit-tap-highlight-color: transparent;
+            -webkit-user-select: none;
+            user-select: none;
         }
 
         body {
-            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif !important;
-            background-color: #0A0A0C !important;
-            color: #E0E0E3 !important;
-            padding-top: var(--safe-top);
-            padding-bottom: var(--safe-bottom);
-            display: flex;
+            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Helvetica Neue', sans-serif !important;
+            background-color: var(--ios-bg) !important;
+            color: var(--ios-text-main) !important;
             min-height: 100vh;
+            display: flex;
+            flex-direction: column;
             overflow-x: hidden;
+            padding-top: var(--safe-top);
+            padding-bottom: calc(var(--safe-bottom) + 85px);
         }
 
-        sidebar {
-            width: 320px;
-            background: rgba(15, 15, 20, 0.7);
-            border-right: 1px solid rgba(255, 255, 255, 0.05);
-            padding: 24px;
-            display: flex;
-            flex-direction: column;
-            gap: 20px;
-            overflow-y: auto;
-            height: 100vh;
-            position: fixed;
-            left: 0;
-            top: 0;
-            z-index: 100;
-        }
-
-        main {
-            margin-left: 320px;
-            flex: 1;
-            padding: 40px;
-            display: flex;
-            flex-direction: column;
-            gap: 30px;
-        }
-
-        h1, h2, h3 {
-            letter-spacing: -0.03em;
-        }
-
-        h1 {
-            font-weight: 800;
-            font-size: 28px;
-            text-align: center;
-            margin-bottom: 10px;
-        }
-
-        .sidebar-section {
-            display: flex;
-            flex-direction: column;
-            gap: 12px;
-        }
-
-        .sidebar-section h2 {
-            font-size: 16px;
-            color: #FFFFFF;
-            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-            padding-bottom: 6px;
-            margin-top: 10px;
-        }
-
-        .input-group {
-            display: flex;
-            flex-direction: column;
-            gap: 6px;
-        }
-
-        label {
-            font-size: 12px;
-            color: #A9A9B3;
-        }
-
-        input[type="number"] {
-            background: rgba(255, 255, 255, 0.05);
-            border: 1px solid rgba(255, 255, 255, 0.1);
-            border-radius: 8px;
-            padding: 8px 12px;
-            color: #FFFFFF;
-            font-size: 14px;
-            outline: none;
-            transition: border-color 0.2s;
-        }
-
-        input[type="number"]:focus {
-            border-color: #00FFCC;
-        }
-
-        .slider-container {
+        /* iOS Navigation Bar Standard */
+        header {
+            height: 52px;
             display: flex;
             align-items: center;
-            gap: 10px;
+            justify-content: center;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            background: rgba(0, 0, 0, 0.8);
+            backdrop-filter: blur(20px);
+            -webkit-backdrop-filter: blur(20px);
+            border-bottom: 0.5px solid var(--ios-border);
+            z-index: 1000;
+            padding-top: var(--safe-top);
+            box-content: content-box;
         }
 
-        input[type="range"] {
-            flex: 1;
-            accent-color: #00FFCC;
+        header h1 {
+            font-size: 17px;
+            font-weight: 600;
+            letter-spacing: -0.02em;
         }
 
-        .slider-val {
-            font-size: 13px;
-            color: #FFFFFF;
-            width: 45px;
-            text-align: right;
-            font-variant-numeric: tabular-nums;
+        /* Core Application Layout Elasticity */
+        main {
+            width: 100%;
+            max-width: 600px;
+            margin: 20px auto 0 auto;
+            padding: 0 16px;
+            display: flex;
+            flex-direction: column;
+            gap: 16px;
         }
 
-        .crystal-panel {
-            background: rgba(255, 255, 255, 0.03) !important;
-            backdrop-filter: blur(20px) saturate(180%) !important;
-            -webkit-backdrop-filter: blur(20px) saturate(180%) !important;
-            border: 1px solid rgba(255, 255, 255, 0.08) !important;
-            border-radius: 16px !important;
-            padding: 24px !important;
-            position: relative;
+        /* Apple Premium Crystal Panel */
+        .ios-card {
+            background: var(--ios-card);
+            backdrop-filter: blur(30px) saturate(210%);
+            -webkit-backdrop-filter: blur(30px) saturate(210%);
+            border: 0.5px solid var(--ios-border);
+            border-radius: 14px;
+            padding: 16px;
+            transition: all 0.3s cubic-bezier(0.25, 0.8, 0.25, 1);
         }
 
         .dashboard-header {
             display: grid;
-            grid-template-columns: 140px 1fr;
-            gap: 24px;
-        }
-
-        .tabular-nums {
-            font-variant-numeric: tabular-nums !important;
-        }
-
-        .perfect-level {
-            color: #00FFCC !important;
-            text-shadow: 0 0 12px rgba(0, 255, 204, 0.8), 0 0 24px rgba(0, 255, 204, 0.4) !important;
-            font-weight: 800 !important;
-        }
-
-        .recording {
-            color: #FF3366 !important;
-            text-shadow: 0 0 12px rgba(255, 51, 102, 0.8), 0 0 24px rgba(255, 51, 102, 0.4) !important;
-            font-weight: 800 !important;
-        }
-
-        .canvas-container {
-            display: flex;
-            flex-direction: column;
-            gap: 24px;
-        }
-
-        .chart-box {
-            height: 260px;
-            position: relative;
+            grid-template-columns: 85px 1fr;
+            gap: 14px;
+            align-items: center;
         }
 
         #windCanvas {
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            background: rgba(255, 255, 255, 0.02);
             border-radius: 50%;
-            background: rgba(255, 255, 255, 0.01);
+            border: 0.5px solid var(--ios-border);
+        }
+
+        /* Tabular Nums & iOS Typography Rules */
+        .tabular-nums {
+            font-variant-numeric: tabular-nums !important;
+            font-feature-settings: "tnum" !important;
+        }
+
+        .perfect-level {
+            color: var(--ios-success) !important;
+            font-weight: 700;
+            font-size: 22px;
+            letter-spacing: -0.02em;
+        }
+
+        .recording {
+            color: var(--ios-destructive) !important;
+            font-weight: 700;
+            font-size: 22px;
+            letter-spacing: -0.02em;
+        }
+
+        .chart-container {
+            height: 200px;
+            position: relative;
+            width: 100%;
+        }
+
+        /* iOS Segmented Control Tab Navigation */
+        .ios-segmented-control {
+            display: flex;
+            background: rgba(118, 118, 128, 0.24);
+            border-radius: 9px;
+            padding: 2px;
+            margin-bottom: 8px;
+        }
+
+        .segment-btn {
+            flex: 1;
+            background: transparent;
+            border: none;
+            color: var(--ios-text-main);
+            font-size: 13px;
+            font-weight: 500;
+            padding: 6px 0;
+            border-radius: 7px;
+            outline: none;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .segment-btn.active {
+            background: rgba(255, 255, 255, 0.12);
+            font-weight: 600;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+        }
+
+        /* Bottom Fixed iOS Modality Panel */
+        .ios-bottom-sheet {
+            position: fixed;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(28, 28, 30, 0.94);
+            backdrop-filter: blur(30px);
+            -webkit-backdrop-filter: blur(30px);
+            border-top: 0.5px solid var(--ios-border);
+            padding: 12px 16px calc(var(--safe-bottom) + 8px) 16px;
+            z-index: 900;
+            border-radius: 20px 20px 0 0;
+            box-shadow: 0 -8px 24px rgba(0,0,0,0.5);
+        }
+
+        .sheet-handle {
+            width: 36px;
+            height: 5px;
+            background: rgba(255, 255, 255, 0.24);
+            border-radius: 2.5px;
+            margin: 0 auto 12px auto;
+        }
+
+        .control-scroll-area {
+            max-height: 280px;
+            overflow-y: auto;
+            display: none;
+            flex-direction: column;
+            gap: 14px;
+            padding-bottom: 10px;
+            -webkit-overflow-scrolling: touch;
+        }
+
+        .control-scroll-area.active {
+            display: flex;
+        }
+
+        /* iOS Form Element Polish */
+        .ios-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            border-bottom: 0.5px solid rgba(255,255,255,0.05);
+            padding-bottom: 10px;
+        }
+
+        .ios-row:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .ios-row label {
+            font-size: 14px;
+            color: var(--ios-text-main);
+            font-weight: 400;
+        }
+
+        .ios-input-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+
+        input[type="number"] {
+            width: 75px;
+            background: rgba(118, 118, 128, 0.24);
+            border: none;
+            border-radius: 6px;
+            padding: 6px 8px;
+            color: #FFFFFF;
+            font-size: 14px;
+            text-align: right;
+            outline: none;
+            -webkit-user-select: text;
+            user-select: text;
+        }
+
+        .ios-slider-box {
+            display: flex;
+            flex-direction: column;
+            gap: 4px;
+            width: 100%;
+            border-bottom: 0.5px solid rgba(255,255,255,0.05);
+            padding-bottom: 10px;
+        }
+
+        .ios-slider-box:last-child {
+            border-bottom: none;
+            padding-bottom: 0;
+        }
+
+        .ios-slider-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 13px;
+        }
+
+        .ios-slider-wrapper {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            width: 100%;
+        }
+
+        input[type="range"] {
+            flex: 1;
+            -webkit-appearance: none;
+            appearance: none;
+            background: rgba(255, 255, 255, 0.16);
+            height: 4px;
+            border-radius: 2px;
+            outline: none;
+        }
+
+        input[type="range"]::-webkit-slider-thumb {
+            -webkit-appearance: none;
+            appearance: none;
+            width: 22px;
+            height: 22px;
+            border-radius: 50%;
+            background: #FFFFFF;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.3);
+            cursor: pointer;
+        }
+
+        .ios-slider-val {
+            font-size: 14px;
+            font-weight: 500;
+            color: var(--ios-accent);
+            width: 50px;
+            text-align: right;
         }
     </style>
 </head>
 <body>
 
-<sidebar>
-    <h1>🏹 JUMONG-JEONG</h1>
-    <div style="text-align: center; font-size: 11px; color: rgba(255,255,255,0.3); margin-top: -15px; margin-bottom: 10px;">朱蒙亭 Simulation</div>
-    
-    <div class="sidebar-section">
-        <h2>⚙️ Launcher Specs</h2>
-        <div class="input-group">
-            <label>Velocity (m/s)</label>
-            <input type="number" id="v0" value="60" min="30" max="100" step="1">
-        </div>
-        <div class="input-group">
-            <label>Weight (g)</label>
-            <input type="number" id="m_g" value="26.25" min="15" max="40" step="0.05">
-        </div>
-        <div class="input-group">
-            <label>Diameter (mm)</label>
-            <input type="number" id="d_mm" value="8.0" min="5" max="15" step="0.1">
-        </div>
-        <div class="input-group">
-            <label>Vertical Angle (°)</label>
-            <input type="number" id="theta_deg" value="13.0" min="0" max="45" step="0.1">
-        </div>
-        <div class="input-group">
-            <label>Horizontal Angle (°)</label>
-            <input type="number" id="phi_deg" value="-0.5" min="-5" max="5" step="0.1">
-        </div>
-        <div class="input-group">
-            <label>Release Height (m)</label>
-            <input type="number" id="h0" value="1.5" min="0" max="5" step="0.1">
-        </div>
-    </div>
-
-    <div class="sidebar-section">
-        <h2>🧪 Aero Environment</h2>
-        <div class="input-group">
-            <label>Drag Coeff (Cd)</label>
-            <div class="slider-container">
-                <input type="range" id="cd0" min="0.1" max="1.5" step="0.05" value="0.9">
-                <span class="slider-val" id="cd0_val">0.9</span>
-            </div>
-        </div>
-        <div class="input-group">
-            <label>Lift Coeff (Cl)</label>
-            <div class="slider-container">
-                <input type="range" id="cl0" min="0.0" max="0.5" step="0.01" value="0.05">
-                <span class="slider-val" id="cl0_val">0.05</span>
-            </div>
-        </div>
-        <div class="input-group">
-            <label>Tail(+) / Head(-) Wind (m/s)</label>
-            <div class="slider-container">
-                <input type="range" id="wx" min="-15" max="15" step="0.5" value="11">
-                <span class="slider-val" id="wx_val">11</span>
-            </div>
-        </div>
-        <div class="input-group">
-            <label>Cross Wind (L:-, R:+) (m/s)</label>
-            <div class="slider-container">
-                <input type="range" id="wz" min="-10" max="10" step="0.5" value="8">
-                <span class="slider-val" id="wz_val">8</span>
-            </div>
-        </div>
-        <div class="input-group">
-            <label>Target Relative Height (m)</label>
-            <input type="number" id="target_dh" value="2.0" min="-10" max="10" step="0.5">
-        </div>
-    </div>
-</sidebar>
-
-<main>
-    <div class="dashboard-header">
-        <div class="crystal-panel" style="display: flex; justify-content: center; align-items: center; padding: 10px !important;">
-            <canvas id="windCanvas" width="110" height="110"></canvas>
-        </div>
-        <div class="crystal-panel" id="resultPanel" style="border-left: 5px solid #FF3366;"></div>
-    </div>
-
-    <div class="canvas-container">
-        <div class="crystal-panel chart-box">
-            <canvas id="sideViewChart"></canvas>
-        </div>
-        <div class="crystal-panel chart-box">
-            <canvas id="topViewChart"></canvas>
-        </div>
-        <div class="crystal-panel style-canvas" style="display: flex; justify-content: center; background: rgba(255,255,255,0.02);">
-            <div style="width: 100%; max-width: 500px; height: 320px;">
-                <canvas id="frontViewChart"></canvas>
-            </div>
-        </div>
-    </div>
-
-    <div class="crystal-panel" style="padding: 12px 24px !important; text-align: center; font-size: 13px; color: #8A8A93;">
-        <span class="tabular-nums">🏹 Arrow Specification Matrix: <b id="bannerSpecs">26.25g</b></span> 
-        <span style="margin: 0 15px; color: rgba(255,255,255,0.1);">|</span> 
-        <span>v1.8.0 (GitHub Static Engine)</span>
-    </div>
-</main>
-
-<script src="GungdoEngine.js"></script>
-</body>
-</html>
+<header>
+    <h1>JUMONG-JEONG</h1>
+</header>
