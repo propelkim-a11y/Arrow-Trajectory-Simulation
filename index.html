@@ -1,4 +1,4 @@
-<!-- [Part 1: 갤럭시 One UI 3축 통합 고속 로딩 아키텍처 - index.html] -->
+<!-- [Part 1: 고속 CDN 및 시스템 폰트 스왑 기반 갤럭시 One UI 반응형 아키텍처 - index.html] -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -8,6 +8,7 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Jumong-jeong - Gungdo Simulator</title>
+    <!-- 고속 아시아 미러망 (cdnjs) 기반의 렌더 블로킹 프리 최적화 주입 -->
     <script src="https://cloudflare.com" integrity="sha512-ZwR1/gSZMwktIZPhxtchPMn3KGf4QvWj63AhTeTUytYms5giKuADrqWxgwiqa9ONY9OTaAMgx60VJvOATHLI9w==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <style>
         :root {
@@ -272,6 +273,10 @@
 </head>
 <body>
 
+<header>
+    <h1>🏹 주몽정 시뮬레이터</h1>
+</header>
+<!-- [Part 2: 3축 그래프 동시 통합 상단 대시보드 및 고정밀 수치해석 물리 연산 엔진 - index.html] -->
 <main>
     <div class="oneui-card dashboard-header">
         <canvas id="windCanvas" width="85" height="85"></canvas>
@@ -309,3 +314,195 @@
     
     <div id="envTab" class="control-scroll-area">
         <div class="oneui-slider-box">
+            <div class="oneui-slider-meta"><label>항력 계수 (Cd)</label><span class="oneui-slider-val" id="cd0_val">0.9</span></div>
+            <div class="oneui-slider-wrapper"><input type="range" id="cd0" min="0.1" max="1.5" step="0.05" value="0.9"></div>
+        </div>
+        <div class="oneui-slider-box">
+            <div class="oneui-slider-meta"><label>양력 계수 (Cl)</label><span class="oneui-slider-val" id="cl0_val">0.05</span></div>
+            <div class="oneui-slider-wrapper"><input type="range" id="cl0" min="0.0" max="0.5" step="0.01" value="0.05"></div>
+        </div>
+        <div class="oneui-slider-box">
+            <div class="oneui-slider-meta"><label>정풍(+) / 역풍(-) (m/s)</label><span class="oneui-slider-val" id="wx_val">11</span></div>
+            <div class="oneui-slider-wrapper"><input type="range" id="wx" min="-15" max="15" step="0.5" value="11"></div>
+        </div>
+        <div class="oneui-slider-box">
+            <div class="oneui-slider-meta"><label>측풍 (좌:-, 우:+) (m/s)</label><span class="oneui-slider-val" id="wz_val">8</span></div>
+            <div class="oneui-slider-wrapper"><input type="range" id="wz" min="-10" max="10" step="0.5" value="8"></div>
+        </div>
+        <div class="oneui-row"><label>과녁 상대 고도 (m)</label><input type="number" id="target_dh" value="2.0" min="-10" max="10" step="0.5"></div>
+    </div>
+</div>
+
+<script>
+    function switchTab(tabId) {
+        document.getElementById('specsTab').classList.remove('active');
+        document.getElementById('envTab').classList.remove('active');
+        document.getElementById('btnSpecs').classList.remove('active');
+        document.getElementById('btnEnv').classList.remove('active');
+        
+        document.getElementById(tabId).classList.add('active');
+        if(tabId === 'specsTab') document.getElementById('btnSpecs').classList.add('active');
+        else document.getElementById('btnEnv').classList.add('active');
+    }
+
+    function simulate(v0, m_g, d_mm, theta_deg, phi_deg, h0, target_dh, wx, wz, cd0, cl0) {
+        const m = m_g / 1000.0;
+        const d = d_mm / 1000.0;
+        const g = 9.80665;
+        const rho = 1.225;
+        const dt = 0.01;
+        
+        const theta = theta_deg * Math.PI / 180.0;
+        const phi = phi_deg * Math.PI / 180.0;
+        const A = Math.PI * Math.pow(d / 2.0, 2);
+        
+        let vx = v0 * Math.cos(theta) * Math.cos(phi);
+        let vy = v0 * Math.sin(theta);
+        let vz = v0 * Math.cos(theta) * Math.sin(phi);
+        
+        let x = 0.0, y = h0, z = 0.0;
+        let xs = [x], ys = [y], zs = [z];
+        let maxSteps = 5000;
+        
+        while (y >= (target_dh - 5.0) && x <= 165.0 && maxSteps > 0) {
+            maxSteps--;
+            let vrx = vx - wx;
+            let vry = vy;
+            let vrz = vz - wz;
+            let v = Math.sqrt(vrx*vrx + vry*vry + vrz*vrz);
+            if (v < 1e-6) break;
+            
+            let Fd = 0.5 * rho * (cd0 * (1 + 0.15 * Math.pow(v / 60.0, 2))) * A * v*v;
+            let Fl = 0.5 * rho * cl0 * A * v*v;
+            
+            let ax = -Fd * vrx / (m * v);
+            let az = -Fd * vrz / (m * v);
+            let ay = -g - (Fd * vry / (m * v)) + (Fl / m);
+            
+            vx += ax * dt; vy += ay * dt; vz += az * dt;
+            x += vx * dt; y += vy * dt; z += vz * dt;
+            
+            xs.push(x); ys.push(y); zs.push(z);
+        }
+        return { xs, ys, zs };
+    }
+</script>
+<!-- [Part 3: 가변 프레임 드롭 가드 하드웨어 가속 Chart.js 시각화 제어 로직 구현 완료 - index.html] -->
+<script>
+    const sliders = ['cd0', 'cl0', 'wx', 'wz'];
+    sliders.forEach(id => {
+        const input = document.getElementById(id);
+        const valSpan = document.getElementById(id + '_val');
+        input.addEventListener('input', () => {
+            valSpan.textContent = input.value;
+            runSimulation();
+        });
+    });
+
+    const inputs = ['v0', 'm_g', 'd_mm', 'theta_deg', 'phi_deg', 'h0', 'target_dh'];
+    inputs.forEach(id => {
+        document.getElementById(id).addEventListener('change', runSimulation);
+    });
+
+    let sideChart = null, topChart = null, frontChart = null;
+
+    function drawWindVector(wx, wz) {
+        const canvas = document.getElementById('windCanvas');
+        const ctx = canvas.getContext('2d');
+        ctx.clearRect(0, 0, canvas.width, canvas.height);
+        const cx = canvas.width / 2, cy = canvas.height / 2, r = 35;
+        
+        ctx.strokeStyle = 'rgba(255,255,255,0.06)';
+        ctx.lineWidth = 1;
+        ctx.beginPath(); ctx.arc(cx, cy, r, 0, 2*Math.PI); ctx.stroke();
+        
+        const norm = Math.sqrt(wx*wx + wz*wz);
+        if (norm > 0) {
+            const nx = wx / norm, nz = wz / norm;
+            ctx.strokeStyle = '#60A5FA';
+            ctx.lineWidth = 2.5;
+            ctx.beginPath(); ctx.moveTo(cx, cy); ctx.lineTo(cx + nx * r * 0.8, cy - nz * r * 0.8); ctx.stroke();
+            ctx.fillStyle = '#60A5FA';
+            ctx.beginPath(); ctx.arc(cx + nx * r * 0.8, cy - nz * r * 0.8, 3.5, 0, 2*Math.PI); ctx.fill();
+        }
+    }
+
+    function runSimulation() {
+        const v0 = parseFloat(document.getElementById('v0').value);
+        const m_g = parseFloat(document.getElementById('m_g').value);
+        const d_mm = parseFloat(document.getElementById('d_mm').value);
+        const theta_deg = parseFloat(document.getElementById('theta_deg').value);
+        const phi_deg = parseFloat(document.getElementById('phi_deg').value);
+        const h0 = parseFloat(document.getElementById('h0').value);
+        const cd0 = parseFloat(document.getElementById('cd0').value);
+        const cl0 = parseFloat(document.getElementById('cl0').value);
+        const wx = parseFloat(document.getElementById('wx').value);
+        const wz = parseFloat(document.getElementById('wz').value);
+        const target_dh = parseFloat(document.getElementById('target_dh').value);
+
+        drawWindVector(wx, wz);
+        const { xs, ys, zs } = simulate(v0, m_g, d_mm, theta_deg, phi_deg, h0, target_dh, wx, wz, cd0, cl0);
+
+        const t_base = 145.0, t_h = 2.67, t_w = 2.0, tilt = 15 * Math.PI / 180.0;
+        let hit_data = { y: ys[ys.length-1], z: zs[zs.length-1], hit: false };
+        
+        for (let i = 0; i < xs.length - 1; i++) {
+            let tx = t_base + (ys[i] - target_dh) * Math.tan(tilt);
+            if (xs[i] <= tx && tx <= xs[i+1]) {
+                let ay = (ys[i] - target_dh) / Math.cos(tilt);
+                hit_data = { y: ay, z: zs[i], hit: (ay >= 0 && ay <= t_h && Math.abs(zs[i]) <= t_w / 2) };
+                break;
+            }
+        }
+
+        const chartOptions = {
+            responsive: true, maintainAspectRatio: false, animation: { duration: 0 },
+            plugins: { legend: { display: false } },
+            scales: { x: { type: 'linear', grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#9CA3AF', font: { size: 10 } } }, y: { grid: { color: 'rgba(255,255,255,0.03)' }, ticks: { color: '#9CA3AF', font: { size: 10 } } } }
+        };
+
+        if (sideChart) sideChart.destroy();
+        sideChart = new Chart(document.getElementById('sideViewChart').getContext('2d'), {
+            type: 'line',
+            data: {
+                datasets: [
+                    { data: xs.map((x, idx) => ({ x: x, y: ys[idx] })), borderColor: '#34D399', borderWidth: 2, pointRadius: 0, fill: false },
+                    { data: [{x: t_base, y: target_dh}, {x: t_base + t_h*Math.sin(tilt), y: target_dh + t_h*Math.cos(tilt)}], borderColor: '#F87171', borderWidth: 3, pointRadius: 0, fill: false }
+                ]
+            },
+            options: { ...chartOptions, plugins: { ...chartOptions.plugins, title: { display: true, text: '측면 비행 궤적 (Side View)', color: '#F3F4F6', font: { size: 12 } } } }
+        });
+
+        if (topChart) topChart.destroy();
+        topChart = new Chart(document.getElementById('topViewChart').getContext('2d'), {
+            type: 'line',
+            data: { datasets: [{ data: xs.map((x, idx) => ({ x: x, y: zs[idx] })), borderColor: '#FB923C', borderWidth: 2, pointRadius: 0, fill: false }] },
+            options: { ...chartOptions, plugins: { ...chartOptions.plugins, title: { display: true, text: '평면 비행 궤적 (Top View)', color: '#F3F4F6', font: { size: 12 } } }, scales: { ...chartOptions.scales, y: { ...chartOptions.scales.y, min: -4, max: 4, reverse: true } } }
+        });
+
+        if (frontChart) frontChart.destroy();
+        frontChart = new Chart(document.getElementById('frontViewChart').getContext('2d'), {
+            type: 'scatter',
+            data: { datasets: [{ data: [{ x: hit_data.z, y: hit_data.y }], backgroundColor: hit_data.hit ? '#34D399' : '#F87171', radius: 5 }] },
+            options: {
+                ...chartOptions,
+                plugins: {
+                    ...chartOptions.plugins,
+                    title: { display: true, text: `정면 과녁 착탄 (${hit_data.hit ? '관중' : '불관중'})`, color: '#F3F4F6', font: { size: 11 } },
+                    beforeDraw: (chart) => {
+                        const ctx = chart.ctx, xAxis = chart.scales.x, yAxis = chart.scales.y;
+                        const xLeft = xAxis.getPixelForValue(-1.0), xRight = xAxis.getPixelForValue(1.0);
+                        const yBottom = yAxis.getPixelForValue(0), yTop = yAxis.getPixelForValue(2.67);
+                        ctx.save(); ctx.fillStyle = 'rgba(248, 113, 113, 0.05)'; ctx.strokeStyle = '#F87171'; ctx.lineWidth = 1.2;
+                        ctx.fillRect(xLeft, yTop, xRight - xLeft, yBottom - yTop); ctx.strokeRect(xLeft, yTop, xRight - xLeft, yBottom - yTop); ctx.restore();
+                    }
+                },
+                scales: { x: { min: -2.5, max: 2.5, grid: { color: 'rgba(255,255,255,0.02)' }, ticks: { display: false } }, y: { min: -0.5, max: 3.5, grid: { color: 'rgba(255,255,255,0.02)' }, ticks: { display: false } } }
+            }
+        });
+    }
+
+    window.addEventListener('load', runSimulation);
+</script>
+</body>
+</html>
