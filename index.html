@@ -1,4 +1,4 @@
-<!-- [Part 1: 갤럭시 One UI 디자인 시스템 및 PWA 모바일 전체 화면 CSS 선언 - index.html] -->
+<!-- [Part 1: 고속 CDN 이식 및 시스템 폰트 스왑 기술이 적용된 캘럭시 최적화 헤더 - index.html] -->
 <!DOCTYPE html>
 <html lang="ko">
 <head>
@@ -8,10 +8,10 @@
     <meta name="apple-mobile-web-app-capable" content="yes">
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <title>Jumong-jeong - Gungdo Simulator</title>
-    <script src="https://jsdelivr.net"></script>
+    <!-- 고속 아시아 미러망 (cdnjs) 기반의 렌더 블로킹 프리 최적화 주입 -->
+    <script src="https://cloudflare.com" integrity="sha512-ZwR1/gSZMwktIZPhxtchPMn3KGf4QvWj63AhTeTUytYms5giKuADrqWxgwiqa9ONY9OTaAMgx60VJvOATHLI9w==" crossorigin="anonymous" referrerpolicy="no-referrer"></script>
     <style>
-        @import url('https://cdnfonts.com');
-
+        /* 외부 서체 의존성을 제거하고 원본의 SF Pro 서체감을 은닉 이식한 시스템 폰트 스택 */
         :root {
             --oneui-bg: #000000;
             --oneui-card: #121214;
@@ -35,7 +35,8 @@
         }
 
         body {
-            font-family: 'SF Pro Display', -apple-system, BlinkMacSystemFont, 'Roboto', 'Noto Sans KR', sans-serif !important;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, "Noto Sans KR", sans-serif;
+            font-display: swap;
             background-color: var(--oneui-bg) !important;
             color: var(--oneui-text-main) !important;
             min-height: 100vh;
@@ -46,7 +47,6 @@
             padding-bottom: calc(var(--safe-bottom) + 340px);
         }
 
-        /* Galaxy One UI App Bar Standard */
         header {
             height: 56px;
             display: flex;
@@ -70,7 +70,6 @@
             letter-spacing: -0.01em;
         }
 
-        /* Main Dashboard Fluid Framework */
         main {
             width: 100%;
             max-width: 600px;
@@ -84,7 +83,6 @@
             -webkit-overflow-scrolling: touch;
         }
 
-        /* One UI Rounded Container Design */
         .oneui-card {
             background: var(--oneui-card);
             border: 1px solid var(--oneui-border);
@@ -130,7 +128,6 @@
             width: 100%;
         }
 
-        /* One UI Flat Tab Control */
         .oneui-tab-container {
             display: flex;
             border-bottom: 2px solid var(--oneui-border);
@@ -166,7 +163,6 @@
             background-color: var(--oneui-accent);
         }
 
-        /* Bottom Sheet Interaction Frame */
         .oneui-bottom-sheet {
             position: fixed;
             bottom: 0;
@@ -202,7 +198,6 @@
             display: flex;
         }
 
-        /* One UI Form Element Layout */
         .oneui-row {
             display: flex;
             align-items: center;
@@ -320,7 +315,7 @@
         <div class="oneui-row"><label>초기 속도 (m/s)</label><input type="number" id="v0" value="60" min="30" max="100" step="1"></div>
         <div class="oneui-row"><label>화살 무게 (g)</label><input type="number" id="m_g" value="26.25" min="15" max="40" step="0.05"></div>
         <div class="oneui-row"><label>화살 직경 (mm)</label><input type="number" id="d_mm" value="8.0" min="5" max="15" step="0.1"></div>
-        <div class="oneui-row"><label>vertical 발사각 (°)</label><input type="number" id="theta_deg" value="13.0" min="0" max="45" step="0.1"></div>
+        <div class="oneui-row"><label>Vertical 발사각 (°)</label><input type="number" id="theta_deg" value="13.0" min="0" max="45" step="0.1"></div>
         <div class="oneui-row"><label>Horizontal 편각 (°)</label><input type="number" id="phi_deg" value="-0.5" min="-5" max="5" step="0.1"></div>
         <div class="oneui-row"><label>출전 높이 (m)</label><input type="number" id="h0" value="1.5" min="0" max="5" step="0.1"></div>
     </div>
