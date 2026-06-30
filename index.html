@@ -253,20 +253,27 @@ align-items: center; padding-bottom: 15px; z-index: 800;
   </button>
 </div>
 <script>
-// Canvas 설정 및 컨텍스트 확보
+// Canvas 초기화 및 동적 리사이징 대응 보정
 const canvas = document.getElementById('simCanvas');
 const ctx = canvas.getContext('2d');
+
+let dprWidth = 0;
+let dprHeight = 0;
 
 function resizeCanvas() {
     const rect = canvas.getBoundingClientRect();
     canvas.width = rect.width * window.devicePixelRatio;
     canvas.height = rect.height * window.devicePixelRatio;
+    ctx.resetTransform();
     ctx.scale(window.devicePixelRatio, window.devicePixelRatio);
+    dprWidth = rect.width;
+    dprHeight = rect.height;
+    drawScene();
 }
 window.addEventListener('resize', resizeCanvas);
 window.addEventListener('load', resizeCanvas);
 
-// 보텀 시트 제어 로직
+// UI 보텀 시트 트리거 로직
 function openBottomSheet(type) {
     closeBottomSheet();
     document.getElementById('overlay').classList.add('active');
@@ -283,7 +290,7 @@ function closeBottomSheet() {
     document.getElementById('sheet-env').classList.remove('active');
 }
 
-// 시점 변경 제어
+// 상단 디스플레이 시점 변경 토글
 let currentView = 'side';
 function changeView(viewType, element) {
     const buttons = document.querySelectorAll('.segment-btn');
@@ -293,7 +300,7 @@ function changeView(viewType, element) {
     drawScene();
 }
 
-// 실시간 시뮬레이션 상태 변수
+// 실시간 물리 변동 상태 파라미터 구조
 let isFlying = false;
 let animationFrameId = null;
 let trajectory = [];
@@ -304,25 +311,28 @@ let arrowState = {
     pitch: 0, yaw: 0
 };
 
-const SCALE = 10; // 1m = 10px
+const SCALE = 10; 
 const GROUND_Y_OFFSET = 50;
 
 function fireArrow() {
-    if (isFlying) cancelAnimationFrame(animationFrameId);
+    if (isFlying) {
+        cancelAnimationFrame(animationFrameId);
+    }
 
-    const v0 = parseFloat(document.getElementById('velocity').value);
-    const angleDeg = parseFloat(document.getElementById('angle').value);     // 수직각
-    const yawDeg = parseFloat(document.getElementById('yawAngle').value);     // 수평각
-    const launchH = parseFloat(document.getElementById('launchHeight').value); // 발사높이
+    const v0 = parseFloat(document.getElementById('velocity').value) || 50;
+    const angleDeg = parseFloat(document.getElementById('angle').value) || 0;
+    const yawDeg = parseFloat(document.getElementById('yawAngle').value) || 0;
+    const launchH = parseFloat(document.getElementById('launchHeight').value) || 0;
 
     const pitchRad = (angleDeg * Math.PI) / 180;
     const yawRad = (yawDeg * Math.PI) / 180;
 
-    // 3차원 위치 및 초기 속도 벡터 성분 분해
-    arrowState.x = 20 / SCALE;
+    // 초기 좌표 매핑 (픽셀 마진을 고려한 미터 변환 시작점 정의)
+    arrowState.x = 30 / SCALE;
     arrowState.y = launchH;
     arrowState.z = 0;
 
+    // 3차원 물리 속도 벡터 초기 분해 값 설정
     arrowState.vx = v0 * Math.cos(pitchRad) * Math.cos(yawRad);
     arrowState.vy = v0 * Math.sin(pitchRad);
     arrowState.vz = v0 * Math.cos(pitchRad) * Math.sin(yawRad);
@@ -331,6 +341,9 @@ function fireArrow() {
     arrowState.yaw = yawRad;
 
     trajectory = [];
+    // 첫 초기 위치 기록
+    trajectory.push({x: arrowState.x, y: arrowState.y, z: arrowState.z});
+    
     isFlying = true;
     animate();
 }
@@ -338,34 +351,34 @@ function fireArrow() {
 function animate() {
     if (!isFlying) return;
 
-    // 폼에서 실시간 동적 값 취득
-    const cd = parseFloat(document.getElementById('dragCoeff').value);
-    const cl = parseFloat(document.getElementById('liftCoeff').value);
-    const d = parseFloat(document.getElementById('diameter').value) / 1000;
-    const m = parseFloat(document.getElementById('weight').value) / 1000;
-    const rho = parseFloat(document.getElementById('airDensity').value);
-    const windX = parseFloat(document.getElementById('windX').value);
-    const windY = parseFloat(document.getElementById('windY').value); // 횡풍 (z축 매핑)
+    // 실시간 파라미터 폼 데이터 동적 누적 수집
+    const cd = parseFloat(document.getElementById('dragCoeff').value) || 0;
+    const cl = parseFloat(document.getElementById('liftCoeff').value) || 0;
+    const d = (parseFloat(document.getElementById('diameter').value) || 5.5) / 1000;
+    const m = (parseFloat(document.getElementById('weight').value) || 25) / 1000;
+    const rho = parseFloat(document.getElementById('airDensity').value) || 1.225;
+    const windX = parseFloat(document.getElementById('windX').value) || 0;
+    const windY = parseFloat(document.getElementById('windY').value) || 0; 
 
     const g = 9.81;
-    const dt = 0.016;
+    const dt = 0.016; // 대략적인 타임스텝 제어 인터벌
 
     const area = Math.PI * Math.pow(d / 2, 2);
 
-    // 바람 대비 상대 속도 계산
+    // 공기 역학 상대 속도차 벡터 연산
     const relVx = arrowState.vx - windX;
     const relVy = arrowState.vy;
     const relVz = arrowState.vz - windY;
-    const vRel = Math.sqrt(relVx * relVx + relVy * relVy + relVz * relVz);
+    const vRel = Math.sqrt(relVx * relVx + relVy * relVy + relVz * relVz) || 0.001;
 
-    // 공기역학 항력 및 양력 연산
+    // 항력 및 양력 연산 수식 결합
     const dragF = 0.5 * rho * vRel * vRel * cd * area;
     const liftF = 0.5 * rho * vRel * vRel * cl * area;
 
     const flowPitch = Math.atan2(relVy, Math.sqrt(relVx * relVx + relVz * relVz));
     const flowYaw = Math.atan2(relVz, relVx);
 
-    // 가속도 계산 (F = ma)
+    // 벡터 공간 가속도값 가중 처리
     const ax = (-dragF * Math.cos(flowPitch) * Math.cos(flowYaw) - liftF * Math.sin(flowPitch) * Math.cos(flowYaw)) / m;
     const ay = (-g - dragF * Math.sin(flowPitch) + liftF * Math.cos(flowPitch)) / m;
     const az = (-dragF * Math.cos(flowPitch) * Math.sin(flowYaw) - liftF * Math.sin(flowPitch) * Math.sin(flowYaw)) / m;
@@ -383,8 +396,14 @@ function animate() {
 
     trajectory.push({x: arrowState.x, y: arrowState.y, z: arrowState.z});
 
+    // 지면 충돌 체크 처리
     if (arrowState.y <= 0) {
         arrowState.y = 0;
+        isFlying = false;
+    }
+    
+    // 경계 오버플로우 한계 정지 제한 조건 추가
+    if (arrowState.x * SCALE > dprWidth + 100 || arrowState.x < -10) {
         isFlying = false;
     }
 
@@ -396,69 +415,71 @@ function animate() {
 }
 
 function drawScene() {
-    const viewWidth = canvas.width / window.devicePixelRatio;
-    const viewHeight = canvas.height / window.devicePixelRatio;
-    ctx.clearRect(0, 0, viewWidth, viewHeight);
+    if (dprWidth === 0 || dprHeight === 0) return;
+    
+    ctx.clearRect(0, 0, dprWidth, dprHeight);
 
-    const targetH = parseFloat(document.getElementById('targetHeight').value);
-    const targetX = viewWidth - 60;
+    const targetH = parseFloat(document.getElementById('targetHeight').value) || 0;
+    const targetScreenX = dprWidth - 60;
 
-    // 시점에 따른 2D 변환 헬퍼 함수 정의
-    function getScreenCoords(pX, pY, pZ) {
-        if (currentView === 'side') { // 측면 뷰 (X, Y 조합)
-            return { x: pX * SCALE, y: viewHeight - GROUND_Y_OFFSET - (pY * SCALE) };
-        } else if (currentView === 'top') { // 평면 뷰 (X, Z 조합)
-            return { x: pX * SCALE, y: (viewHeight / 2) + (pZ * SCALE) };
-        } else { // 정면 뷰 (Z, Y 조합)
-            return { x: (viewWidth / 2) + (pZ * SCALE), y: viewHeight - GROUND_Y_OFFSET - (pY * SCALE) };
+    // 다중 투영 시점 픽셀 좌표 바인딩 헬퍼 정의
+    function toScreen(pX, pY, pZ) {
+        if (currentView === 'side') {
+            return { x: pX * SCALE, y: dprHeight - GROUND_Y_OFFSET - (pY * SCALE) };
+        } else if (currentView === 'top') {
+            return { x: pX * SCALE, y: (dprHeight / 2) + (pZ * SCALE) };
+        } else {
+            return { x: (dprWidth / 2) + (pZ * SCALE), y: dprHeight - GROUND_Y_OFFSET - (pY * SCALE) };
         }
     }
 
-    // 1. 바닥선 또는 가이드선 시트 그리기
+    // 1. 기준 바닥 보조선 렌더링
     ctx.strokeStyle = '#86868b';
-    ctx.lineWidth = 2;
+    ctx.lineWidth = 1.5;
     ctx.beginPath();
     if (currentView === 'side' || currentView === 'front') {
-        const groundY = viewHeight - GROUND_Y_OFFSET;
-        ctx.moveTo(0, groundY); ctx.lineTo(viewWidth, groundY);
+        const groundY = dprHeight - GROUND_Y_OFFSET;
+        ctx.moveTo(0, groundY); ctx.lineTo(dprWidth, groundY);
     } else {
-        ctx.moveTo(0, viewHeight / 2); ctx.lineTo(viewWidth, viewHeight / 2);
+        ctx.moveTo(0, dprHeight / 2); ctx.lineTo(dprWidth, dprHeight / 2);
     }
     ctx.stroke();
 
-    // 2. 과녁 그리기
-    const tgtPos = getScreenCoords(targetX / SCALE, targetH, 0);
+    // 2. 고정 목표 과녁판 오브젝트 구현
+    const tgt = toScreen(targetScreenX / SCALE, targetH, 0);
     ctx.fillStyle = '#ff3b30';
-    ctx.beginPath(); ctx.arc(tgtPos.x, tgtPos.y, 12, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(tgt.x, tgt.y, 12, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = '#ffffff';
-    ctx.beginPath(); ctx.arc(tgtPos.x, tgtPos.y, 6, 0, Math.PI * 2); ctx.fill();
+    ctx.beginPath(); ctx.arc(tgt.x, tgt.y, 6, 0, Math.PI * 2); ctx.fill();
 
-    // 3. 누적 비행 궤적 그리기
-    if (trajectory.length > 1) {
-        ctx.strokeStyle = '#0071e3';
-        ctx.lineWidth = 1.5;
-        ctx.setLineDash([4, 4]);
-        ctx.beginPath();
-        const startPos = getScreenCoords(trajectory[0].x, trajectory[0].y, trajectory[0].z);
-        ctx.moveTo(startPos.x, startPos.y);
-        for (let i = 1; i < trajectory.length; i++) {
-            const pos = getScreenCoords(trajectory[i].x, trajectory[i].y, trajectory[i].z);
-            ctx.lineTo(pos.x, pos.y);
-        }
-        ctx.stroke();
-        ctx.setLineDash([]);
+    if (currentView === 'side' || currentView === 'front') {
+        ctx.strokeStyle = '#1d1d1f'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(tgt.x, tgt.y + 12); ctx.lineTo(tgt.x, dprHeight - GROUND_Y_OFFSET); ctx.stroke();
     }
 
-    // 4. 실시간 화살 투영 객체 그리기
-    const arrowPos = getScreenCoords(arrowState.x, arrowState.y, arrowState.z);
+    // 3. 누적 이동 포물선 점선 궤적 렌더링
+    if (trajectory.length > 1) {
+        ctx.strokeStyle = '#0071e3';
+        ctx.lineWidth = 2;
+        ctx.beginPath();
+        const start = toScreen(trajectory[0].x, trajectory[0].y, trajectory[0].z);
+        ctx.moveTo(start.x, start.y);
+        for (let i = 1; i < trajectory.length; i++) {
+            const pt = toScreen(trajectory[i].x, trajectory[i].y, trajectory[i].z);
+            ctx.lineTo(pt.x, pt.y);
+        }
+        ctx.stroke();
+    }
+
+    // 4. 실시간 이동 화살 핀 렌더링 구현
+    const arrowPos = toScreen(arrowState.x, arrowState.y, arrowState.z);
     ctx.save();
     ctx.translate(arrowPos.x, arrowPos.y);
 
-    let renderAngle = 0;
-    if (currentView === 'side') renderAngle = -arrowState.pitch;
-    else if (currentView === 'top') renderAngle = arrowState.yaw;
-    else renderAngle = 0; 
-    ctx.rotate(renderAngle);
+    let angleRad = 0;
+    if (currentView === 'side') angleRad = -arrowState.pitch;
+    else if (currentView === 'top') angleRad = arrowState.yaw;
+    ctx.rotate(angleRad);
 
     ctx.strokeStyle = '#515154'; ctx.lineWidth = 2;
     ctx.beginPath(); ctx.moveTo(-20, 0); ctx.lineTo(0, 0); ctx.stroke();
@@ -471,13 +492,15 @@ function drawScene() {
     ctx.restore();
 }
 
+// 최초 기본 디폴트 데이터 화면 구성 연동
 setTimeout(() => {
-    const launchH = parseFloat(document.getElementById('launchHeight').value);
-    arrowState.x = 20 / SCALE; arrowState.y = launchH; arrowState.z = 0;
-    arrowState.pitch = (parseFloat(document.getElementById('angle').value) * Math.PI) / 180;
-    arrowState.yaw = (parseFloat(document.getElementById('yawAngle').value) * Math.PI) / 180;
+    resizeCanvas();
+    const launchH = parseFloat(document.getElementById('launchHeight').value) || 1.5;
+    arrowState.x = 30 / SCALE; arrowState.y = launchH; arrowState.z = 0;
+    arrowState.pitch = (parseFloat(document.getElementById('angle').value) || 30) * Math.PI / 180;
+    arrowState.yaw = (parseFloat(document.getElementById('yawAngle').value) || 0) * Math.PI / 180;
     drawScene();
-}, 200);
+}, 250);
 </script>
 </body>
 </html>
