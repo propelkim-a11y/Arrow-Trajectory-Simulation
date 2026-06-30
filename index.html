@@ -16,7 +16,17 @@ overflow: hidden; /* 보텀시트 제어를 위해 전체 스크롤 막음 */
 display: flex;
 flex-direction: column;
 }
+<!-- 일반 브라우저 상단 탭 파비콘 (Favicon) 설정 -->
+<link rel="icon" type="image/png" sizes="32x32" href="icon.png">
+<link rel="icon" type="image/png" sizes="16x16" href="icon.png">
 
+<!-- iOS (iPhone, iPad) 홈 화면 바로가기 추가 시 앱 아이콘 지정 -->
+<link rel="apple-touch-icon" sizes="180x180" href="icon.png">
+
+<!-- 모바일 웹앱 상태바 및 브라우저 UI 숨김 (Native App처럼 작동) -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="mobile-web-app-capable" content="yes">
 /* 메인 화면 레이아웃 */
 .main-screen {
 flex: 1;
