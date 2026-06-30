@@ -181,6 +181,22 @@ align-items: center; padding-bottom: 15px; z-index: 800;
 <span class="unit">mm</span>
 </div>
 </div>
+<!-- 항력 계수 (Cd) -->
+<div class="form-group">
+<label>항력 계수 (Cd)</label>
+<div class="input-wrapper">
+<input type="number" id="dragCoeff" value="0.35" step="0.01">
+<span class="unit">cd</span>
+</div>
+</div>
+<!-- 양력 계수 (Cl) -->
+<div class="form-group">
+<label>양력 계수 (Cl)</label>
+<div class="input-wrapper">
+<input type="number" id="liftCoeff" value="0.05" step="0.01">
+<span class="unit">cl</span>
+</div>
+</div>
 <div class="form-group">
 <label>화살 무게</label>
 <div class="input-wrapper">
@@ -196,6 +212,14 @@ align-items: center; padding-bottom: 15px; z-index: 800;
 <div class="sheet-handle" onclick="closeBottomSheet()"></div>
 <div class="sheet-title">환경 변수 설정</div>
 <div class="form-grid">
+<!-- 과녁 높이 (Target Height) -->
+<div class="form-group">
+<label>과녁 높이</label>
+<div class="input-wrapper">
+<input type="number" id="targetHeight" value="1.3" step="0.1">
+<span class="unit">m</span>
+</div>
+</div>
 <div class="form-group">
 <label>종풍 (맞바람/뒷바람)</label>
 <div class="input-wrapper">
@@ -263,7 +287,13 @@ console.log(viewType + " 시점으로 보기 변경");
 }
 
 function fireArrow() {
-console.log("화살 시뮬레이션 계산 시작");
+// 추후 물리 엔진 설계 시 아래와 같이 변수를 취득해 사용할 수 있습니다.
+const cd = parseFloat(document.getElementById('dragCoeff').value);
+const cl = parseFloat(document.getElementById('liftCoeff').value);
+const th = parseFloat(document.getElementById('targetHeight').value);
+const rho = parseFloat(document.getElementById('airDensity').value);
+
+console.log(`화살 발사 연산 데이터 -> 항력:${cd}, 양력:${cl}, 과녁높이:${th}m, 공기밀도:${rho}kg/m³`);
 }
 </script>
 </body>
