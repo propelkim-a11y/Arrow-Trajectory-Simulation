@@ -102,7 +102,6 @@ padding-bottom: 40px;
 .input-wrapper:focus-within { border-color: #0071e3; background: #fff; box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15); }
 .input-wrapper input { width: 80px; border: none; background: transparent; text-align: right; font-size: 14px; font-weight: 600; outline: none; }
 .input-wrapper .unit { font-size: 12px; color: #86868b; margin-left: 6px; width: 40px; }
-
 /* --- 하단 탭 바 (iOS 네비게이션 바 스타일) --- */
 .tab-bar {
 position: fixed; bottom: 0; left: 0; width: 100%; height: 75px; 
@@ -116,6 +115,7 @@ align-items: center; padding-bottom: 15px; z-index: 800;
 </style>
 </head>
 <body>
+
 <!-- 메인 화면 영역 -->
 <div class="main-screen">
   <h1>Arrow Trajectory</h1>
@@ -204,7 +204,6 @@ align-items: center; padding-bottom: 15px; z-index: 800;
     </div>
   </div>
 </div>
-
 <!-- [보텀 시트 2] 환경 변수 -->
 <div class="bottom-sheet" id="sheet-env">
   <div class="sheet-handle" onclick="closeBottomSheet()"></div>
@@ -252,6 +251,7 @@ align-items: center; padding-bottom: 15px; z-index: 800;
     <span>환경 변수</span>
   </button>
 </div>
+
 <script>
 // Canvas 초기화 및 동적 리사이징 대응 보정
 const canvas = document.getElementById('simCanvas');
@@ -312,7 +312,7 @@ function closeBottomSheet() {
     document.getElementById('overlay').classList.remove('active');
     document.getElementById('sheet-arrow').classList.remove('active');
     document.getElementById('sheet-env').classList.remove('active');
-    saveSettings(); // 시트를 닫을 때 자동으로 현재 변경 값 영구 백업
+    saveSettings(); 
     drawScene();    
 }
 
@@ -337,16 +337,16 @@ let arrowState = {
     pitch: 0, yaw: 0
 };
 
-// 픽셀 배율 보정 (화면 크기에 맞춰 궤적이 시원하게 보이도록 조정)
+// 그래프 좌표계 마진 및 배율 보정
 const SCALE = 6; 
+const ORIGIN_X_OFFSET = 50; 
 const GROUND_Y_OFFSET = 60;
-
 function fireArrow() {
     if (isFlying) {
         cancelAnimationFrame(animationFrameId);
     }
     
-    saveSettings(); // 발사 순간 최종 데이터 백업
+    saveSettings(); 
 
     const v0 = parseFloat(document.getElementById('velocity').value) || 50;
     const angleDeg = parseFloat(document.getElementById('angle').value) || 0;
@@ -356,12 +356,10 @@ function fireArrow() {
     const pitchRad = (angleDeg * Math.PI) / 180;
     const yawRad = (yawDeg * Math.PI) / 180;
 
-    // 초기 좌표 매핑
-    arrowState.x = 40 / SCALE; 
+    arrowState.x = 0; 
     arrowState.y = launchH;
     arrowState.z = 0;
 
-    // 3차원 물리 속도 벡터 초기 분해 값 설정
     arrowState.vx = v0 * Math.cos(pitchRad) * Math.cos(yawRad);
     arrowState.vy = v0 * Math.sin(pitchRad);
     arrowState.vz = v0 * Math.cos(pitchRad) * Math.sin(yawRad);
@@ -425,7 +423,7 @@ function animate() {
         isFlying = false;
     }
     
-    if (arrowState.x * SCALE > dprWidth + 100 || arrowState.x < -10) {
+    if ((arrowState.x * SCALE) + ORIGIN_X_OFFSET > dprWidth + 100 || arrowState.x < -10) {
         isFlying = false;
     }
 
@@ -442,83 +440,71 @@ function drawScene() {
     ctx.clearRect(0, 0, dprWidth, dprHeight);
 
     const targetH = parseFloat(document.getElementById('targetHeight').value) || 0;
-    const targetScreenX = dprWidth - 60;
+    const targetScreenX = dprWidth - 80;
 
     function toScreen(pX, pY, pZ) {
         if (currentView === 'side') {
-            return { x: pX * SCALE, y: dprHeight - GROUND_Y_OFFSET - (pY * SCALE) };
+            return { x: ORIGIN_X_OFFSET + (pX * SCALE), y: dprHeight - GROUND_Y_OFFSET - (pY * SCALE) };
         } else if (currentView === 'top') {
-            return { x: pX * SCALE, y: (dprHeight / 2) + (pZ * SCALE) };
+            return { x: ORIGIN_X_OFFSET + (pX * SCALE), y: (dprHeight / 2) + (pZ * SCALE) };
         } else {
             return { x: (dprWidth / 2) + (pZ * SCALE), y: dprHeight - GROUND_Y_OFFSET - (pY * SCALE) };
         }
     }
 
-    // 1. 기준 바닥 보조선 렌더링
-    ctx.strokeStyle = '#86868b';
-    ctx.lineWidth = 1.5;
-    ctx.beginPath();
-    if (currentView === 'side' || currentView === 'front') {
-        const groundY = dprHeight - GROUND_Y_OFFSET;
-        ctx.moveTo(0, groundY); ctx.lineTo(dprWidth, groundY);
+    if (currentView === 'side') {
+        ctx.strokeStyle = '#e5e5ea'; ctx.lineWidth = 1; ctx.font = '10px -apple-system'; ctx.fillStyle = '#8e8e93';
+        for (let xMeters = 0; ORIGIN_X_OFFSET + (xMeters * SCALE) < dprWidth; xMeters += 20) {
+            let scrX = ORIGIN_X_OFFSET + (xMeters * SCALE);
+            ctx.beginPath(); ctx.moveTo(scrX, 0); ctx.lineTo(scrX, dprHeight - GROUND_Y_OFFSET); ctx.stroke();
+            ctx.textAlign = 'center'; ctx.fillText(xMeters + 'm', scrX, dprHeight - GROUND_Y_OFFSET + 18);
+        }
+        for (let yMeters = 0; dprHeight - GROUND_Y_OFFSET - (yMeters * SCALE) > 0; yMeters += 10) {
+            let scrY = dprHeight - GROUND_Y_OFFSET - (yMeters * SCALE);
+            ctx.beginPath(); ctx.moveTo(ORIGIN_X_OFFSET, scrY); ctx.lineTo(dprWidth, scrY); ctx.stroke();
+            ctx.textAlign = 'right'; ctx.fillText(yMeters + 'm', ORIGIN_X_OFFSET - 8, scrY + 3);
+        }
+        ctx.strokeStyle = '#1d1d1f'; ctx.lineWidth = 2;
+        ctx.beginPath(); ctx.moveTo(ORIGIN_X_OFFSET, dprHeight - GROUND_Y_OFFSET); ctx.lineTo(dprWidth, dprHeight - GROUND_Y_OFFSET); ctx.stroke();
+        ctx.beginPath(); ctx.moveTo(ORIGIN_X_OFFSET, 0); ctx.lineTo(ORIGIN_X_OFFSET, dprHeight - GROUND_Y_OFFSET); ctx.stroke();
     } else {
-        ctx.moveTo(0, dprHeight / 2); ctx.lineTo(dprWidth, dprHeight / 2);
+        ctx.strokeStyle = '#86868b'; ctx.lineWidth = 1.5; ctx.beginPath();
+        if (currentView === 'front') { ctx.moveTo(0, dprHeight - GROUND_Y_OFFSET); ctx.lineTo(dprWidth, dprHeight - GROUND_Y_OFFSET); }
+        else { ctx.moveTo(0, dprHeight / 2); ctx.lineTo(dprWidth, dprHeight / 2); }
+        ctx.stroke();
     }
-    ctx.stroke();
 
-    // 2. 고정 목표 과녁판 오브젝트 구현
-    const tgt = toScreen(targetScreenX / SCALE, targetH, 0);
-    ctx.fillStyle = '#ff3b30';
-    ctx.beginPath(); ctx.arc(tgt.x, tgt.y, 12, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#ffffff';
-    ctx.beginPath(); ctx.arc(tgt.x, tgt.y, 6, 0, Math.PI * 2); ctx.fill();
+    const tgt = toScreen((targetScreenX - ORIGIN_X_OFFSET) / SCALE, targetH, 0);
+    ctx.fillStyle = '#ff3b30'; ctx.beginPath(); ctx.arc(tgt.x, tgt.y, 12, 0, Math.PI * 2); ctx.fill();
+    ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(tgt.x, tgt.y, 6, 0, Math.PI * 2); ctx.fill();
 
     if (currentView === 'side' || currentView === 'front') {
         ctx.strokeStyle = '#1d1d1f'; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.moveTo(tgt.x, tgt.y + 12); ctx.lineTo(tgt.x, dprHeight - GROUND_Y_OFFSET); ctx.stroke();
     }
 
-    // 3. 누적 이동 포물선 궤적 렌더링
     if (trajectory.length > 1) {
-        ctx.strokeStyle = '#0071e3';
-        ctx.lineWidth = 2.5;
-        ctx.beginPath();
-        const start = toScreen(trajectory[0].x, trajectory[0].y, trajectory[0].z); 
-        ctx.moveTo(start.x, start.y);
-        for (let i = 1; i < trajectory.length; i++) {
-            const pt = toScreen(trajectory[i].x, trajectory[i].y, trajectory[i].z);
-            ctx.lineTo(pt.x, pt.y);
-        }
+        ctx.strokeStyle = '#0071e3'; ctx.lineWidth = 2.5; ctx.beginPath();
+        const start = toScreen(trajectory[0].x, trajectory[0].y, trajectory[0].z); ctx.moveTo(start.x, start.y);
+        for (let i = 1; i < trajectory.length; i++) { const pt = toScreen(trajectory[i].x, trajectory[i].y, trajectory[i].z); ctx.lineTo(pt.x, pt.y); }
         ctx.stroke();
     }
 
-    // 4. 실시간 이동 화살 핀 렌더링 구현
     const arrowPos = toScreen(arrowState.x, arrowState.y, arrowState.z);
-    ctx.save();
-    ctx.translate(arrowPos.x, arrowPos.y);
-
-    let angleRad = 0;
-    if (currentView === 'side') angleRad = -arrowState.pitch;
-    else if (currentView === 'top') angleRad = arrowState.yaw;
+    ctx.save(); ctx.translate(arrowPos.x, arrowPos.y);
+    let angleRad = 0; if (currentView === 'side') angleRad = -arrowState.pitch; else if (currentView === 'top') angleRad = arrowState.yaw;
     ctx.rotate(angleRad);
-
-    ctx.strokeStyle = '#515154'; ctx.lineWidth = 2;
-    ctx.beginPath(); ctx.moveTo(-20, 0); ctx.lineTo(0, 0); ctx.stroke();
-
-    ctx.fillStyle = '#1d1d1f';
-    ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-6, -3); ctx.lineTo(-6, 3); ctx.closePath(); ctx.fill();
-
-    ctx.fillStyle = '#ff9500';
-    ctx.beginPath(); ctx.moveTo(-20, 0); ctx.lineTo(-16, -4); ctx.lineTo(-10, -4); ctx.lineTo(-14, 0); ctx.fill();
+    ctx.strokeStyle = '#515154'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(-20, 0); ctx.lineTo(0, 0); ctx.stroke();
+    ctx.fillStyle = '#1d1d1f'; ctx.beginPath(); ctx.moveTo(0, 0); ctx.lineTo(-6, -3); ctx.lineTo(-6, 3); ctx.closePath(); ctx.fill();
+    ctx.fillStyle = '#ff9500'; ctx.beginPath(); ctx.moveTo(-20, 0); ctx.lineTo(-16, -4); ctx.lineTo(-10, -4); ctx.lineTo(-14, 0); ctx.fill();
     ctx.restore();
 }
 
-// 최초 기본 디폴트 데이터 화면 구성 및 세이브 로드 연동
 setTimeout(() => {
-    loadSettings();  // 이전 분석 환경설정 세션값 자동 복원
+    loadSettings();  
     resizeCanvas();
     const launchH = parseFloat(document.getElementById('launchHeight').value) || 1.5;
-    arrowState.x = 40 / SCALE; arrowState.y = launchH; arrowState.z = 0;
+    arrowState.x = 0; arrowState.y = launchH; arrowState.z = 0;
     arrowState.pitch = (parseFloat(document.getElementById('angle').value) || 30) * Math.PI / 180;
     arrowState.yaw = (parseFloat(document.getElementById('yawAngle').value) || 0) * Math.PI / 180;
     drawScene();
