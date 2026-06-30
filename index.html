@@ -260,6 +260,30 @@ const ctx = canvas.getContext('2d');
 let dprWidth = 0;
 let dprHeight = 0;
 
+// 로컬 스토리지 저장 및 불러오기 대상 변수 리스트
+const INPUT_IDS = [
+    'velocity', 'angle', 'yawAngle', 'launchHeight', 
+    'diameter', 'dragCoeff', 'liftCoeff', 'weight',
+    'targetHeight', 'windX', 'windY', 'airDensity'
+];
+
+function saveSettings() {
+    INPUT_IDS.forEach(id => {
+        const el = document.getElementById(id);
+        if (el) localStorage.setItem('arrow_sim_' + id, el.value);
+    });
+}
+
+function loadSettings() {
+    INPUT_IDS.forEach(id => {
+        const savedValue = localStorage.getItem('arrow_sim_' + id);
+        const el = document.getElementById(id);
+        if (el && savedValue !== null) {
+            el.value = savedValue;
+        }
+    });
+}
+
 function resizeCanvas() {
     const rect = canvas.getBoundingClientRect();
     canvas.width = rect.width * window.devicePixelRatio;
@@ -288,6 +312,8 @@ function closeBottomSheet() {
     document.getElementById('overlay').classList.remove('active');
     document.getElementById('sheet-arrow').classList.remove('active');
     document.getElementById('sheet-env').classList.remove('active');
+    saveSettings(); // 시트를 닫을 때 자동으로 현재 변경 값 영구 백업
+    drawScene();    
 }
 
 // 상단 디스플레이 시점 변경 토글
@@ -319,6 +345,8 @@ function fireArrow() {
     if (isFlying) {
         cancelAnimationFrame(animationFrameId);
     }
+    
+    saveSettings(); // 발사 순간 최종 데이터 백업
 
     const v0 = parseFloat(document.getElementById('velocity').value) || 50;
     const angleDeg = parseFloat(document.getElementById('angle').value) || 0;
@@ -329,7 +357,7 @@ function fireArrow() {
     const yawRad = (yawDeg * Math.PI) / 180;
 
     // 초기 좌표 매핑
-    arrowState.x = 40 / SCALE; // 좌측 출발 마진 확보
+    arrowState.x = 40 / SCALE; 
     arrowState.y = launchH;
     arrowState.z = 0;
 
@@ -342,7 +370,6 @@ function fireArrow() {
     arrowState.yaw = yawRad;
 
     trajectory = [];
-    // 첫 초기 위치 기록
     trajectory.push({x: arrowState.x, y: arrowState.y, z: arrowState.z});
     
     isFlying = true;
@@ -352,7 +379,6 @@ function fireArrow() {
 function animate() {
     if (!isFlying) return;
 
-    // 실시간 파라미터 폼 데이터 동적 누적 수집
     const cd = parseFloat(document.getElementById('dragCoeff').value) || 0;
     const cl = parseFloat(document.getElementById('liftCoeff').value) || 0;
     const d = (parseFloat(document.getElementById('diameter').value) || 5.5) / 1000;
@@ -366,20 +392,17 @@ function animate() {
 
     const area = Math.PI * Math.pow(d / 2, 2);
 
-    // 공기 역학 상대 속도차 벡터 연산
     const relVx = arrowState.vx - windX;
     const relVy = arrowState.vy;
     const relVz = arrowState.vz - windY;
     const vRel = Math.sqrt(relVx * relVx + relVy * relVy + relVz * relVz) || 0.001;
 
-    // 항력 및 양력 연산 수식 결합
     const dragF = 0.5 * rho * vRel * vRel * cd * area;
     const liftF = 0.5 * rho * vRel * vRel * cl * area;
 
     const flowPitch = Math.atan2(relVy, Math.sqrt(relVx * relVx + relVz * relVz));
     const flowYaw = Math.atan2(relVz, relVx);
 
-    // 벡터 공간 가속도값 가중 처리
     const ax = (-dragF * Math.cos(flowPitch) * Math.cos(flowYaw) - liftF * Math.sin(flowPitch) * Math.cos(flowYaw)) / m;
     const ay = (-g - dragF * Math.sin(flowPitch) + liftF * Math.cos(flowPitch)) / m;
     const az = (-dragF * Math.cos(flowPitch) * Math.sin(flowYaw) - liftF * Math.sin(flowPitch) * Math.sin(flowYaw)) / m;
@@ -397,13 +420,11 @@ function animate() {
 
     trajectory.push({x: arrowState.x, y: arrowState.y, z: arrowState.z});
 
-    // 지면 충돌 체크 처리
     if (arrowState.y <= 0) {
         arrowState.y = 0;
         isFlying = false;
     }
     
-    // 경계 오버플로우 한계 정지 제한 조건
     if (arrowState.x * SCALE > dprWidth + 100 || arrowState.x < -10) {
         isFlying = false;
     }
@@ -423,7 +444,6 @@ function drawScene() {
     const targetH = parseFloat(document.getElementById('targetHeight').value) || 0;
     const targetScreenX = dprWidth - 60;
 
-    // 다중 투영 시점 픽셀 좌표 바인딩 헬퍼 정의
     function toScreen(pX, pY, pZ) {
         if (currentView === 'side') {
             return { x: pX * SCALE, y: dprHeight - GROUND_Y_OFFSET - (pY * SCALE) };
@@ -493,8 +513,9 @@ function drawScene() {
     ctx.restore();
 }
 
-// 최초 기본 디폴트 데이터 화면 구성 연동
+// 최초 기본 디폴트 데이터 화면 구성 및 세이브 로드 연동
 setTimeout(() => {
+    loadSettings();  // 이전 분석 환경설정 세션값 자동 복원
     resizeCanvas();
     const launchH = parseFloat(document.getElementById('launchHeight').value) || 1.5;
     arrowState.x = 40 / SCALE; arrowState.y = launchH; arrowState.z = 0;
