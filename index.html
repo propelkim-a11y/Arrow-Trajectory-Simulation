@@ -311,8 +311,9 @@ let arrowState = {
     pitch: 0, yaw: 0
 };
 
-const SCALE = 10; 
-const GROUND_Y_OFFSET = 50;
+// 픽셀 배율 보정 (화면 크기에 맞춰 궤적이 시원하게 보이도록 조정)
+const SCALE = 6; 
+const GROUND_Y_OFFSET = 60;
 
 function fireArrow() {
     if (isFlying) {
@@ -327,8 +328,8 @@ function fireArrow() {
     const pitchRad = (angleDeg * Math.PI) / 180;
     const yawRad = (yawDeg * Math.PI) / 180;
 
-    // 초기 좌표 매핑 (픽셀 마진을 고려한 미터 변환 시작점 정의)
-    arrowState.x = 30 / SCALE;
+    // 초기 좌표 매핑
+    arrowState.x = 40 / SCALE; // 좌측 출발 마진 확보
     arrowState.y = launchH;
     arrowState.z = 0;
 
@@ -361,7 +362,7 @@ function animate() {
     const windY = parseFloat(document.getElementById('windY').value) || 0; 
 
     const g = 9.81;
-    const dt = 0.016; // 대략적인 타임스텝 제어 인터벌
+    const dt = 0.016; 
 
     const area = Math.PI * Math.pow(d / 2, 2);
 
@@ -402,7 +403,7 @@ function animate() {
         isFlying = false;
     }
     
-    // 경계 오버플로우 한계 정지 제한 조건 추가
+    // 경계 오버플로우 한계 정지 제한 조건
     if (arrowState.x * SCALE > dprWidth + 100 || arrowState.x < -10) {
         isFlying = false;
     }
@@ -457,12 +458,12 @@ function drawScene() {
         ctx.beginPath(); ctx.moveTo(tgt.x, tgt.y + 12); ctx.lineTo(tgt.x, dprHeight - GROUND_Y_OFFSET); ctx.stroke();
     }
 
-    // 3. 누적 이동 포물선 점선 궤적 렌더링
+    // 3. 누적 이동 포물선 궤적 렌더링
     if (trajectory.length > 1) {
         ctx.strokeStyle = '#0071e3';
-        ctx.lineWidth = 2;
+        ctx.lineWidth = 2.5;
         ctx.beginPath();
-        const start = toScreen(trajectory[0].x, trajectory[0].y, trajectory[0].z);
+        const start = toScreen(trajectory[0].x, trajectory[0].y, trajectory[0].z); 
         ctx.moveTo(start.x, start.y);
         for (let i = 1; i < trajectory.length; i++) {
             const pt = toScreen(trajectory[i].x, trajectory[i].y, trajectory[i].z);
@@ -496,7 +497,7 @@ function drawScene() {
 setTimeout(() => {
     resizeCanvas();
     const launchH = parseFloat(document.getElementById('launchHeight').value) || 1.5;
-    arrowState.x = 30 / SCALE; arrowState.y = launchH; arrowState.z = 0;
+    arrowState.x = 40 / SCALE; arrowState.y = launchH; arrowState.z = 0;
     arrowState.pitch = (parseFloat(document.getElementById('angle').value) || 30) * Math.PI / 180;
     arrowState.yaw = (parseFloat(document.getElementById('yawAngle').value) || 0) * Math.PI / 180;
     drawScene();
