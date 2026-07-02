@@ -24,26 +24,30 @@ function loadSettings() {
     });
 }
 
-// [제2조 사이드 이펙트 디펜스] 다중 레이어 충돌 방지 보텀 시트 트리거
+// [제2조 사이드 이펙트 디펜스] 다중 레이어 충돌 방지 보텀 시트 트리거 (4단 분할 적용)
 function openBottomSheet(type) {
     // 활성화된 상태의 오버레이 및 모든 보텀 시트 강제 완전 제거 선행
     closeBottomSheet();
     
-    // 타겟 활성화 컴포넌트 라우팅 연동
+    // 외곽 오버레이 활성화
     document.getElementById('overlay').classList.add('active');
     
     const tabBarItems = document.querySelectorAll('.tab-item');
     tabBarItems.forEach(item => item.classList.remove('active'));
 
+    // 타입 체크 매핑 바인딩 처리
     if (type === 'arrow') {
         document.getElementById('sheet-arrow').classList.add('active');
-        document.querySelectorAll('.tab-item')[0].classList.add('active');
+        tabBarItems[0].classList.add('active');
     } else if (type === 'shooting') {
         document.getElementById('sheet-shooting').classList.add('active');
-        document.querySelectorAll('.tab-item')[1].classList.add('active');
+        tabBarItems[1].classList.add('active');
     } else if (type === 'env') {
         document.getElementById('sheet-env').classList.add('active');
-        document.querySelectorAll('.tab-item')[2].classList.add('active');
+        tabBarItems[2].classList.add('active');
+    } else if (type === 'result') {
+        document.getElementById('sheet-result').classList.add('active');
+        tabBarItems[3].classList.add('active');
     }
 }
 
@@ -53,6 +57,7 @@ function closeBottomSheet() {
     document.getElementById('sheet-arrow').classList.remove('active');
     document.getElementById('sheet-shooting').classList.remove('active');
     document.getElementById('sheet-env').classList.remove('active');
+    document.getElementById('sheet-result').classList.remove('active');
     
     const tabBarItems = document.querySelectorAll('.tab-item');
     tabBarItems.forEach(item => item.classList.remove('active'));
@@ -60,6 +65,19 @@ function closeBottomSheet() {
     // 데이터 영속성 스냅샷 수집 및 물리 캔버스 동기화 업데이트
     saveSettings();
     if (typeof drawScene === 'function') drawScene();
+}
+
+// [물리 연산 연동 데이터 인젝션 인터페이스]
+// physics.js 내 연산 루프 종료 후 본 함수를 호출하여 수치를 실시간 투영합니다.
+function updateFlightResultsUI(data) {
+    if (!data) return;
+    
+    if (data.maxDistance !== undefined) document.getElementById('resMaxDistance').innerText = data.maxDistance.toFixed(2);
+    if (data.maxHeight !== undefined) document.getElementById('resMaxHeight').innerText = data.maxHeight.toFixed(2);
+    if (data.lateralDeviation !== undefined) document.getElementById('resLateralDeviation').innerText = data.lateralDeviation.toFixed(2);
+    if (data.flightTime !== undefined) document.getElementById('resFlightTime').innerText = data.flightTime.toFixed(2);
+    if (data.impactVelocity !== undefined) document.getElementById('resImpactVelocity').innerText = data.impactVelocity.toFixed(2);
+    if (data.impactEnergy !== undefined) document.getElementById('resImpactEnergy').innerText = data.impactEnergy.toFixed(2);
 }
 
 // 탑 뷰/사이드 뷰/프론트 뷰 세그먼트 컨트롤 핸들러
@@ -71,3 +89,8 @@ function changeView(viewType, element) {
     currentView = viewType;
     if (typeof drawScene === 'function') drawScene();
 }
+
+// 도큐먼트 초기화 로드 바인딩
+window.addEventListener('DOMContentLoaded', () => {
+    loadSettings();
+});
