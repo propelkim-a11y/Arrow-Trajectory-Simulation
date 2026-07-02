@@ -1,5 +1,5 @@
 // ============================================================================
-// [UI & Interaction Core] 국궁 시뮬레이터 보텀 시트 및 탭 바 제어 엔진
+// [UI & Interaction Core] 국궁 시뮬레이터 상시 노출형 패널 스위칭 엔진
 // ============================================================================
 
 // 로컬 스토리지 저장 및 불러오기 전수 변수 리스트 통합 관리
@@ -17,7 +17,7 @@ function saveSettings() {
   });
 }
 
-// 로컬 스토리지 백업 데이터 셋업 엔진
+// 로컬 스토리지 백업 데이터 셋업 엔진 및 이벤트 리스너 통합 바인딩
 function loadSettings() {
   INPUT_IDS.forEach(id => {
     const savedValue = localStorage.getItem('arrow_sim_' + id);
@@ -25,53 +25,35 @@ function loadSettings() {
     if (el && savedValue !== null) {
       el.value = savedValue;
     }
+    
+    // [실시간 동기화 인터페이스] 값이 변경될 때마다 자동 백업 및 물리 드로잉 씬 갱신
+    if (el) {
+      el.addEventListener('input', () => {
+        saveSettings();
+        if (typeof drawScene === 'function') drawScene();
+      });
+    }
   });
 }
 
-// [제2조 사이드 이펙트 디펜스] 다중 레이어 충돌 및 NodeList 런타임 에러 완전 차단 트리거
-function openBottomSheet(type) {
-  // 1. 활성화된 상태의 오버레이 및 모든 보텀 시트 클래스 강제 일괄 제거
-  document.getElementById('overlay').classList.remove('active');
-  document.getElementById('sheet-arrow').classList.remove('active');
-  document.getElementById('sheet-shooting').classList.remove('active');
-  document.getElementById('sheet-env').classList.remove('active');
-  document.getElementById('sheet-result').classList.remove('active');
-
-  // 2. 하단 탭바 아이템 전체 비활성화 스타일 초기화 (안전한 순회 처리)
+// [상시 노출형 전용 패널 탭 스위칭 트리거 핸들러]
+function switchTab(tabType, element) {
+  // 1. 하단 탭바 메뉴 전체 활성화 클래스 안전하게 강제 초기화 제거
   const tabBarItems = document.querySelectorAll('.tab-bar .tab-item');
   tabBarItems.forEach(item => item.classList.remove('active'));
   
-  // 3. 외곽 배경 어두운 오버레이 레이어 활성화
-  document.getElementById('overlay').classList.add('active');
+  // 2. 화면에 고정 노출되는 상시 설정 패널 컨포넌트 전체 비활성화
+  const tabPanels = document.querySelectorAll('.tab-panel');
+  tabPanels.forEach(panel => panel.classList.remove('active'));
 
-  // 4. 요청된 타겟 보텀시트 맵핑 및 활성화 매칭 (배열 인덱스 매치 포함)
-  if (type === 'arrow') {
-    document.getElementById('sheet-arrow').classList.add('active');
-    if (tabBarItems[0]) tabBarItems[0].classList.add('active');
-  } else if (type === 'shooting') {
-    document.getElementById('sheet-shooting').classList.add('active');
-    if (tabBarItems[1]) tabBarItems[1].classList.add('active');
-  } else if (type === 'env') {
-    document.getElementById('sheet-env').classList.add('active');
-    if (tabBarItems[2]) tabBarItems[2].classList.add('active');
-  } else if (type === 'result') {
-    document.getElementById('sheet-result').classList.add('active');
-    if (tabBarItems[3]) tabBarItems[3].classList.add('active');
+  // 3. 선택된 현재 터치 타겟 탭 메뉴와 일치하는 설정 패널을 활성화 동기화
+  element.classList.add('active');
+  const targetPanel = document.getElementById('sheet-' + tabType);
+  if (targetPanel) {
+    targetPanel.classList.add('active');
   }
-}
 
-// 보텀 시트 전체 차단 클로징 오퍼레이션 핸들러
-function closeBottomSheet() {
-  document.getElementById('overlay').classList.remove('active');
-  document.getElementById('sheet-arrow').classList.remove('active');
-  document.getElementById('sheet-shooting').classList.remove('active');
-  document.getElementById('sheet-env').classList.remove('active');
-  document.getElementById('sheet-result').classList.remove('active');
-  
-  const tabBarItems = document.querySelectorAll('.tab-bar .tab-item');
-  tabBarItems.forEach(item => item.classList.remove('active'));
-  
-  // 데이터 영속성 스냅샷 수집 및 물리 캔버스 동기화 업데이트
+  // 4. 레이아웃 변경에 따른 데이터 정밀 데이터 수집 유도 및 물리 캔버스 재수립
   saveSettings();
   if (typeof drawScene === 'function') drawScene();
 }
