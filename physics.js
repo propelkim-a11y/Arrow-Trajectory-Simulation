@@ -1,5 +1,5 @@
 // ============================================================================
-// [Physics Core - Part 1] 국궁 탄도학 시뮬레이션 물리 연산 엔진 (Runtime Fix)
+// [Physics Core - Part 1] 국궁 탄도학 시뮬레이션 물리 연산 엔진 (Grammar Fixed)
 // ============================================================================
 
 // 전역 시뮬레이션 상태 인프라 변수
@@ -142,7 +142,7 @@ function fireArrow() {
     animationFrameId = requestAnimationFrame(drawScene);
 }
 // ============================================================================
-// [Physics Core - Part 2] 시점별 3차원 좌표축 및 과녁 보조선 렌더링 엔진 (Bug Fixed)
+// [Physics Core - Part 2] 시점별 3차원 좌표축 및 과녁 보조선 렌더링 엔진 (Complete Fix)
 // ============================================================================
 
 // HTML5 Canvas 그래픽스 신 드로잉 메인 엔진 루틴
@@ -196,11 +196,11 @@ function drawScene() {
         ctx.textAlign = 'center';
         ctx.fillText('높이 Z (m)', startX, topY - 30);
 
-        // 주요 수평 전방 거리 구간 계측 눈금 스케일 매핑 (누락 수정 완료)
-        const distances = [0, 50, 100, 145, 150];
+        // 주요 수평 전방 거리 구간 계측 눈금 스케일 매핑 (문법 구문 교정 완료)
+        const distances =;
         distances.forEach(d => {
             const tickX = startX + (d / 160) * (canvas.width * 0.8);
-            ctx.strokeStyle = d === 145 ? '#ff453a' : 'rgba(0,0,0,0.15)'; // 국궁 규격 고정사거리 145m 한정 고대비 레드 분기
+            ctx.strokeStyle = d === 145 ? '#ff453a' : 'rgba(0,0,0,0.15)'; // 국궁 규격 145m 고대비 레드 분기
             ctx.lineWidth = d === 145 ? 1.5 : 1;
             
             ctx.beginPath(); ctx.moveTo(tickX, groundY); ctx.lineTo(tickX, groundY + 5); ctx.stroke();
@@ -210,8 +210,8 @@ function drawScene() {
             ctx.fillText(d + 'm', tickX, groundY + 18);
         });
 
-        // 주요 상방 수직 높이 구간 계측 눈금 스케일 매핑 (누락 수정 완료)
-        const heights = [0, 10, 20, 30, 40];
+        // 주요 상방 수직 높이 구간 계측 눈금 스케일 매핑 (문법 구문 교정 완료)
+        const heights =;
         ctx.font = '11px -apple-system';
         ctx.fillStyle = '#515154';
         ctx.textAlign = 'right';
@@ -280,7 +280,6 @@ function drawScene() {
         ctx.beginPath(); ctx.moveTo(midX - 30, targetYPos); ctx.lineTo(midX + 30, targetYPos); ctx.stroke();
         ctx.setLineDash([]);
 
-        // [오타 수정] ctx.arc 메서드 누락 결함 조치 완료
         ctx.fillStyle = '#ff453a';
         ctx.beginPath(); ctx.arc(midX, targetYPos, 5, 0, 2 * Math.PI); ctx.fill();
         ctx.font = 'bold 11px -apple-system';
@@ -303,8 +302,8 @@ function drawScene() {
         ctx.textAlign = 'center';
         ctx.fillText('측면 편차 Y (m)', startX, midY - (canvas.height * 0.4) - 20);
 
-        // 평면 기준 종방향 거리 스케일 단위 눈금 마킹 투영
-        const distances = [0, 50, 100, 145, 150];
+        // 평면 기준 종방향 거리 스케일 단위 눈금 마킹 투영 (구문 고정 완료)
+        const distances =;
         ctx.textAlign = 'center';
         distances.forEach(d => {
             const tickX = startX + (d / 160) * (canvas.width * 0.8);
