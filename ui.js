@@ -1,3 +1,7 @@
+// ============================================================================
+// [UI & Interaction Core] 국궁 시뮬레이터 보텀 시트 및 탭 바 제어 엔진 (Runtime Fix)
+// ============================================================================
+
 // 로컬 스토리지 저장 및 불러오기 전수 변수 리스트 통합 관리
 const INPUT_IDS = [
     'velocity', 'angle', 'yawAngle', 'launchHeight',
@@ -24,34 +28,39 @@ function loadSettings() {
     });
 }
 
-// [제2조 사이드 이펙트 디펜스] 다중 레이어 충돌 방지 보텀 시트 트리거 (4단 분할 적용)
+// [제2조 사이드 이펙트 디펜스] 다중 레이어 충돌 및 NodeList 런타임 에러 완전 차단 트리거
 function openBottomSheet(type) {
-    // 활성화된 상태의 오버레이 및 모든 보텀 시트 강제 완전 제거 선행
-    closeBottomSheet();
+    // 1. 활성화된 상태의 오버레이 및 모든 보텀 시트 클래스 강제 일괄 제거
+    document.getElementById('overlay').classList.remove('active');
+    document.getElementById('sheet-arrow').classList.remove('active');
+    document.getElementById('sheet-shooting').classList.remove('active');
+    document.getElementById('sheet-env').classList.remove('active');
+    document.getElementById('sheet-result').classList.remove('active');
     
-    // 외곽 오버레이 활성화
-    document.getElementById('overlay').classList.add('active');
-    
-    const tabBarItems = document.querySelectorAll('.tab-item');
+    // 2. 하단 탭바 아이템 전체 비활성화 스타일 초기화 (안전한 순회 처리)
+    const tabBarItems = document.querySelectorAll('.tab-bar .tab-item');
     tabBarItems.forEach(item => item.classList.remove('active'));
+    
+    // 3. 외곽 배경 어두운 오버레이 레이어 활성화
+    document.getElementById('overlay').classList.add('active');
 
-    // 타입 체크 매핑 바인딩 처리
+    // 4. 요청된 타겟 보텀시트 맵핑 및 활성화 매칭 (배열 인덱스 매치 포함)
     if (type === 'arrow') {
         document.getElementById('sheet-arrow').classList.add('active');
-        tabBarItems[0].classList.add('active');
+        if (tabBarItems[0]) tabBarItems[0].classList.add('active');
     } else if (type === 'shooting') {
         document.getElementById('sheet-shooting').classList.add('active');
-        tabBarItems[1].classList.add('active');
+        if (tabBarItems[1]) tabBarItems[1].classList.add('active');
     } else if (type === 'env') {
         document.getElementById('sheet-env').classList.add('active');
-        tabBarItems[2].classList.add('active');
+        if (tabBarItems[2]) tabBarItems[2].classList.add('active');
     } else if (type === 'result') {
         document.getElementById('sheet-result').classList.add('active');
-        tabBarItems[3].classList.add('active');
+        if (tabBarItems[3]) tabBarItems[3].classList.add('active');
     }
 }
 
-// 보텀 시트 전체 차단 클로징 핸들러
+// 보텀 시트 전체 차단 클로징 오퍼레이션 핸들러
 function closeBottomSheet() {
     document.getElementById('overlay').classList.remove('active');
     document.getElementById('sheet-arrow').classList.remove('active');
@@ -59,7 +68,7 @@ function closeBottomSheet() {
     document.getElementById('sheet-env').classList.remove('active');
     document.getElementById('sheet-result').classList.remove('active');
     
-    const tabBarItems = document.querySelectorAll('.tab-item');
+    const tabBarItems = document.querySelectorAll('.tab-bar .tab-item');
     tabBarItems.forEach(item => item.classList.remove('active'));
     
     // 데이터 영속성 스냅샷 수집 및 물리 캔버스 동기화 업데이트
@@ -80,7 +89,7 @@ function updateFlightResultsUI(data) {
     if (data.impactEnergy !== undefined) document.getElementById('resImpactEnergy').innerText = data.impactEnergy.toFixed(2);
 }
 
-// 탑 뷰/사이드 뷰/프론트 뷰 세그먼트 컨트롤 핸들러
+// 탑 뷰 / 사이드 뷰 / 프론트 뷰 세그먼트 가로 컨트롤 핸들러
 let currentView = 'side';
 function changeView(viewType, element) {
     const buttons = document.querySelectorAll('.segment-btn');
@@ -90,7 +99,7 @@ function changeView(viewType, element) {
     if (typeof drawScene === 'function') drawScene();
 }
 
-// 도큐먼트 초기화 로드 바인딩
+// 도큐먼트 초기화 로드 라이프사이클 바인딩
 window.addEventListener('DOMContentLoaded', () => {
     loadSettings();
 });
