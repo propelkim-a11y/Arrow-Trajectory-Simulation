@@ -150,7 +150,57 @@
     </div>
 </div>
 
-<!-- 하단 탭바 메뉴 내비게이션 -->
+<!-- [보텀 시트 4] 비행 결과 표시 (신규 추가) -->
+<div class="bottom-sheet" id="sheet-result">
+    <div class="sheet-handle" onclick="closeBottomSheet()"></div>
+    <div class="sheet-title">비행 결과</div>
+    <div class="form-grid">
+        <div class="form-group">
+            <label>최대 거리</label>
+            <div class="value-wrapper">
+                <span id="resMaxDistance" class="result-value">0.00</span>
+                <span class="unit">m</span>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>최고 높이</label>
+            <div class="value-wrapper">
+                <span id="resMaxHeight" class="result-value">0.00</span>
+                <span class="unit">m</span>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>측면 편차</label>
+            <div class="value-wrapper">
+                <span id="resLateralDeviation" class="result-value">0.00</span>
+                <span class="unit">m</span>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>비행 시간</label>
+            <div class="value-wrapper">
+                <span id="resFlightTime" class="result-value">0.00</span>
+                <span class="unit">s</span>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>충돌 속도</label>
+            <div class="value-wrapper">
+                <span id="resImpactVelocity" class="result-value">0.00</span>
+                <span class="unit">m/s</span>
+            </div>
+        </div>
+        <div class="form-group">
+            <label>충돌 에너지</label>
+            <div class="value-wrapper">
+                <span id="resImpactEnergy" class="result-value">0.00</span>
+                <span class="unit">J</span>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- 하단 탭바 메뉴 내비게이션 (4단 확장) -->
 <div class="tab-bar">
     <button class="tab-item" onclick="openBottomSheet('arrow')">
         <span class="tab-icon">🏹</span>
@@ -163,6 +213,10 @@
     <button class="tab-item" onclick="openBottomSheet('env')">
         <span class="tab-icon">🌍</span>
         <span>환경 변수</span>
+    </button>
+    <button class="tab-item" onclick="openBottomSheet('result')">
+        <span class="tab-icon">📊</span>
+        <span>비행 결과</span>
     </button>
 </div>
 
