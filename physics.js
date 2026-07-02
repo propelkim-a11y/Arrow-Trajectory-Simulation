@@ -227,7 +227,7 @@ function drawScene() {
     const targetYPos = groundY - (targetH / 40) * (canvas.height * 0.7);
     ctx.strokeStyle = 'rgba(255, 69, 58, 0.3)';
     ctx.lineWidth = 1;
-    ctx.setLineDash(); // 정밀 대시 가이드라인 처리
+    ctx.setLineDash([4, 4]); // 정밀 대시 가이드라인 처리
     ctx.beginPath(); ctx.moveTo(startX, targetYPos); ctx.lineTo(targetX145, targetYPos); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(targetX145, groundY); ctx.lineTo(targetX145, targetYPos); ctx.stroke();
     ctx.setLineDash([]); // 대시라인 속성 즉시 반환 해제
@@ -275,7 +275,7 @@ function drawScene() {
     // 정면 표적용 타겟 과녁 횡대 가이드 가설선 배치
     const targetYPos = groundY - (targetH / 40) * (canvas.height * 0.7);
     ctx.strokeStyle = 'rgba(255, 69, 58, 0.4)';
-    ctx.setLineDash();
+    ctx.setLineDash([4, 4]);
     ctx.beginPath(); ctx.moveTo(midX - 30, targetYPos); ctx.lineTo(midX + 30, targetYPos); ctx.stroke();
     ctx.setLineDash([]);
 
