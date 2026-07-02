@@ -1,274 +1,274 @@
 /* 애플 디자인 시스템 기반 초기화 */
 * { 
-    box-sizing: border-box; 
-    margin: 0; 
-    padding: 0; 
+  box-sizing: border-box; 
+  margin: 0; 
+  padding: 0; 
 }
 
 body {
-    font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
-    font-variant-numeric: tabular-nums;
-    background: #f5f5f7;
-    color: #1d1d1f;
-    height: 100vh;
-    overflow: hidden;
-    display: flex;
-    flex-direction: column;
+  font-family: -apple-system, BlinkMacSystemFont, "SF Pro Text", "SF Pro Icons", "Helvetica Neue", Helvetica, Arial, sans-serif;
+  font-variant-numeric: tabular-nums;
+  background: #f5f5f7;
+  color: #1d1d1f;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .main-screen {
-    flex: 1;
-    display: flex;
-    flex-direction: column;
-    padding: 20px;
-    padding-top: calc(20px + env(safe-area-inset-top));
-    padding-bottom: calc(95px + env(safe-area-inset-bottom));
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  padding: 20px;
+  padding-top: calc(20px + env(safe-area-inset-top));
+  padding-bottom: calc(95px + env(safe-area-inset-bottom));
 }
 
 h1 { 
-    font-size: 24px; 
-    font-weight: 700; 
-    letter-spacing: -0.5px; 
-    margin-bottom: 16px;
-    text-align: center; 
+  font-size: 24px; 
+  font-weight: 700; 
+  letter-spacing: -0.5px; 
+  margin-bottom: 16px;
+  text-align: center; 
 }
 
 /* 세그먼트 컨트롤 시점 선택 */
 .segmented-control {
-    display: flex;
-    background: #e3e3e6;
-    padding: 4px;
-    border-radius: 9px;
-    margin-bottom: 16px;
-    align-self: center;
-    width: fit-content;
-    z-index: 10;
+  display: flex;
+  background: #e3e3e6;
+  padding: 4px;
+  border-radius: 9px;
+  margin-bottom: 16px;
+  align-self: center;
+  width: fit-content;
+  z-index: 10;
 }
 
 .segment-btn {
-    border: none; 
-    background: none; 
-    padding: 6px 20px; 
-    font-size: 13px;
-    font-weight: 500; 
-    color: #515154; 
-    border-radius: 7px; 
-    cursor: pointer;
-    transition: all 0.2s ease;
+  border: none; 
+  background: none; 
+  padding: 6px 20px; 
+  font-size: 13px;
+  font-weight: 500; 
+  color: #515154; 
+  border-radius: 7px; 
+  cursor: pointer;
+  transition: all 0.2s ease;
 }
 
 .segment-btn.active {
-    background: #ffffff; 
-    color: #1d1d1f; 
-    box-shadow: 0px 3px 8px rgba(0, 0, 0, 0.12);
-    font-weight: 600;
+  background: #ffffff; 
+  color: #1d1d1f; 
+  box-shadow: 0px 3px 8px rgba(0, 0, 0, 0.12);
+  font-weight: 600;
 }
 
 /* 메인 캔버스 영역 */
 .sim-container {
-    flex: 1;
-    background: #ffffff;
-    border-radius: 20px;
-    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
-    border: 1px solid rgba(0, 0, 0, 0.04);
-    overflow: hidden;
-    position: relative;
+  flex: 1;
+  background: #ffffff;
+  border-radius: 20px;
+  box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
+  border: 1px solid rgba(0, 0, 0, 0.04);
+  overflow: hidden;
+  position: relative;
 }
 
 canvas { 
-    width: 100%; 
-    height: 100%; 
-    display: block; 
+  width: 100%; 
+  height: 100%; 
+  display: block; 
 }
 
 .floating-actions {
-    position: absolute;
-    bottom: 20px;
-    right: 20px;
-    display: flex;
-    gap: 10px;
+  position: absolute;
+  bottom: 20px;
+  right: 20px;
+  display: flex;
+  gap: 10px;
 }
 
 .fire-btn {
-    padding: 14px 28px; 
-    background: #0071e3; 
-    color: #fff; 
-    font-size: 15px;
-    font-weight: 600; 
-    border: none; 
-    border-radius: 12px; 
-    cursor: pointer;
-    box-shadow: 0 4px 12px rgba(0,113,227,0.3); 
-    transition: 0.2s;
+  padding: 14px 28px; 
+  background: #0071e3; 
+  color: #fff; 
+  font-size: 15px;
+  font-weight: 600; 
+  border: none; 
+  border-radius: 12px; 
+  cursor: pointer;
+  box-shadow: 0 4px 12px rgba(0,113,227,0.3); 
+  transition: 0.2s;
 }
 
 .fire-btn:active { 
-    transform: scale(0.97); 
+  transform: scale(0.97); 
 }
 
 /* iOS 스타일 보텀 시트 오버레이 */
 .bottom-sheet-overlay {
-    position: fixed; 
-    top: 0; 
-    left: 0; 
-    width: 100%; 
-    height: 100%; 
-    background: rgba(0,0,0,0.3); 
-    opacity: 0; 
-    pointer-events: none; 
-    transition: opacity 0.3s ease;
-    z-index: 900;
+  position: fixed; 
+  top: 0; 
+  left: 0; 
+  width: 100%; 
+  height: 100%; 
+  background: rgba(0,0,0,0.3); 
+  opacity: 0; 
+  pointer-events: none; 
+  transition: opacity 0.3s ease;
+  z-index: 900;
 }
 
 .bottom-sheet-overlay.active { 
-    opacity: 1; 
-    pointer-events: auto; 
+  opacity: 1; 
+  pointer-events: auto; 
 }
 
 /* 보텀 시트 본체 스타일 */
 .bottom-sheet {
-    position: fixed; 
-    bottom: 0; 
-    left: 0; 
-    width: 100%; 
-    background: #ffffff;
-    border-radius: 20px 20px 0 0; 
-    box-shadow: 0 -5px 25px rgba(0,0,0,0.1);
-    transform: translateY(100%); 
-    transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1); 
-    z-index: 1000; 
-    padding: 20px;
-    padding-bottom: calc(30px + env(safe-area-inset-bottom));
+  position: fixed; 
+  bottom: 0; 
+  left: 0; 
+  width: 100%; 
+  background: #ffffff;
+  border-radius: 20px 20px 0 0; 
+  box-shadow: 0 -5px 25px rgba(0,0,0,0.1);
+  transform: translateY(100%); 
+  transition: transform 0.35s cubic-bezier(0.25, 1, 0.5, 1); 
+  z-index: 1000; 
+  padding: 20px;
+  padding-bottom: calc(30px + env(safe-area-inset-bottom));
 }
 
 .bottom-sheet.active { 
-    transform: translateY(0); 
+  transform: translateY(0); 
 }
 
 .sheet-handle { 
-    width: 40px; 
-    height: 5px; 
-    background: #ddddde; 
-    border-radius: 2.5px;
-    margin: 0 auto 20px auto; 
-    cursor: pointer; 
+  width: 40px; 
+  height: 5px; 
+  background: #ddddde; 
+  border-radius: 2.5px;
+  margin: 0 auto 20px auto; 
+  cursor: pointer; 
 }
 
 .sheet-title { 
-    font-size: 19px; 
-    font-weight: 700; 
-    margin-bottom: 20px; 
-    color: #1d1d1f;
+  font-size: 19px; 
+  font-weight: 700; 
+  margin-bottom: 20px; 
+  color: #1d1d1f;
 }
 
 .form-grid { 
-    display: flex; 
-    flex-direction: column; 
-    gap: 16px; 
+  display: flex; 
+  flex-direction: column; 
+  gap: 16px; 
 }
 
 /* 입력 및 출력 폼 필드 공통 레이아웃 */
 .form-group { 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
+  display: flex; 
+  justify-content: space-between; 
+  align-items: center; 
 }
 
 .form-group label { 
-    font-size: 14px; 
-    color: #515154; 
-    font-weight: 500; 
+  font-size: 14px; 
+  color: #515154; 
+  font-weight: 500; 
 }
 
 .input-wrapper { 
-    display: flex; 
-    align-items: center; 
-    background: #f5f5f7;
-    border-radius: 8px; 
-    padding: 8px 12px; 
-    border: 1px solid transparent; 
+  display: flex; 
+  align-items: center; 
+  background: #f5f5f7;
+  border-radius: 8px; 
+  padding: 8px 12px; 
+  border: 1px solid transparent; 
 }
 
-.input-wrapper :focus-within { 
-    border-color: #0071e3; 
-    background: #fff; 
-    box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15); 
+.input-wrapper:focus-within { 
+  border-color: #0071e3; 
+  background: #fff; 
+  box-shadow: 0 0 0 3px rgba(0, 113, 227, 0.15); 
 }
 
 .input-wrapper input { 
-    width: 80px; 
-    border: none; 
-    background: transparent; 
-    text-align: right; 
-    font-size: 14px; 
-    font-weight: 600; 
-    outline: none; 
+  width: 80px; 
+  border: none; 
+  background: transparent; 
+  text-align: right; 
+  font-size: 14px; 
+  font-weight: 600; 
+  outline: none; 
 }
 
 /* 결과값 출력 래퍼 전용 스타일 */
 .value-wrapper {
-    display: flex;
-    align-items: center;
-    padding: 8px 12px;
+  display: flex;
+  align-items: center;
+  padding: 8px 12px;
 }
 
 .result-value {
-    font-size: 15px;
-    font-weight: 600;
-    color: #0071e3;
-    text-align: right;
-    min-width: 60px;
-    display: inline-block;
+  font-size: 15px;
+  font-weight: 600;
+  color: #0071e3;
+  text-align: right;
+  min-width: 60px;
+  display: inline-block;
 }
 
 .unit { 
-    font-size: 12px; 
-    color: #86868b; 
-    margin-left: 6px; 
-    width: 45px; 
-    text-align: left;
+  font-size: 12px; 
+  color: #86868b; 
+  margin-left: 6px; 
+  width: 45px; 
+  text-align: left;
 }
 
 /* 프리미엄 100% 완전 투명 크리스탈 하단 탭 바 (4단 전용 최적화) */
 .tab-bar {
-    position: fixed; 
-    bottom: 0; 
-    left: 0; 
-    width: 100%; 
-    height: calc(75px + env(safe-area-inset-bottom));
-    background: rgba(255, 255, 255, 0.85); 
-    backdrop-filter: blur(20px);
-    -webkit-backdrop-filter: blur(20px); 
-    border-top: 0.5px solid rgba(0,0,0,0.15);
-    display: flex; 
-    justify-content: space-around;
-    align-items: flex-start; 
-    padding-top: 12px;
-    padding-bottom: env(safe-area-inset-bottom);
-    z-index: 800;
+  position: fixed; 
+  bottom: 0; 
+  left: 0; 
+  width: 100%; 
+  height: calc(75px + env(safe-area-inset-bottom));
+  background: rgba(255, 255, 255, 0.85); 
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px); 
+  border-top: 0.5px solid rgba(0,0,0,0.15);
+  display: flex; 
+  justify-content: space-around;
+  align-items: flex-start; 
+  padding-top: 12px;
+  padding-bottom: env(safe-area-inset-bottom);
+  z-index: 800;
 }
 
 .tab-item { 
-    background: none; 
-    border: none; 
-    display: flex; 
-    flex-direction: column;
-    align-items: center; 
-    gap: 4px; 
-    color: #86868b; 
-    cursor: pointer; 
-    font-size: 9.5px; /* 4단 배열 가로 터짐 방지 조율 */
-    font-weight: 500; 
-    letter-spacing: -0.3px;
-    word-break: keep-all;
-    flex-basis: 25%;
-    width: 100%;
+  background: none; 
+  border: none; 
+  display: flex; 
+  flex-direction: column;
+  align-items: center; 
+  gap: 4px; 
+  color: #86868b; 
+  cursor: pointer; 
+  font-size: 9.5px; /* 4단 배열 가로 터짐 방지 조율 */
+  font-weight: 500; 
+  letter-spacing: -0.3px;
+  word-break: keep-all;
+  flex-basis: 25%;
+  width: 100%;
 }
 
 .tab-item.active { 
-    color: #0071e3; 
+  color: #0071e3; 
 }
 
 .tab-icon { 
-    font-size: 20px; 
+  font-size: 20px; 
 }
