@@ -1,5 +1,5 @@
 // ============================================================================
-// [Physics Core - Part 1] 국궁 탄도학 시뮬레이션 물리 연산 엔진
+// [Physics Core - Part 1] 국궁 탄도학 시뮬레이션 물리 연산 엔진 (Runtime Fix)
 // ============================================================================
 
 // 전역 시뮬레이션 상태 인프라 변수
@@ -142,7 +142,7 @@ function fireArrow() {
     animationFrameId = requestAnimationFrame(drawScene);
 }
 // ============================================================================
-// [Physics Core - Part 2] 시점별 3차원 좌표축 및 과녁 보조선 렌더링 엔진
+// [Physics Core - Part 2] 시점별 3차원 좌표축 및 과녁 보조선 렌더링 엔진 (Bug Fixed)
 // ============================================================================
 
 // HTML5 Canvas 그래픽스 신 드로잉 메인 엔진 루틴
@@ -166,12 +166,15 @@ function drawScene() {
     const targetH = parseFloat(document.getElementById('targetHeight').value) || 1.3;
 
     // ------------------------------------------------------------------------
-    // 2. 프리미엄 테크니컬 라이팅 계측 좌표축 및 과녁 보조선 레이어 (Axis Layer)
+    // 2. 프리미엄 계측 좌표축 및 과녁 보조선 레이어 (Axis Layer - Fixed)
     // ------------------------------------------------------------------------
     ctx.font = '11px -apple-system, BlinkMacSystemFont, "SF Pro Text"';
     ctx.textBaseline = 'middle';
 
-    if (currentView === 'side') {
+    // 글로벌 세션 뷰 타입 로직 분기 검증
+    const viewMode = typeof currentView !== 'undefined' ? currentView : 'side';
+
+    if (viewMode === 'side') {
         // [측면도 렌더링] 가로: 수평 비행 거리 X (0m ~ 160m), 세로: 수직 비행 높이 Z (0m ~ 40m)
         const startX = canvas.width * 0.1;
         const endX = canvas.width * 0.9;
@@ -193,8 +196,8 @@ function drawScene() {
         ctx.textAlign = 'center';
         ctx.fillText('높이 Z (m)', startX, topY - 30);
 
-        // 주요 수평 전방 거리 구간 계측 눈금 스케일 매핑 (0m, 50m, 100m, 145m, 150m)
-        const distances =;
+        // 주요 수평 전방 거리 구간 계측 눈금 스케일 매핑 (누락 수정 완료)
+        const distances = [0, 50, 100, 145, 150];
         distances.forEach(d => {
             const tickX = startX + (d / 160) * (canvas.width * 0.8);
             ctx.strokeStyle = d === 145 ? '#ff453a' : 'rgba(0,0,0,0.15)'; // 국궁 규격 고정사거리 145m 한정 고대비 레드 분기
@@ -207,8 +210,8 @@ function drawScene() {
             ctx.fillText(d + 'm', tickX, groundY + 18);
         });
 
-        // 주요 상방 수직 높이 구간 계측 눈금 스케일 매핑 (0m, 10m, 20m, 30m, 40m)
-        const heights =;
+        // 주요 상방 수직 높이 구간 계측 눈금 스케일 매핑 (누락 수정 완료)
+        const heights = [0, 10, 20, 30, 40];
         ctx.font = '11px -apple-system';
         ctx.fillStyle = '#515154';
         ctx.textAlign = 'right';
@@ -236,7 +239,7 @@ function drawScene() {
         ctx.font = 'bold 11px -apple-system';
         ctx.fillText('국궁과녁 (145m)', targetX145 - 10, targetYPos - 12);
 
-    } else if (currentView === 'front') {
+    } else if (viewMode === 'front') {
         // [정면도 렌더링] 가로: 중심 기준 측면 편차 Y (-5m ~ 5m), 세로: 비행 고도 높이 Z (0m ~ 40m)
         const midX = canvas.width / 2;
         const groundY = canvas.height * 0.85;
@@ -273,16 +276,17 @@ function drawScene() {
         // 정면 표적용 타겟 과녁 횡대 가이드 가설선 배치
         const targetYPos = groundY - (targetH / 40) * (canvas.height * 0.7);
         ctx.strokeStyle = 'rgba(255, 69, 58, 0.4)';
-        ctx.setLineDash([3, 3]);
+        ctx.setLineDash([4, 4]);
         ctx.beginPath(); ctx.moveTo(midX - 30, targetYPos); ctx.lineTo(midX + 30, targetYPos); ctx.stroke();
         ctx.setLineDash([]);
 
+        // [오타 수정] ctx.arc 메서드 누락 결함 조치 완료
         ctx.fillStyle = '#ff453a';
-        ctx.beginPath(); arc(midX, targetYPos, 5, 0, 2 * Math.PI); ctx.fill();
+        ctx.beginPath(); ctx.arc(midX, targetYPos, 5, 0, 2 * Math.PI); ctx.fill();
         ctx.font = 'bold 11px -apple-system';
         ctx.fillText('과녁 중심점', midX, targetYPos - 12);
 
-    } else if (currentView === 'top') {
+    } else if (viewMode === 'top') {
         // [평면도 렌더링] 가로: 전방 종적 주행 거리 X (0m ~ 160m), 세로: 횡적 좌우 측면 편차 Y (-5m ~ 5m)
         const startX = canvas.width * 0.1;
         const endX = canvas.width * 0.9;
@@ -300,7 +304,7 @@ function drawScene() {
         ctx.fillText('측면 편차 Y (m)', startX, midY - (canvas.height * 0.4) - 20);
 
         // 평면 기준 종방향 거리 스케일 단위 눈금 마킹 투영
-        const distances =;
+        const distances = [0, 50, 100, 145, 150];
         ctx.textAlign = 'center';
         distances.forEach(d => {
             const tickX = startX + (d / 160) * (canvas.width * 0.8);
@@ -339,13 +343,13 @@ function drawScene() {
             let screenY = 0;
             
             // 실시간 토글 뷰포트 상태에 따른 좌표 가상 매핑 트랜스폼
-            if (currentView === 'side') {
+            if (viewMode === 'side') {
                 screenX = (point.x / 160) * (canvas.width * 0.8) + (canvas.width * 0.1);
                 screenY = (canvas.height * 0.85) - (point.z / 40) * (canvas.height * 0.7);
-            } else if (currentView === 'front') {
+            } else if (viewMode === 'front') {
                 screenX = (canvas.width / 2) + (point.y / 10) * (canvas.width * 0.4);
                 screenY = (canvas.height * 0.85) - (point.z / 40) * (canvas.height * 0.7);
-            } else if (currentView === 'top') {
+            } else if (viewMode === 'top') {
                 screenX = (point.x / 160) * (canvas.width * 0.8) + (canvas.width * 0.1);
                 screenY = (canvas.height / 2) + (point.y / 10) * (canvas.height * 0.4);
             }
