@@ -24,7 +24,8 @@ function resizeCanvas() {
   const container = canvas.parentElement;
   canvas.width = container.clientWidth;
   canvas.height = container.clientHeight;
-  // 이벤트 무한 루프 폭발 방지를 위해 drawScene 대신 데이터 보존을 동반한 계산 트리거 우회
+  // 리사이즈 시점에도 강제 역학 계산을 수행하여 고정 스케일로 화면 동기화
+  if (typeof drawScene === 'function') drawScene();
 }
 
 // [핵심 연산 루틴] 화살 시뮬레이션 발사 및 역학 미분 방정식 수치 해석
@@ -196,7 +197,7 @@ function drawScene() {
     ctx.textAlign = 'center';
     ctx.fillText('높이 Z (m)', startX, topY - 30);
 
-    // [완전 재건] 주요 수평 전방 거리 구간 계측 눈금 고정 스케일 주입 (0m ~ 160m)
+    // [완전 복구] 수평 거리 눈금 스케일 상시 고정 주입 (0m ~ 160m 구간)
     const distances =;
     distances.forEach(d => {
       const tickX = startX + (d / 160) * (canvas.width * 0.8);
@@ -210,7 +211,7 @@ function drawScene() {
       ctx.fillText(d + 'm', tickX, groundY + 18);
     });
 
-    // [완전 재건] 주요 상방 수직 높이 구간 계측 눈금 고정 스케일 주입 (0m ~ 40m)
+    // [완전 복구] 상방 수직 높이 눈금 스케일 상시 고정 주입 (0m ~ 40m 구간)
     const heights =;
     ctx.font = '11px -apple-system';
     ctx.fillStyle = '#515154';
@@ -227,7 +228,7 @@ function drawScene() {
     const targetYPos = groundY - (targetH / 40) * (canvas.height * 0.7);
     ctx.strokeStyle = 'rgba(255, 69, 58, 0.3)';
     ctx.lineWidth = 1;
-    ctx.setLineDash([3, 3]); // 정밀 대시 가이드라인 처리
+    ctx.setLineDash([4, 4]); // 정밀 대시 가이드라인 처리
     ctx.beginPath(); ctx.moveTo(startX, targetYPos); ctx.lineTo(targetX145, targetYPos); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(targetX145, groundY); ctx.lineTo(targetX145, targetYPos); ctx.stroke();
     ctx.setLineDash([]); // 대시라인 속성 즉시 반환 해제
@@ -275,7 +276,7 @@ function drawScene() {
     // 정면 표적용 타겟 과녁 횡대 가이드 가설선 배치
     const targetYPos = groundY - (targetH / 40) * (canvas.height * 0.7);
     ctx.strokeStyle = 'rgba(255, 69, 58, 0.4)';
-    ctx.setLineDash([3, 3]);
+    ctx.setLineDash([4, 4]);
     ctx.beginPath(); ctx.moveTo(midX - 30, targetYPos); ctx.lineTo(midX + 30, targetYPos); ctx.stroke();
     ctx.setLineDash([]);
 
@@ -301,7 +302,7 @@ function drawScene() {
     ctx.textAlign = 'center';
     ctx.fillText('측면 편차 Y (m)', startX, midY - (canvas.height * 0.4) - 20);
 
-    // 평면 기준 종방향 거리 스케일 단위 눈금 마킹 투영
+    // [완전 복구] 평면 기준 종방향 거리 스케일 단위 눈금 상시 고정 투영 (0m ~ 160m 구간)
     const distances =;
     ctx.textAlign = 'center';
     distances.forEach(d => {
