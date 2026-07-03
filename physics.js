@@ -44,7 +44,11 @@ let flightMetrics = {
     impactEnergy: 0
 };
 
-// 자 눈금 화면 마진 설정 (정면도 박스 꽉 채우기를 위해 최소화)
+// 실시간 조건 검사용 플래그 변수
+let hasReachedTargetX = false;
+let hasReachedTargetY = false;
+
+// 자 눈금 화면 마진 설정
 const ORIGIN_X_OFFSET = 35; 
 const GROUND_Y_OFFSET = 30; 
 
@@ -78,6 +82,7 @@ function fireArrow() {
     arrowState.pitch = pitchRad; 
     arrowState.yaw = yawRad;
 
+    // 통계 및 플래그 초기화
     flightMetrics = { 
         maxDistance: 0, 
         maxHeight: launchH, 
@@ -86,6 +91,8 @@ function fireArrow() {
         impactVelocity: v0, 
         impactEnergy: 0 
     };
+    hasReachedTargetX = false;
+    hasReachedTargetY = false;
     
     updateResultUI();
 
@@ -109,6 +116,10 @@ function animate() {
     const g = 9.81; 
     const dt = 0.016; 
     const area = Math.PI * Math.pow(d / 2, 2); 
+
+    const tgtGeo = getDynamicTargetGeometry();
+    const targetBaseX = tgtGeo.baseX; // 원호 운동을 고려한 과녁 바닥의 실제 수평 거리
+    const targetH = tgtGeo.height;   // 과녁 바닥의 실제 높이
 
     const relVx = arrowState.vx - windX; 
     const relVy = arrowState.vy; 
@@ -137,6 +148,10 @@ function animate() {
     const ay = -g + dragAy + liftAy;
     const az = dragAz + liftAz;
 
+    // 이전 위치 백업 (정밀 교차점 체크용)
+    const prevX = arrowState.x;
+    const prevY = arrowState.y;
+
     arrowState.vx += ax * dt; 
     arrowState.vy += ay * dt; 
     arrowState.vz += az * dt;
@@ -150,20 +165,50 @@ function animate() {
 
     trajectory.push({ x: arrowState.x, y: arrowState.y, z: arrowState.z });
 
-    flightMetrics.flightTime += dt;
-    flightMetrics.maxDistance = arrowState.x;    
-    flightMetrics.sideDeviation = arrowState.z;   
-
+    // 1. 공통 비행 시간 분초 누적 및 최대 고도 트래킹
+    if (!hasReachedTargetX) {
+        flightMetrics.flightTime += dt; 
+    }
     if (arrowState.y > flightMetrics.maxHeight) {
         flightMetrics.maxHeight = arrowState.y; 
     }
 
-    const vCurrent = Math.sqrt(arrowState.vx * arrowState.vx + arrowState.vy * arrowState.vy + arrowState.vz * arrowState.vz);
-    flightMetrics.impactVelocity = vCurrent;
-    flightMetrics.impactEnergy = 0.5 * m * vCurrent * vCurrent;
+    // 2. [요구사항 반영] 비행 시간 기록: 원호상 과녁 바닥 수평 거리(targetBaseX) 돌파 검증
+    if (!hasReachedTargetX && arrowState.x >= targetBaseX) {
+        hasReachedTargetX = true;
+        // 보정 없이 돌파 순간의 현재 비행 누적 시간으로 고정 잠금
+    }
+
+    // 3. [요구사항 반영] 최대 거리 및 낙하 지표 기록: 과녁 바닥 높이(targetH) 선과 최초 교차 판정
+    // 발사 초기 상승기(`vy > 0`)를 지나 하강기(`vy <= 0`)에 과녁 바닥 높이 라인 아래로 떨어지는 순간
+    if (!hasReachedTargetY && arrowState.vy <= 0 && prevY >= targetH && arrowState.y <= targetH) {
+        hasReachedTargetY = true;
+        
+        // 정밀한 위치 역산을 위한 선형 보정 비례 가중치(t) 구하기
+        const t = (prevY - targetH) / (prevY - arrowState.y);
+        const exactX = prevX + (arrowState.x - prevX) * t;
+        const exactZ = prevX + (arrowState.z - prevX) * t; // 측면 편차도 연동 보정
+
+        flightMetrics.maxDistance = exactX;      // 과녁 바닥 높이 기준 최종 수평 사거리
+        flightMetrics.sideDeviation = exactZ;     // 과녁 바닥 높이 기준 최종 측면 편차
+        
+        const vFinal = Math.sqrt(arrowState.vx * arrowState.vx + arrowState.vy * arrowState.vy + arrowState.vz * arrowState.vz);
+        flightMetrics.impactVelocity = vFinal;
+        flightMetrics.impactEnergy = 0.5 * m * vFinal * vFinal;
+    }
+
+    // 하단 결과창 계기판 실시간 렌더바인딩 (확정 플래그가 서기 전엔 현재 최고 도달 실시간 값 노출)
+    if (!hasReachedTargetY) {
+        flightMetrics.maxDistance = arrowState.x;
+        flightMetrics.sideDeviation = arrowState.z;
+        const vCurrent = Math.sqrt(arrowState.vx * arrowState.vx + arrowState.vy * arrowState.vy + arrowState.vz * arrowState.vz);
+        flightMetrics.impactVelocity = vCurrent;
+        flightMetrics.impactEnergy = 0.5 * m * vCurrent * vCurrent;
+    }
 
     updateResultUI();
 
+    // 순수 지면(y <= 0) 충돌 시 물리 시뮬레이션 최종 완전 종료 처리
     if (arrowState.y <= 0) { 
         arrowState.y = 0; 
         isFlying = false; 
@@ -204,66 +249,70 @@ function drawScene() {
     const targetBaseX = tgtGeo.baseX;
     const safeTargetH = tgtGeo.height;
 
-    // 가용 스크린 영역 계산
     const availW = dprWidth - ORIGIN_X_OFFSET - 10;
     const availH = dprHeight - GROUND_Y_OFFSET - 10;
 
-    // [1] 측면도 축척 (가로 180m, 세로 30m)
     const scaleX = availW / MAX_WORLD_X;
     const scaleY = availH / MAX_WORLD_Y;
 
-    // [2] 평면도 세로 모드 축척 (세로 180m, 가로 ±15m)
     const topScaleForward = (dprHeight - 40) / MAX_WORLD_X; 
     const topScaleSide = (dprWidth - 20) / (MAX_WORLD_Z * 2); 
 
-    // [3] 정면도 축척 (가로 편차 ±15m, 세로 높이 30m)
-    // 캔버스 중앙을 Z=0으로 잡고 꽉 차게 그리기 위해 분할 스케일 적용
     const frontScaleZ = (dprWidth - ORIGIN_X_OFFSET - 20) / (MAX_WORLD_Z * 2);
     const frontScaleY = availH / MAX_WORLD_Y;
 
     function toScreen(pX, pY, pZ) {
         if (currentView === 'side') { 
-            return { 
-                x: ORIGIN_X_OFFSET + (pX * scaleX), 
-                y: dprHeight - GROUND_Y_OFFSET - (pY * scaleY) 
-            };
+            return { x: ORIGIN_X_OFFSET + (pX * scaleX), y: dprHeight - GROUND_Y_OFFSET - (pY * scaleY) };
         }
         if (currentView === 'top') {  
-            return { 
-                x: (dprWidth / 2) + (pZ * topScaleSide), 
-                y: dprHeight - 25 - (pX * topScaleForward) 
-            };
+            return { x: (dprWidth / 2) + (pZ * topScaleSide), y: dprHeight - 25 - (pX * topScaleForward) };
         }
-        // [정면도 좌표 변환] X축 중앙 정렬(Z기반 좌우 편차), Y축 하단 정렬(높이)
-        return { 
-            x: ORIGIN_X_OFFSET + (dprWidth - ORIGIN_X_OFFSET - 20) / 2 + (pZ * frontScaleZ), 
-            y: dprHeight - GROUND_Y_OFFSET - (pY * frontScaleY) 
-        };
+        return { x: ORIGIN_X_OFFSET + (dprWidth - ORIGIN_X_OFFSET - 20) / 2 + (pZ * frontScaleZ), y: dprHeight - GROUND_Y_OFFSET - (pY * frontScaleY) };
     }
 
-    // ==========================================
-    // 시점별 격자 가이드 라인 및 자 눈금 시스템
-    // ==========================================
-    ctx.strokeStyle = '#e5e5ea'; ctx.lineWidth = 1; ctx.font = '10px -apple-system'; ctx.fillStyle = '#8e8e93';
-
+    // 가이드 및 격자 라인 눈금선
     if (currentView === 'side') {
-        // [측면 눈금]
+        ctx.strokeStyle = '#e5e5ea'; 
+        ctx.lineWidth = 1; 
+        ctx.font = '10px -apple-system'; 
+        ctx.fillStyle = '#8e8e93';
+        
         for (let xMeters = 0; xMeters <= MAX_WORLD_X; xMeters += 20) {
             let scrX = ORIGIN_X_OFFSET + (xMeters * scaleX);
-            ctx.beginPath(); ctx.moveTo(scrX, 0); ctx.lineTo(scrX, dprHeight - GROUND_Y_OFFSET); ctx.stroke();
-            ctx.textAlign = 'center'; ctx.fillText(xMeters + 'm', scrX, dprHeight - GROUND_Y_OFFSET + 14);
+            ctx.beginPath(); 
+            ctx.moveTo(scrX, 0); 
+            ctx.lineTo(scrX, dprHeight - GROUND_Y_OFFSET); 
+            ctx.stroke();
+            ctx.textAlign = 'center'; 
+            ctx.fillText(xMeters + 'm', scrX, dprHeight - GROUND_Y_OFFSET + 14);
         }
         for (let yMeters = 0; yMeters <= MAX_WORLD_Y; yMeters += 5) {
             let scrY = dprHeight - GROUND_Y_OFFSET - (yMeters * scaleY);
-            ctx.beginPath(); ctx.moveTo(ORIGIN_X_OFFSET, scrY); ctx.lineTo(dprWidth, scrY); ctx.stroke();
-            ctx.textAlign = 'right'; ctx.fillText(yMeters + 'm', ORIGIN_X_OFFSET - 5, scrY + 3);
+            ctx.beginPath(); 
+            ctx.moveTo(ORIGIN_X_OFFSET, scrY); 
+            ctx.lineTo(dprWidth, scrY); 
+            ctx.stroke();
+            ctx.textAlign = 'right'; 
+            ctx.fillText(yMeters + 'm', ORIGIN_X_OFFSET - 5, scrY + 3);
         }
-        ctx.strokeStyle = '#1d1d1f'; ctx.lineWidth = 2;
-        ctx.beginPath(); ctx.moveTo(ORIGIN_X_OFFSET, dprHeight - GROUND_Y_OFFSET); ctx.lineTo(ORIGIN_X_OFFSET + (MAX_WORLD_X * scaleX), dprHeight - GROUND_Y_OFFSET); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(ORIGIN_X_OFFSET, 0); ctx.lineTo(ORIGIN_X_OFFSET, dprHeight - GROUND_Y_OFFSET); ctx.stroke();
+        ctx.strokeStyle = '#1d1d1f'; 
+        ctx.lineWidth = 2;
+        ctx.beginPath(); 
+        ctx.moveTo(ORIGIN_X_OFFSET, dprHeight - GROUND_Y_OFFSET); 
+        ctx.lineTo(ORIGIN_X_OFFSET + (MAX_WORLD_X * scaleX), dprHeight - GROUND_Y_OFFSET); 
+        ctx.stroke();
+        ctx.beginPath(); 
+        ctx.moveTo(ORIGIN_X_OFFSET, 0); 
+        ctx.lineTo(ORIGIN_X_OFFSET, dprHeight - GROUND_Y_OFFSET); 
+        ctx.stroke();
 
     } else if (currentView === 'top') {
-        // [평면 눈금]
+        ctx.strokeStyle = '#e5e5ea'; 
+        ctx.lineWidth = 1; 
+        ctx.font = '10px -apple-system'; 
+        ctx.fillStyle = '#8e8e93';
+        
         for (let xMeters = 0; xMeters <= MAX_WORLD_X; xMeters += 20) {
             let scrY = dprHeight - 25 - (xMeters * topScaleForward);
             ctx.beginPath(); 
@@ -284,14 +333,14 @@ function drawScene() {
         }
         ctx.strokeStyle = '#86868b'; 
         ctx.lineWidth = 1.5; 
-        ctx.beginPath();
+        ctx.beginPath(); 
         ctx.moveTo(dprWidth / 2, 0); 
         ctx.lineTo(dprWidth / 2, dprHeight - 25); 
         ctx.stroke();
 
     } else if (currentView === 'front') {
-        // [요구사항 반영 - 정면 눈금 신설] 가로 좌우 편차 눈금선 생성 (5m 간격)
         const centerX = ORIGIN_X_OFFSET + (dprWidth - ORIGIN_X_OFFSET - 20) / 2;
+        
         for (let zMeters = -MAX_WORLD_Z; zMeters <= MAX_WORLD_Z; zMeters += 5) {
             let scrX = centerX + (zMeters * frontScaleZ);
             ctx.beginPath(); 
@@ -301,7 +350,6 @@ function drawScene() {
             ctx.textAlign = 'center'; 
             ctx.fillText(zMeters === 0 ? '0m' : zMeters + 'm', scrX, dprHeight - GROUND_Y_OFFSET + 14);
         }
-        // 세로 높이 눈금선 생성 (5m 간격)
         for (let yMeters = 0; yMeters <= MAX_WORLD_Y; yMeters += 5) {
             let scrY = dprHeight - GROUND_Y_OFFSET - (yMeters * frontScaleY);
             ctx.beginPath(); 
@@ -311,7 +359,6 @@ function drawScene() {
             ctx.textAlign = 'right'; 
             ctx.fillText(yMeters + 'm', ORIGIN_X_OFFSET - 5, scrY + 3);
         }
-        // 정면도 메인 축 강조선 (수평 지면선 및 수직 제로 스케일선)
         ctx.strokeStyle = '#1d1d1f'; 
         ctx.lineWidth = 2;
         ctx.beginPath(); 
@@ -322,9 +369,9 @@ function drawScene() {
         ctx.moveTo(ORIGIN_X_OFFSET, 0); 
         ctx.lineTo(ORIGIN_X_OFFSET, dprHeight - GROUND_Y_OFFSET); 
         ctx.stroke();
-
+        
         ctx.strokeStyle = '#86868b'; 
-        ctx.lineWidth = 1.2;
+        ctx.lineWidth = 1.2; 
         ctx.beginPath(); 
         ctx.moveTo(centerX, 0); 
         ctx.lineTo(centerX, dprHeight - GROUND_Y_OFFSET); 
@@ -333,9 +380,7 @@ function drawScene() {
 
     ctx.lineWidth = 1.5;
 
-    // ==========================================
-    // 과녁 객체 그래픽 드로잉 파트
-    // ==========================================
+    // 과녁 그리기
     if (currentView === 'side') {
         const fBottom = toScreen(targetBaseX, safeTargetH, 0);
         const frontTopX = targetBaseX + TGT_H * Math.sin(TGT_TILT);
@@ -354,7 +399,7 @@ function drawScene() {
         ctx.lineTo(bBottom.x, bBottom.y); 
         ctx.closePath(); 
         ctx.fill();
-
+        
         ctx.strokeStyle = '#1d1d1f';
         ctx.beginPath(); 
         ctx.moveTo(fTop.x, fTop.y); 
@@ -362,7 +407,7 @@ function drawScene() {
         ctx.lineTo(bBottom.x, bBottom.y); 
         ctx.lineTo(fBottom.x, fBottom.y); 
         ctx.stroke();
-
+        
         ctx.strokeStyle = '#ff3b30'; 
         ctx.lineWidth = 3;
         ctx.beginPath(); 
@@ -370,13 +415,10 @@ function drawScene() {
         ctx.lineTo(fTop.x, fTop.y); 
         ctx.stroke();
         ctx.lineWidth = 1.5;
-
+        
     } else if (currentView === 'front') {
-        // [정면 스케일에 고정된 과녁 렌더링]
         const projH = TGT_H * Math.cos(TGT_TILT);
         const tgtCenter = toScreen(targetBaseX, safeTargetH, 0);
-        
-        // 정면 스케일 가중치를 추적하여 좌우 2m, 높이 projH 스케일 구현
         const leftX = toScreen(targetBaseX, safeTargetH, -TGT_W / 2).x;
         const rightX = toScreen(targetBaseX, safeTargetH, TGT_W / 2).x;
         const topY = toScreen(targetBaseX, safeTargetH + projH, 0).y;
@@ -384,17 +426,15 @@ function drawScene() {
 
         ctx.fillStyle = '#ffffff'; 
         ctx.fillRect(leftX, topY, rightX - leftX, bottomY - topY);
-        
         ctx.strokeStyle = '#ff3b30'; 
         ctx.lineWidth = 4; 
         ctx.strokeRect(leftX, topY, rightX - leftX, bottomY - topY);
-        
         ctx.fillStyle = '#ff3b30'; 
         ctx.beginPath(); 
         ctx.arc((leftX + rightX) / 2, (topY + bottomY) / 2, 8, 0, Math.PI * 2); 
         ctx.fill();
         ctx.lineWidth = 1.5;
-
+        
     } else if (currentView === 'top') {
         const projTopX = targetBaseX + TGT_H * Math.sin(TGT_TILT);
         const thickX = TGT_D * Math.cos(TGT_TILT);
@@ -411,7 +451,6 @@ function drawScene() {
         ctx.lineTo(bLeftTop.x, bLeftTop.y); 
         ctx.closePath(); 
         ctx.fill();
-        
         ctx.strokeStyle = '#1d1d1f'; 
         ctx.stroke();
     }
@@ -433,28 +472,24 @@ function drawScene() {
         ctx.strokeStyle = '#0071e3'; 
         ctx.lineWidth = 2.5; 
         ctx.beginPath();
-        const start = toScreen(trajectory.x, trajectory.y, trajectory.z);
+        const start = toScreen(trajectory[0].x, trajectory[0].y, trajectory[0].z); 
         ctx.moveTo(start.x, start.y);
-        for (let i = 1; i < trajectory.length; i++) {
-            const pt = toScreen(trajectory[i].x, trajectory[i].y, trajectory[i].z);
-            ctx.lineTo(pt.x, pt.y);
+        for (let i = 1; i < trajectory.length; i++) { 
+            const pt = toScreen(trajectory[i].x, trajectory[i].y, trajectory[i].z); 
+            ctx.lineTo(pt.x, pt.y); 
         }
         ctx.stroke();
     }
 
     // 실시간 화살 오브젝트 렌더링
     const arrowPos = toScreen(arrowState.x, arrowState.y, arrowState.z);
-    ctx.save();
+    ctx.save(); 
     ctx.translate(arrowPos.x, arrowPos.y);
     
-    let angleRad = 0;
-    if (currentView === 'side') {
-        angleRad = -arrowState.pitch;
-    } else if (currentView === 'top') {
-        angleRad = -arrowState.yaw;
-    } else if (currentView === 'front') {
-        angleRad = Math.atan2(arrowState.vz, arrowState.vy);
-    }
+    let angleRad = 0; 
+    if (currentView === 'side') angleRad = -arrowState.pitch; 
+    else if (currentView === 'top') angleRad = -arrowState.yaw; 
+    else if (currentView === 'front') angleRad = Math.atan2(arrowState.vz, arrowState.vy);
     
     ctx.rotate(angleRad);
     ctx.strokeStyle = '#515154'; 
@@ -463,7 +498,6 @@ function drawScene() {
     ctx.moveTo(-20, 0); 
     ctx.lineTo(0, 0); 
     ctx.stroke();
-    
     ctx.fillStyle = '#1d1d1f'; 
     ctx.beginPath(); 
     ctx.moveTo(0, 0); 
@@ -471,7 +505,6 @@ function drawScene() {
     ctx.lineTo(-6, 3); 
     ctx.closePath(); 
     ctx.fill();
-    
     ctx.fillStyle = '#ff9500'; 
     ctx.beginPath(); 
     ctx.moveTo(-20, 0); 
