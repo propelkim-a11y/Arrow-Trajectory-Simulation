@@ -199,7 +199,7 @@ function drawScene() {
             ctx.fillText(h + 'm', startX - 10, tickY);
         });
         
-        // 145m 국궁 과녁 십자 보조선
+        // 145m 국궁 과녁 십자 보조선 (모바일 표준 규격 대괄호 배열 주입 완료)
         const targetX145 = startX + (145 / 160) * (canvas.width * 0.8);
         const targetYPos = groundY - (targetH / 40) * (canvas.height * 0.7);
         ctx.strokeStyle = 'rgba(255, 69, 58, 0.3)';
