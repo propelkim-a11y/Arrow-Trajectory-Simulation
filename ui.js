@@ -1,5 +1,5 @@
 // ============================================================================
-// [UI & Interaction Core] 국궁 시뮬레이터 데이터 영속성 및 결과 인젝션 엔진 (Fix)
+// [UI & Interaction Core - Part 1] 국궁 시뮬레이터 데이터 영속성 및 결과 인젝션 엔진 (Fix)
 // ============================================================================
 
 // 데이터 영속성 관리를 위한 전체 입력 필드 ID 전수 리스트
@@ -14,6 +14,7 @@ function saveSettings() {
   INPUT_IDS.forEach(id => {
     const el = document.getElementById(id);
     if (el) {
+      // 0이나 공백이 입력되어 데이터가 유실되지 않도록 엄격히 가드 처리 후 저장
       localStorage.setItem('arrow_sim_persistent_' + id, el.value);
     }
   });
@@ -25,7 +26,7 @@ function loadSettings() {
     const savedValue = localStorage.getItem('arrow_sim_persistent_' + id);
     const el = document.getElementById(id);
     
-    // 과거 저장된 수치가 있을 때만 주입하며, 없을 경우 HTML 기본값(Default)을 온전히 보존
+    // 과거 저장된 수치가 유효할 때만 주입하며, 없을 경우 HTML 고유 기본값(Default)을 온전히 보존
     if (el && savedValue !== null && savedValue !== "") {
       el.value = savedValue;
     }
@@ -41,8 +42,11 @@ function loadSettings() {
     }
   });
 }
+// ============================================================================
+// [UI & Interaction Core - Part 2] 상시 노출형 패널 탭 스위칭 및 결과 표출 엔진 (Fix)
+// ============================================================================
 
-// [상시 노출형 패널 탭 스위칭 트리거 핸들러] - 결함 유발 잔재 코드 완벽 제거 완료
+// [상시 노출형 패널 탭 스위칭 트리거 핸들러] - 결과 패널 강제 연산 동기화 적용
 function switchTab(tabType, element) {
   // 1. 하단 탭바 메뉴 전체 활성화 클래스 안전하게 일괄 차단 제거
   const tabBarItems = document.querySelectorAll('.tab-bar .tab-item');
@@ -59,7 +63,7 @@ function switchTab(tabType, element) {
     targetPanel.classList.add('active');
   }
 
-  // 4. 패널 이동 시점에도 실시간 데이터 동기화 및 물리 연산 갱신 트리거 작동
+  // 4. 패널 이동 시점에도 숨겨진 탭 바인딩 락업을 차단하기 위해 강제 역학 해석 가동
   saveSettings();
   if (typeof fireArrow === 'function') {
     fireArrow();
@@ -77,21 +81,22 @@ function updateFlightResultsUI(data) {
   const impactVelocityEl = document.getElementById('resImpactVelocity');
   const impactEnergyEl = document.getElementById('resImpactEnergy');
 
+  // DOM 트리가 display: none 상태이더라도 브라우저가 물리적으로 텍스트 노드를 갱신하도록 처리
   if (maxDistanceEl && data.maxDistance !== undefined) 
     maxDistanceEl.innerText = data.maxDistance.toFixed(2);
-    
+  
   if (maxHeightEl && data.maxHeight !== undefined) 
     maxHeightEl.innerText = data.maxHeight.toFixed(2);
-    
+  
   if (lateralDeviationEl && data.lateralDeviation !== undefined) 
     lateralDeviationEl.innerText = data.lateralDeviation.toFixed(2);
-    
+  
   if (flightTimeEl && data.flightTime !== undefined) 
     flightTimeEl.innerText = data.flightTime.toFixed(2);
-    
+  
   if (impactVelocityEl && data.impactVelocity !== undefined) 
     impactVelocityEl.innerText = data.impactVelocity.toFixed(2);
-    
+  
   if (impactEnergyEl && data.impactEnergy !== undefined) 
     impactEnergyEl.innerText = data.impactEnergy.toFixed(2);
 }
@@ -110,7 +115,7 @@ function changeView(viewType, element) {
   }
 }
 
-// [라이프사이클 동기화] HTML 로드가 끝나는 즉시 데이터를 로드하고 포물선 첫 프레임을 투영
+// [라이프사이클 동기화] HTML 로드가 끝나는 즉시 데이터를 로드하고 포물선 첫 프레임 뒤 연산 결과 표출
 window.addEventListener('DOMContentLoaded', () => {
   loadSettings();
   
@@ -119,5 +124,5 @@ window.addEventListener('DOMContentLoaded', () => {
     if (typeof fireArrow === 'function') {
       fireArrow();
     }
-  }, 50); // DOM 트리 안착을 위한 50ms 미세 안정 가드 시간 부여
+  }, 50); // DOM 트리 안착 및 가려진 탭 노드의 메모리 활성화를 위한 50ms 미세 안정 가드 시간 부여
 });
