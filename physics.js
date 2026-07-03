@@ -7,7 +7,7 @@ let dprHeight = 0;
 // 고정할 3차원 월드 공간 최대 크기 및 국궁 과녁 규격 정의
 const MAX_WORLD_X = 160;   // 최대 거리 160m
 const MAX_WORLD_Y = 40;    // 최대 높이 40m
-const TARGET_SLANT_R = 145; // [수정] 사대 0점부터 과녁 바닥 전면까지의 고정 '실제 경사 거리' (145m 부동)
+const TARGET_SLANT_R = 145; // 사대 0점부터 과녁 바닥 전면까지의 고정 '실제 경사 거리' (145m 부동)
 
 // 국궁 표준 과녁 물리 제원
 const TGT_W = 2.0;         // 가로 2m
@@ -45,6 +45,16 @@ let flightMetrics = {
 
 const ORIGIN_X_OFFSET = 50;
 const GROUND_Y_OFFSET = 60;
+
+// [추가] 실시간으로 입력된 과녁 고도에 따라 원호상의 동적 X축 바닥 거리를 계산하는 함수
+function getDynamicTargetGeometry() {
+    const targetH = parseFloat(document.getElementById('targetHeight').value) || 0;
+    // 과격 고도가 145m를 넘어가 수학적 에러(허수)가 나지 않도록 방지
+    const safeTargetH = Math.min(targetH, TARGET_SLANT_R - 0.1);
+    // 피타고라스 정리에 의해 고도가 올라갈수록 수평 거리는 줄어듦 (원호 운동)
+    const targetBaseX = Math.sqrt(Math.pow(TARGET_SLANT_R, 2) - Math.pow(safeTargetH, 2));
+    return { baseX: targetBaseX, height: safeTargetH };
+}
 
 function fireArrow() {
     if (isFlying) cancelAnimationFrame(animationFrameId);
@@ -191,12 +201,10 @@ function drawScene() {
     if (dprWidth === 0 || dprHeight === 0) return;
     ctx.clearRect(0, 0, dprWidth, dprHeight);
     
-    const targetH = parseFloat(document.getElementById('targetHeight').value) || 0;
-
-    // [중요] 원호 공식 반영: 경사거리 145m를 유지하기 위한 동적 수평 거리(X) 계산
-    // 허수 에러 방지를 위해 고도차가 145m를 넘지 않도록 Math.min 제한 추가
-    const safeTargetH = Math.min(targetH, TARGET_SLANT_R - 0.1);
-    const targetBaseX = Math.sqrt(Math.pow(TARGET_SLANT_R, 2) - Math.pow(safeTargetH, 2));
+    // [중요] 최신 동적 원호 지형 매트릭스 로드
+    const tgtGeo = getDynamicTargetGeometry();
+    const targetBaseX = tgtGeo.baseX;
+    const safeTargetH = tgtGeo.height;
 
     const availableWidth = dprWidth - ORIGIN_X_OFFSET - 80;
     const availableHeight = dprHeight - GROUND_Y_OFFSET - 20;
@@ -248,20 +256,16 @@ function drawScene() {
     ctx.lineWidth = 1.5;
 
     if (currentView === 'side') {
-        // 동적 원호 거리가 반영된 바닥 좌표 바인딩
         const fBottom = toScreen(targetBaseX, safeTargetH, 0);
         
         const frontTopX = targetBaseX + TGT_H * Math.sin(TGT_TILT);
         const frontTopY = safeTargetH + TGT_H * Math.cos(TGT_TILT);
         const fTop = toScreen(frontTopX, frontTopY, 0);
-        
         const thickX = TGT_D * Math.cos(TGT_TILT);
         const thickY = -TGT_D * Math.sin(TGT_TILT);
-        
         const bBottom = toScreen(targetBaseX + thickX, safeTargetH + thickY, 0);
         const bTop = toScreen(frontTopX + thickX, frontTopY + thickY, 0);
 
-        // 입체 단면 폴리곤 그리기 (과녁 내부 회색 채우기)
         ctx.fillStyle = '#e5e5ea';
         ctx.beginPath(); 
         ctx.moveTo(fBottom.x, fBottom.y); 
@@ -271,7 +275,6 @@ function drawScene() {
         ctx.closePath(); 
         ctx.fill();
 
-        // 테두리 외곽선 강조 (정면은 빨간색 과녁판 표시)
         ctx.strokeStyle = '#1d1d1f';
         ctx.beginPath(); 
         ctx.moveTo(fTop.x, fTop.y); 
@@ -285,14 +288,13 @@ function drawScene() {
         ctx.beginPath(); 
         ctx.moveTo(fBottom.x, fBottom.y); 
         ctx.lineTo(fTop.x, fTop.y); 
+        // 문법 오류 교정: stroke() -> ctx.stroke()
         ctx.stroke();
         ctx.lineWidth = 1.5;
 
     } else if (currentView === 'front') {
-        // 2. 정면 뷰포트: 경사 투영으로 세로가 약간 압축되어 보임 (TGT_H * cos(15도))
         const projH = TGT_H * Math.cos(TGT_TILT);
         const tgtCenter = toScreen(targetBaseX, safeTargetH, 0);
-        
         const leftX = toScreen(targetBaseX, safeTargetH, -TGT_W / 2).x;
         const rightX = toScreen(targetBaseX, safeTargetH, TGT_W / 2).x;
         const topY = toScreen(targetBaseX, safeTargetH + projH, 0).y;
@@ -300,11 +302,11 @@ function drawScene() {
 
         ctx.fillStyle = '#ffffff'; 
         ctx.fillRect(leftX, topY, rightX - leftX, bottomY - topY);
-        
+
         ctx.strokeStyle = '#ff3b30'; 
         ctx.lineWidth = 4; 
         ctx.strokeRect(leftX, topY, rightX - leftX, bottomY - topY);
-        
+
         ctx.fillStyle = '#ff3b30'; 
         ctx.beginPath(); 
         ctx.arc((leftX + rightX) / 2, (topY + bottomY) / 2, 10, 0, Math.PI * 2); 
@@ -312,10 +314,8 @@ function drawScene() {
         ctx.lineWidth = 1.5;
 
     } else if (currentView === 'top') {
-        // 3. 평면 뷰포트: 위에서 바라본 입체 직사각형 투영 (두께 및 경사 상단 투영)
         const projTopX = targetBaseX + TGT_H * Math.sin(TGT_TILT);
         const thickX = TGT_D * Math.cos(TGT_TILT);
-        
         const fLeftBot = toScreen(targetBaseX, safeTargetH, -TGT_W / 2);
         const fRightBot = toScreen(targetBaseX, safeTargetH, TGT_W / 2);
         const bLeftTop = toScreen(projTopX + thickX, safeTargetH, -TGT_W / 2);
@@ -329,16 +329,14 @@ function drawScene() {
         ctx.lineTo(bLeftTop.x, bLeftTop.y); 
         ctx.closePath(); 
         ctx.fill();
-        
+
         ctx.strokeStyle = '#1d1d1f'; 
         ctx.stroke();
     }
 
-    // 과녁 지면 고정용 수직 지지대 (정면 및 측면 전용)
     if (currentView === 'side' || currentView === 'front') {
-        const tgtFloor = toScreen(targetBaseX, 0, 0); // 동일 수평선상의 지면(Y=0)
+        const tgtFloor = toScreen(targetBaseX, 0, 0);
         const tgtBasePos = toScreen(targetBaseX, safeTargetH, 0);
-        
         ctx.strokeStyle = '#515154'; 
         ctx.lineWidth = 2; 
         ctx.beginPath();
@@ -347,15 +345,12 @@ function drawScene() {
         ctx.stroke();
     }
 
-    // 누적 비행 궤적 그리기
     if (trajectory.length > 1) {
         ctx.strokeStyle = '#0071e3'; 
         ctx.lineWidth = 2.5; 
         ctx.beginPath();
-        
-        const start = toScreen(trajectory.x, trajectory.y, trajectory.z);
+        const start = toScreen(trajectory[0].x, trajectory[0].y, trajectory[0].z);
         ctx.moveTo(start.x, start.y);
-        
         for (let i = 1; i < trajectory.length; i++) {
             const pt = toScreen(trajectory[i].x, trajectory[i].y, trajectory[i].z);
             ctx.lineTo(pt.x, pt.y);
@@ -363,16 +358,13 @@ function drawScene() {
         ctx.stroke();
     }
 
-    // 현재 프레임의 실시간 화살 오브젝트 그래픽 드로잉
     const arrowPos = toScreen(arrowState.x, arrowState.y, arrowState.z);
     ctx.save();
     ctx.translate(arrowPos.x, arrowPos.y);
-    
     let angleRad = 0;
     if (currentView === 'side') angleRad = -arrowState.pitch;
     else if (currentView === 'top') angleRad = arrowState.yaw;
     ctx.rotate(angleRad);
-    
     ctx.strokeStyle = '#515154'; 
     ctx.lineWidth = 2; 
     ctx.beginPath(); 
