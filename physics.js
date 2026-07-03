@@ -194,8 +194,8 @@ function drawScene() {
         ctx.textAlign = 'center';
         ctx.fillText('높이 Z (m)', startX, topY - 30);
         
-        // 거리 눈금 주입 (0m ~ 160m 구간) - 생략 결함 전수 완전 복구 완료
-        const distances =;
+        // 거리 눈금 주입 (0m ~ 160m 구간) - 데이터 완전성 정밀 복구 완료
+        const distances = [0, 20, 40, 60, 80, 100, 120, 145, 160];
         distances.forEach(d => {
             const tickX = startX + (d / 160) * (canvas.width * 0.8);
             ctx.strokeStyle = d === 145 ? '#ff453a' : 'rgba(0,0,0,0.15)';
@@ -208,8 +208,8 @@ function drawScene() {
             ctx.fillText(d + 'm', tickX, groundY + 18);
         });
         
-        // 높이 눈금 주입 (0m ~ 40m 구간) - 생략 결함 전수 완전 복구 완료
-        const heights =;
+        // 높이 눈금 주입 (0m ~ 40m 구간) - 데이터 완전성 정밀 복구 완료
+        const heights = [0, 10, 20, 30, 40];
         ctx.font = '11px -apple-system';
         ctx.fillStyle = '#515154';
         ctx.textAlign = 'right';
@@ -220,7 +220,7 @@ function drawScene() {
             ctx.fillText(h + 'm', startX - 10, tickY);
         });
         
-        // 145m 국궁 과녁 십자 보조선 (모바일 크래시 방어용 대괄호 인자 주입 완료)
+        // 145m 국궁 과녁 십자 보조선 (모바일 크래시 방어 가드 교정 완료)
         const targetX145 = startX + (145 / 160) * (canvas.width * 0.8);
         const targetYPos = groundY - (targetH / 40) * (canvas.height * 0.7);
         ctx.strokeStyle = 'rgba(255, 69, 58, 0.3)';
@@ -293,7 +293,7 @@ function drawScene() {
         ctx.textAlign = 'center';
         ctx.fillText('측면 편차 Y (m)', startX, midY - (canvas.height * 0.4) - 20);
         
-        const distances =;
+        const distances = [0, 20, 40, 60, 80, 100, 120, 145, 160];
         ctx.textAlign = 'center';
         distances.forEach(d => {
             const tickX = startX + (d / 160) * (canvas.width * 0.8);
