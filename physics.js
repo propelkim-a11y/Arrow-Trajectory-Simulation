@@ -464,88 +464,123 @@ function drawScene() {
     }
     
     ctx.lineWidth = 1.5; // 기본 선 굵기 복원
-// =========================================================================
-// [Part 14/15] physics.js - 4분할 시점별 국궁 표준 경사 과녁 및 명중 마커 드로잉
-// =========================================================================
-
-    // 과녁 객체 그래픽 드로잉 파트
+    // =========================================================================
+    // [과녁 객체 그래픽 드로잉 - 제공된 국궁 표준 과녁 디자인 완벽 반영]
+    // =========================================================================
     if (currentView === 'side') {
+        // 1. 측면도: 경사각과 두께가 살아있는 3차원 단면 드로잉
         const fBottom = toScreen(targetBaseX, safeTargetH, 0);
         const frontTopX = targetBaseX + TGT_H * Math.sin(TGT_TILT);
         const frontTopY = safeTargetH + TGT_H * Math.cos(TGT_TILT);
         const fTop = toScreen(frontTopX, frontTopY, 0);
+        
         const thickX = TGT_D * Math.cos(TGT_TILT);
         const thickY = -TGT_D * Math.sin(TGT_TILT);
         const bBottom = toScreen(targetBaseX + thickX, safeTargetH + thickY, 0);
         const bTop = toScreen(frontTopX + thickX, frontTopY + thickY, 0);
 
-        ctx.fillStyle = '#e5e5ea';
+        // 과녁 내부 몸통 (옆면 두께부 회색 처리)
+        ctx.fillStyle = '#d1d1d6';
         ctx.beginPath(); ctx.moveTo(fBottom.x, fBottom.y); ctx.lineTo(fTop.x, fTop.y); ctx.lineTo(bTop.x, bTop.y); ctx.lineTo(bBottom.x, bBottom.y); ctx.closePath(); ctx.fill();
-        ctx.strokeStyle = '#1d1d1f';
-        ctx.beginPath(); ctx.moveTo(fTop.x, fTop.y); ctx.lineTo(bTop.x, bTop.y); ctx.lineTo(bBottom.x, bBottom.y); ctx.lineTo(fBottom.x, fBottom.y); ctx.stroke();
-        ctx.strokeStyle = '#ff3b30'; ctx.lineWidth = 3; 
-        ctx.beginPath(); ctx.moveTo(fBottom.x, fBottom.y); ctx.lineTo(fTop.x, fTop.y); ctx.stroke();
-        ctx.lineWidth = 1.5;
+        ctx.strokeStyle = '#1d1d1f'; ctx.lineWidth = 1; ctx.stroke();
 
+        // [이미지 반영] 측면에서 본 전면부 과녁판 테두리 및 띠 분할선 표시
+        ctx.strokeStyle = '#1d1d1f'; ctx.lineWidth = 3;
+        ctx.beginPath(); ctx.moveTo(fBottom.x, fBottom.y); ctx.lineTo(fTop.x, fTop.y); ctx.stroke();
+        
     } else if (currentView === 'front') {
+        // 2. 정면도: 제공해주신 과녁 비율을 전체 월드 스케일에 맞춰 축척 드로잉
         const projH = TGT_H * Math.cos(TGT_TILT);
         const tgtCenter = toScreen(targetBaseX, safeTargetH, 0);
         const leftX = toScreen(targetBaseX, safeTargetH, -TGT_W / 2).x;
         const rightX = toScreen(targetBaseX, safeTargetH, TGT_W / 2).x;
         const topY = toScreen(targetBaseX, safeTargetH + projH, 0).y;
         const bottomY = tgtCenter.y;
+        
+        const w = rightX - leftX;
+        const h = bottomY - topY;
 
-        ctx.fillStyle = '#ffffff'; ctx.fillRect(leftX, topY, rightX - leftX, bottomY - topY);
-        ctx.strokeStyle = '#ff3b30'; ctx.lineWidth = 4; ctx.strokeRect(leftX, topY, rightX - leftX, bottomY - topY);
-        ctx.fillStyle = '#ff3b30'; ctx.beginPath(); ctx.arc((leftX + rightX) / 2, (topY + bottomY) / 2, 8, 0, Math.PI * 2); ctx.fill();
-        ctx.lineWidth = 1.5;
+        // [이미지 반영] 흰색 외곽 전체 바탕 사각형
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(leftX, topY, w, h);
+        ctx.strokeStyle = '#1d1d1f'; ctx.lineWidth = 1.5; ctx.strokeRect(leftX, topY, w, h);
+
+        // [이미지 반영] 상단 검은색 띠 (전체 높이의 약 15% 비율)
+        const topBarH = h * 0.15;
+        ctx.fillStyle = '#1d1d1f';
+        ctx.fillRect(leftX + w * 0.1, topY + h * 0.08, w * 0.8, topBarH);
+
+        // [이미지 반영] 하단 메인 검은색 사각형 패널
+        const mainBoxTop = topY + h * 0.3;
+        const mainBoxH = h * 0.62;
+        ctx.fillRect(leftX + w * 0.1, mainBoxTop, w * 0.8, mainBoxH);
+
+        // [이미지 반영] 하단 검은색 패널 중앙의 선명한 붉은색 홍심 원
+        ctx.fillStyle = '#ff3b30'; ctx.beginPath();
+        ctx.arc(leftX + w * 0.5, mainBoxTop + mainBoxH * 0.5, w * 0.3, 0, Math.PI * 2);
+        ctx.fill();
 
     } else if (currentView === 'top') {
+        // 3. 평면도: 위에서 바라본 수평 투영면 렌더링
         const projTopX = targetBaseX + TGT_H * Math.sin(TGT_TILT);
         const thickX = TGT_D * Math.cos(TGT_TILT);
+
         const fLeftBot = toScreen(targetBaseX, safeTargetH, -TGT_W / 2);
         const fRightBot = toScreen(targetBaseX, safeTargetH, TGT_W / 2);
         const bLeftTop = toScreen(projTopX + thickX, safeTargetH, -TGT_W / 2);
         const bRightTop = toScreen(projTopX + thickX, safeTargetH, TGT_W / 2);
 
-        ctx.fillStyle = '#ff3b30'; 
+        ctx.fillStyle = '#ffffff';
         ctx.beginPath(); ctx.moveTo(fLeftBot.x, fLeftBot.y); ctx.lineTo(fRightBot.x, fRightBot.y); ctx.lineTo(bRightTop.x, bRightTop.y); ctx.lineTo(bLeftTop.x, bLeftTop.y); ctx.closePath(); ctx.fill();
-        ctx.strokeStyle = '#1d1d1f'; ctx.stroke();
+        ctx.strokeStyle = '#1d1d1f'; ctx.lineWidth = 1.5; ctx.stroke();
 
     } else if (currentView === 'target') {
+        // 4. 과녁 확대 뷰: 제공해주신 비례 이미지를 모니터 화면 가득 "원본 그대로" 초고해상도 영사
         const tLeftX = toScreen(0, 0, -TGT_W / 2).x;
         const tRightX = toScreen(0, 0, TGT_W / 2).x;
         const tTopY = toScreen(0, TGT_H / 2, 0).y;
         const tBottomY = toScreen(0, -TGT_H / 2, 0).y;
 
-        ctx.fillStyle = '#ffffff'; ctx.fillRect(tLeftX, tTopY, tRightX - tLeftX, tBottomY - tTopY);
-        ctx.strokeStyle = '#ff3b30'; ctx.lineWidth = 5; ctx.strokeRect(tLeftX, tTopY, tRightX - tLeftX, tBottomY - tTopY);
-        
-        ctx.fillStyle = '#ff3b30';
-        const tCenter = toScreen(0, 0, 0);
-        ctx.beginPath(); ctx.arc(tCenter.x, tCenter.y, 14, 0, Math.PI * 2); ctx.fill();
-        ctx.lineWidth = 1.5;
+        const w = tRightX - tLeftX;
+        const h = tBottomY - tTopY;
 
-        // 화살이 과녁 평면을 통과 완료했다면 타겟팅 충돌 흔적 표시
+        // [이미지 완벽 매핑] 흰색 외곽 액자 바탕
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(tLeftX, tTopY, w, h);
+        ctx.strokeStyle = '#1d1d1f'; ctx.lineWidth = 2; ctx.strokeRect(tLeftX, tTopY, w, h);
+
+        // [이미지 완벽 매핑] 상단 검은색 가로 띠
+        const topBarH = h * 0.15;
+        ctx.fillStyle = '#1d1d1f';
+        ctx.fillRect(tLeftX + w * 0.1, tTopY + h * 0.08, w * 0.8, topBarH);
+
+        // [이미지 완벽 매핑] 하단 검은색 본체 사각형
+        const mainBoxTop = tTopY + h * 0.3;
+        const mainBoxH = h * 0.62;
+        ctx.fillRect(tLeftX + w * 0.1, mainBoxTop, w * 0.8, mainBoxH);
+
+        // [이미지 완벽 매핑] 검은색 본체 한가운데 박히는 거대하고 강렬한 빨간색 홍심 원
+        ctx.fillStyle = '#ff3b30'; ctx.beginPath();
+        const rRadius = w * 0.3; // 이미지와 동일한 꽉 찬 반지름 비율 계산
+        ctx.arc(tLeftX + w * 0.5, mainBoxTop + mainBoxH * 0.5, rRadius, 0, Math.PI * 2);
+        ctx.fill();
+
+        // 화살이 과녁 평면을 통과했을 때 타켓팅 충돌 마커 도장 처리
         if (hasIntersectedTargetPlane) {
             const hitScr = toScreen(0, targetHitMetrics.localY, targetHitMetrics.localZ);
             
             if (targetHitMetrics.isHit) {
-                ctx.fillStyle = '#34c759'; // 명중 그린 도트
-                ctx.strokeStyle = 'rgba(52, 199, 89, 0.4)'; ctx.lineWidth = 8;
+                ctx.fillStyle = '#34c759'; ctx.strokeStyle = 'rgba(52, 199, 89, 0.4)'; ctx.lineWidth = 8;
                 ctx.beginPath(); ctx.arc(hitScr.x, hitScr.y, 6, 0, Math.PI * 2); ctx.stroke(); ctx.fill();
                 ctx.fillStyle = '#34c759'; ctx.font = 'bold 13px -apple-system'; ctx.textAlign = 'center';
                 ctx.fillText("🎯 관중 (HIT!)", dprWidth / 2, tTopY - 14);
             } else {
-                ctx.fillStyle = '#af52de'; // 빗나감 퍼플 도트
-                ctx.strokeStyle = 'rgba(175, 82, 222, 0.3)'; ctx.lineWidth = 6;
+                ctx.fillStyle = '#af52de'; ctx.strokeStyle = 'rgba(175, 82, 222, 0.3)'; ctx.lineWidth = 6;
                 ctx.beginPath(); ctx.arc(hitScr.x, hitScr.y, 5, 0, Math.PI * 2); ctx.stroke(); ctx.fill();
                 ctx.fillStyle = '#af52de'; ctx.font = 'bold 12px -apple-system'; ctx.textAlign = 'center';
                 ctx.fillText(`❌ 탈타 (오차: 좌우 ${targetHitMetrics.localZ.toFixed(2)}m, 상하 ${targetHitMetrics.localY.toFixed(2)}m)`, dprWidth / 2, tTopY - 14);
             }
-            ctx.lineWidth = 1.5;
         }
     }
+
 
     if (currentView === 'side' || currentView === 'front') {
         const tgtFloor = toScreen(targetBaseX, 0, 0); 
