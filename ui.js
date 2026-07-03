@@ -26,11 +26,11 @@ function loadSettings() {
       el.value = savedValue;
     }
     
-    // [실시간 동기화 인터페이스] 값이 변경될 때마다 자동 백업 및 물리 드로잉 씬 갱신
+    // [포물선 상시 즉시 표시] 값이 변경될 때마다 자동 백업 및 물리 연산 실시간 재호출
     if (el) {
       el.addEventListener('input', () => {
         saveSettings();
-        if (typeof drawScene === 'function') drawScene();
+        if (typeof fireArrow === 'function') fireArrow();
       });
     }
   });
@@ -42,7 +42,7 @@ function switchTab(tabType, element) {
   const tabBarItems = document.querySelectorAll('.tab-bar .tab-item');
   tabBarItems.forEach(item => item.classList.remove('active'));
   
-  // 2. 화면에 고정 노출되는 상시 설정 패널 컨포넌트 전체 비활성화
+  // 2. 화면에 고정 노출되는 상시 설정 패널 컴포넌트 전체 비활성화
   const tabPanels = document.querySelectorAll('.tab-panel');
   tabPanels.forEach(panel => panel.classList.remove('active'));
 
@@ -55,7 +55,7 @@ function switchTab(tabType, element) {
 
   // 4. 레이아웃 변경에 따른 데이터 정밀 데이터 수집 유도 및 물리 캔버스 재수립
   saveSettings();
-  if (typeof drawScene === 'function') drawScene();
+  if (typeof fireArrow === 'function') fireArrow();
 }
 
 // [물리 연산 연동 데이터 인젝션 인터페이스]
@@ -80,7 +80,7 @@ function updateFlightResultsUI(data) {
 // 탑 뷰 / 사이드 뷰 / 프론트 뷰 세그먼트 가로 컨트롤 핸들러
 let currentView = 'side';
 function changeView(viewType, element) {
-  const buttons = document.querySelectorAll('.segment-btn');
+  const buttons = document.querySelectorAll('.segmented-control .segment-btn');
   buttons.forEach(btn => btn.classList.remove('active'));
   element.classList.add('active');
   currentView = viewType;
