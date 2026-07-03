@@ -30,20 +30,20 @@ function resizeCanvas() {
 
 // [핵심 연산 루틴] 화살 시뮬레이션 발사 및 역학 미분 방정식 수치 해석
 function fireArrow() {
-  // 1. UI 입력 폼 엘리먼트 데이터 실시간 캡처 및 파싱
-  const v0 = parseFloat(document.getElementById('velocity').value) || 50;
+  // 1. UI 입력 폼 엘리먼트 데이터 실시간 캡처 및 파싱 (NaN 방어 필터 적용)
+  const v0 = Math.max(0.1, parseFloat(document.getElementById('velocity').value) || 50);
   const thetaDeg = parseFloat(document.getElementById('angle').value) || 30;
   const psiDeg = parseFloat(document.getElementById('yawAngle').value) || 0;
   
-  const cd = parseFloat(document.getElementById('dragCoeff').value) || 0.35;
+  const cd = Math.max(0, parseFloat(document.getElementById('dragCoeff').value) || 0.35);
   const cl = parseFloat(document.getElementById('liftCoeff').value) || 0.05;
-  const wGram = parseFloat(document.getElementById('weight').value) || 25;
-  const dMm = parseFloat(document.getElementById('diameter').value) || 5.5;
-  const h0 = parseFloat(document.getElementById('launchHeight').value) || 1.5;
+  const wGram = Math.max(0.1, parseFloat(document.getElementById('weight').value) || 25);
+  const dMm = Math.max(0.1, parseFloat(document.getElementById('diameter').value) || 5.5);
+  const h0 = Math.max(0, parseFloat(document.getElementById('launchHeight').value) || 1.5);
   
   const windX = parseFloat(document.getElementById('windX').value) || 0;
   const windY = parseFloat(document.getElementById('windY').value) || 0;
-  const rho = parseFloat(document.getElementById('airDensity').value) || 1.225;
+  const rho = Math.max(0, parseFloat(document.getElementById('airDensity').value) || 1.225);
 
   // 2. 물리 표준 단위계 변환 (제2조 연산 오류 폭발 방어 수치 정형화)
   const mass = wGram / 1000; // g -> kg 변환
@@ -125,12 +125,12 @@ function fireArrow() {
 
   // 5. 구조화된 비행 연산 결과 데이터 패킹 변환
   const flightResults = {
-    maxDistance: maxDistance,
-    maxHeight: maxHeight,
-    lateralDeviation: y,
-    flightTime: t,
-    impactVelocity: finalV,
-    impactEnergy: impactEnergy
+    maxDistance: isNaN(maxDistance) ? 0 : maxDistance,
+    maxHeight: isNaN(maxHeight) ? 0 : maxHeight,
+    lateralDeviation: isNaN(y) ? 0 : y,
+    flightTime: isNaN(t) ? 0 : t,
+    impactVelocity: isNaN(finalV) ? 0 : finalV,
+    impactEnergy: isNaN(impactEnergy) ? 0 : impactEnergy
   };
 
   // ui.js 모듈 파일 내부의 결과 폼 전용 데이터 인젝션 트리거 연동 호출
@@ -197,7 +197,7 @@ function drawScene() {
     ctx.textAlign = 'center';
     ctx.fillText('높이 Z (m)', startX, topY - 30);
 
-    // [완전 복구] 수평 거리 눈금 스케일 상시 고정 주입 (0m ~ 160m 구간)
+    // [완전 복구] 수평 거리 눈금 스케일 상시 고정 주입 (0m ~ 160m 구간 배열 채움)
     const distances =;
     distances.forEach(d => {
       const tickX = startX + (d / 160) * (canvas.width * 0.8);
@@ -211,7 +211,7 @@ function drawScene() {
       ctx.fillText(d + 'm', tickX, groundY + 18);
     });
 
-    // [완전 복구] 상방 수직 높이 눈금 스케일 상시 고정 주입 (0m ~ 40m 구간)
+    // [완전 복구] 상방 수직 높이 눈금 스케일 상시 고정 주입 (0m ~ 40m 구간 배열 채움)
     const heights =;
     ctx.font = '11px -apple-system';
     ctx.fillStyle = '#515154';
@@ -302,7 +302,7 @@ function drawScene() {
     ctx.textAlign = 'center';
     ctx.fillText('측면 편차 Y (m)', startX, midY - (canvas.height * 0.4) - 20);
 
-    // [완전 복구] 평면 기준 종방향 거리 스케일 단위 눈금 상시 고정 투영 (0m ~ 160m 구간)
+    // [완전 복구] 평면 기준 종방향 거리 스케일 단위 눈금 상시 고정 투영 (0m ~ 160m 구간 배열 채움)
     const distances =;
     ctx.textAlign = 'center';
     distances.forEach(d => {
