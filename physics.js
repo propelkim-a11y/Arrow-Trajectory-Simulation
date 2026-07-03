@@ -4,10 +4,16 @@ const ctx = canvas.getContext('2d');
 let dprWidth = 0;
 let dprHeight = 0;
 
-// 고정할 3차원 월드 공간 최대 크기 정의
-const MAX_WORLD_X = 160; // 최대 거리 160m
-const MAX_WORLD_Y = 40;  // 최대 높이 40m
-const TARGET_BASE_X = 145; // 사대 0점부터 과녁 바닥까지의 고정 수평 거리 (145m)
+// 고정할 3차원 월드 공간 최대 크기 및 국궁 과녁 규격 정의
+const MAX_WORLD_X = 160;   // 최대 거리 160m
+const MAX_WORLD_Y = 40;    // 최대 높이 40m
+const TARGET_BASE_X = 145; // 사대 0점부터 과녁 바닥 전면까지의 고정 수평 거리 (145m)
+
+// 국궁 표준 과녁 물리 제원
+const TGT_W = 2.0;         // 가로 2m
+const TGT_H = 2.667;       // 세로 2.667m
+const TGT_D = 0.5;         // 두께 0.5m
+const TGT_TILT = 15 * Math.PI / 180; // 뒤로 15도 기울어짐 (라디안)
 
 function resizeCanvas() {
     const rect = canvas.getBoundingClientRect();
@@ -26,10 +32,8 @@ let isFlying = false;
 let animationFrameId = null;
 let trajectory = [];
 
-// 3차원 물리 공간 상태 정의
 let arrowState = { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, pitch: 0, yaw: 0 };
 
-// 비행 분석용 실시간 물리 데이터 저장 객체
 let flightMetrics = {
     maxDistance: 0,
     maxHeight: 0,
@@ -39,7 +43,6 @@ let flightMetrics = {
     impactEnergy: 0
 };
 
-// 화면 여백 바이어스 세팅
 const ORIGIN_X_OFFSET = 50;
 const GROUND_Y_OFFSET = 60;
 
@@ -103,7 +106,6 @@ function animate() {
     const relVz = arrowState.vz - windZ;
     const vRel = Math.sqrt(relVx * relVx + relVy * relVy + relVz * relVz) || 0.001;
 
-    // 받음각(Angle of Attack) 기반 정밀 계산식 적용
     const flowPitch = Math.atan2(relVy, Math.sqrt(relVx * relVx + relVz * relVz));
     const flowYaw = Math.atan2(relVz, relVx);
     const attackAngle = arrowState.pitch - flowPitch;
@@ -153,7 +155,6 @@ function animate() {
 
     updateResultUI();
 
-    // 지면 충돌 검사
     if (arrowState.y <= 0) { 
         arrowState.y = 0; 
         isFlying = false; 
@@ -242,25 +243,130 @@ function drawScene() {
         ctx.stroke();
     }
 
-    // [핵심 반영] 과녁 그리기: 사대 원점 기준 수평 거리 145m 상시 고정 적용
-    const tgt = toScreen(TARGET_BASE_X, targetH, 0); 
-    ctx.fillStyle = '#ff3b30'; ctx.beginPath(); ctx.arc(tgt.x, tgt.y, 12, 0, Math.PI * 2); ctx.fill();
-    ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(tgt.x, tgt.y, 6, 0, Math.PI * 2); ctx.fill();
-    
-    // 과녁 지지대: 과녁 중심(tgt.y)에서 과녁 바닥(지면 고도 0점)까지 수직선으로 연결
+    // ==========================================
+    // [신설] 국궁 규격 및 15도 경사 과녁 정밀 드로잉 파트
+    // ==========================================
+    ctx.lineWidth = 1.5;
+
+    if (currentView === 'side') {
+        // 1. 측면 뷰포트: 경사각에 따른 선 및 두께 투영 계산
+        // 하단 기준선 좌표 (과녁고도 고차 반영)
+        const fBottom = toScreen(TARGET_BASE_X, targetH, 0);
+        
+        // 15도 뒤로 기울어진 정면 판넬 탑 좌표
+        const frontTopX = TARGET_BASE_X + TGT_H * Math.sin(TGT_TILT);
+        const frontTopY = targetH + TGT_H * Math.cos(TGT_TILT);
+        const fTop = toScreen(frontTopX, frontTopY, 0);
+        
+        // 과녁 두께(0.5m)가 뒷면에 미치는 오프셋 반영 (기울어진 면에 수직인 두께 벡터)
+        const thickX = TGT_D * Math.cos(TGT_TILT);
+        const thickY = -TGT_D * Math.sin(TGT_TILT);
+        
+        const bBottom = toScreen(TARGET_BASE_X + thickX, targetH + thickY, 0);
+        const bTop = toScreen(frontTopX + thickX, frontTopY + thickY, 0);
+
+        // 입체 단면 폴리곤 그리기 (과녁 내부 회색 채우기)
+        ctx.fillStyle = '#e5e5ea';
+        ctx.beginPath();
+        ctx.moveTo(fBottom.x, fBottom.y);
+        ctx.lineTo(fTop.x, fTop.y);
+        ctx.lineTo(bTop.x, bTop.y);
+        ctx.lineTo(bBottom.x, bBottom.y);
+        ctx.closePath();
+        ctx.fill();
+
+        // 테두리 외곽선 강조 (정면은 빨간색 과녁판 표시)
+        ctx.strokeStyle = '#1d1d1f';
+        ctx.beginPath();
+        ctx.moveTo(fTop.x, fTop.y); 
+        ctx.lineTo(bTop.x, bTop.y);
+        ctx.lineTo(bBottom.x, bBottom.y); 
+        ctx.lineTo(fBottom.x, fBottom.y);
+        ctx.stroke();
+
+        ctx.strokeStyle = '#ff3b30'; 
+        ctx.lineWidth = 3; // 빨간 정면 과녁판
+        ctx.beginPath(); 
+        ctx.moveTo(fBottom.x, fBottom.y); 
+        ctx.lineTo(fTop.x, fTop.y); 
+        ctx.stroke();
+        ctx.lineWidth = 1.5;
+
+    } else if (currentView === 'front') {
+        // 2. 정면 뷰포트: 경사 투영으로 세로가 약간 압축되어 보임 (TGT_H * cos(15도))
+        const projH = TGT_H * Math.cos(TGT_TILT);
+        
+        // 정면 중심 바닥 좌표
+        const tgtCenter = toScreen(TARGET_BASE_X, targetH, 0);
+        
+        // 좌우 가로폭 2m 분할 (\pm 1m), 높이 projH 분할
+        const leftX = toScreen(TARGET_BASE_X, targetH, -TGT_W / 2).x;
+        const rightX = toScreen(TARGET_BASE_X, targetH, TGT_W / 2).x;
+        const topY = toScreen(TARGET_BASE_X, targetH + projH, 0).y;
+        const bottomY = tgtCenter.y;
+
+        // 과녁 몸통 사각형 채우기
+        ctx.fillStyle = '#ffffff';
+        ctx.fillRect(leftX, topY, rightX - leftX, bottomY - topY);
+        
+        // 국궁 표준 빨간 테두리 및 과녁 원형 과녁판 표기
+        ctx.strokeStyle = '#ff3b30'; 
+        ctx.lineWidth = 4;
+        ctx.strokeRect(leftX, topY, rightX - leftX, bottomY - topY);
+        
+        // 중앙 홍심(Red Center) 표현
+        ctx.fillStyle = '#ff3b30';
+        ctx.beginPath();
+        ctx.arc((leftX + rightX) / 2, (topY + bottomY) / 2, 10, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.lineWidth = 1.5;
+
+    } else if (currentView === 'top') {
+        // 3. 평면 뷰포트: 위에서 바라본 입체 직사각형 투영 (두께 및 경사 상단 투영)
+        const projTopX = TARGET_BASE_X + TGT_H * Math.sin(TGT_TILT);
+        const thickX = TGT_D * Math.cos(TGT_TILT);
+
+        // 평면상의 네 귀퉁이 픽셀 맵 변환
+        const fLeftBot = toScreen(TARGET_BASE_X, targetH, -TGT_W / 2);
+        const fRightBot = toScreen(TARGET_BASE_X, targetH, TGT_W / 2);
+        const bLeftTop = toScreen(projTopX + thickX, targetH, -TGT_W / 2);
+        const bRightTop = toScreen(projTopX + thickX, targetH, TGT_W / 2);
+
+        // 과녁 상단 평면 채우기
+        ctx.fillStyle = '#d1d1d6';
+        ctx.beginPath();
+        ctx.moveTo(fLeftBot.x, fLeftBot.y);
+        ctx.lineTo(fRightBot.x, fRightBot.y);
+        ctx.lineTo(bRightTop.x, bRightTop.y);
+        ctx.lineTo(bLeftTop.x, bLeftTop.y);
+        ctx.closePath();
+        ctx.fill();
+        
+        ctx.strokeStyle = '#1d1d1f';
+        ctx.stroke();
+    }
+
+    // 과녁 지면 고정용 수직 지지대 (정면 및 측면 전용)
     if (currentView === 'side' || currentView === 'front') {
-        const tgtFloor = toScreen(TARGET_BASE_X, 0, 0); // 과녁 바닥의 화면 좌표 계산
-        ctx.strokeStyle = '#1d1d1f'; ctx.lineWidth = 2; ctx.beginPath(); 
-        ctx.moveTo(tgt.x, tgt.y + 12); 
-        ctx.lineTo(tgt.x, tgtFloor.y); // 지면 고도선이 아닌 과녁 바닥 지점으로 고정
+        const tgtFloor = toScreen(TARGET_BASE_X, 0, 0);
+        const tgtBasePos = toScreen(TARGET_BASE_X, targetH, 0);
+        ctx.strokeStyle = '#515154'; 
+        ctx.lineWidth = 2; 
+        ctx.beginPath();
+        ctx.moveTo(tgtBasePos.x, tgtBasePos.y);
+        ctx.lineTo(tgtBasePos.x, tgtFloor.y);
         ctx.stroke();
     }
 
     // 누적 비행 궤적 그리기
     if (trajectory.length > 1) {
-        ctx.strokeStyle = '#0071e3'; ctx.lineWidth = 2.5; ctx.beginPath();
-        const start = toScreen(trajectory[0].x, trajectory[0].y, trajectory[0].z); 
+        ctx.strokeStyle = '#0071e3'; 
+        ctx.lineWidth = 2.5; 
+        ctx.beginPath();
+        
+        const start = toScreen(trajectory[0].x, trajectory[0].y, trajectory[0].z);
         ctx.moveTo(start.x, start.y);
+        
         for (let i = 1; i < trajectory.length; i++) {
             const pt = toScreen(trajectory[i].x, trajectory[i].y, trajectory[i].z);
             ctx.lineTo(pt.x, pt.y);
