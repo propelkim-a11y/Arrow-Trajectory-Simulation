@@ -197,11 +197,11 @@ function drawScene() {
         ctx.textAlign = 'center';
         ctx.fillText('Z (m) 높이', startX, topY - 30);
 
-        // [완전 복구] 수평 거리 눈금 스케일 상시 고정 주입 구간 (0m ~ 160m)
-        const distances =;
+        // [완전 복구] 수평 거리 눈금 데이터 주입 완료
+        const distances = [0, 20, 40, 60, 80, 100, 120, 145, 160];
         distances.forEach(d => {
             const tickX = startX + (d / 160) * (canvas.width * 0.8);
-            ctx.strokeStyle = d === 145 ? '#ff453a' : 'rgba(0,0,0,0.15)'; // 145m 국궁 규격 고대비 레드 분기
+            ctx.strokeStyle = d === 145 ? '#ff453a' : 'rgba(0,0,0,0.15)'; // 145m 국궁 규격 고대비 레드 강조
             ctx.lineWidth = d === 145 ? 1.5 : 1;
 
             ctx.beginPath(); ctx.moveTo(tickX, groundY); ctx.lineTo(tickX, groundY + 5); ctx.stroke();
@@ -211,8 +211,8 @@ function drawScene() {
             ctx.fillText(d + 'm', tickX, groundY + 18);
         });
 
-        // [완전 복구] 상방 수직 높이 눈금 스케일 상시 고정 주입 구간 (0m ~ 40m)
-        const heights =;
+        // [완전 복구] 상방 수직 높이 눈금 데이터 주입 완료
+        const heights = [0, 10, 20, 30, 40];
         ctx.font = '11px -apple-system';
         ctx.fillStyle = '#515154';
         ctx.textAlign = 'right';
@@ -302,8 +302,8 @@ function drawScene() {
         ctx.textAlign = 'center';
         ctx.fillText('Y (m) 측면 편차', startX, midY - (canvas.height * 0.4) - 20);
 
-        // [완전 복구] 평면 기준 종방향 거리 스케일 단위 눈금 상시 고정 투영 구간 (0m ~ 160m)
-        const distances =;
+        // [완전 복구] 평면 기준 종방향 거리 눈금 데이터 주입 완료
+        const distances = [0, 20, 40, 60, 80, 100, 120, 145, 160];
         ctx.textAlign = 'center';
         distances.forEach(d => {
             const tickX = startX + (d / 160) * (canvas.width * 0.8);
