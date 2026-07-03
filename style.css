@@ -24,11 +24,39 @@ body {
 }
 
 h1 { 
-    font-size: 18px; 
+    font-size: 20px; 
     font-weight: 700; 
     letter-spacing: -0.5px; 
-    margin-bottom: 6px;
+    margin-bottom: 8px;
     text-align: center; 
+}
+
+.segmented-control {
+    display: flex;
+    background: #e3e3e6;
+    padding: 3px;
+    border-radius: 9px;
+    margin-bottom: 8px;
+    align-self: center;
+    width: fit-content;
+}
+
+.segment-btn {
+    border: none; 
+    background: none; 
+    padding: 4px 16px; 
+    font-size: 12px;
+    font-weight: 500; 
+    color: #515154; 
+    border-radius: 7px; 
+    cursor: pointer;
+}
+
+.segment-btn.active {
+    background: #ffffff; 
+    color: #1d1d1f; 
+    box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.1);
+    font-weight: 600;
 }
 
 .sim-container {
@@ -50,9 +78,9 @@ canvas {
 
 .floating-actions {
     position: absolute;
-    top: 12px;
-    right: 12px;
-    z-index: 100;
+    top: 16px;
+    right: 16px;
+    z-index: 50;
 }
 
 .fire-btn {
@@ -100,6 +128,10 @@ canvas {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px 16px;
+}
+
+.form-grid.grid-2col {
+    grid-template-columns: 1fr 1fr;
 }
 
 .form-group {
