@@ -4,32 +4,42 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
   <title>Arrow Trajectory Simulator</title>
+  
+  <!-- PWA manifest -->
   <link rel="manifest" href="manifest.json">
+  
+  <!-- 탭 아이콘 및 모바일 웹앱 전용 메타 태그 -->
   <link rel="icon" type="image/png" sizes="32x32" href="icon.png">
   <link rel="apple-touch-icon" sizes="180x180" href="icon.png">
   <meta name="apple-mobile-web-app-capable" content="yes">
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="mobile-web-app-capable" content="yes">
+  
+  <!-- CSS 스타일시트 모듈 연동 -->
   <link rel="stylesheet" href="style.css">
 </head>
 <body>
 <div class="main-screen">
   <h1>Arrow Trajectory</h1>
   
-  <!-- 시점 토글 세그먼트 -->
+  <!-- 시점 토글 세그먼트 (정면 / 측면 / 평면) -->
   <div class="segmented-control">
     <button class="segment-btn" onclick="changeView('front', this)">정면</button>
     <button class="segment-btn active" onclick="changeView('side', this)">측면</button>
     <button class="segment-btn" onclick="changeView('top', this)">평면</button>
   </div>
   
-  <!-- 시뮬레이터 캔버스 컨테이너 (발사 버튼 제거 완료) -->
+  <!-- 시뮬레이터 캔버스 컨테이너 -->
   <div class="sim-container">
     <canvas id="simCanvas"></canvas>
+    <div class="floating-actions">
+      <button class="fire-btn" onclick="fireArrow()">발사</button>
+    </div>
   </div>
 
-  <!-- 설정 및 결과 하단 고정 스케일 가이드 시트 패널 -->
+  <!-- [상시 고정 패널 컴포넌트 구조 - 내부 스크롤 가이드 탑재] -->
   <div class="persistent-panel-container">
+    
     <!-- [탭 패널 1] 화살 설정 -->
     <div class="tab-panel active" id="sheet-arrow">
       <div class="panel-title">화살 설정</div>
@@ -135,7 +145,7 @@
       </div>
     </div>
 
-    <!-- [탭 패널 4] 비행 결과 표시 (구조 마감 보완) -->
+    <!-- [탭 패널 4] 비행 결과 표시 -->
     <div class="tab-panel" id="sheet-result">
       <div class="panel-title">비행 결과</div>
       <div class="form-grid">
@@ -183,10 +193,11 @@
         </div>
       </div>
     </div>
+
   </div>
 </div>
 
-<!-- 하단 고정형 블러 탭바 내비게이션 -->
+<!-- 하단 고정형 탭바 내비게이션 -->
 <div class="tab-bar">
   <button class="tab-item active" onclick="switchTab('arrow', this)">
     <span class="tab-icon">🎯</span>
@@ -206,17 +217,19 @@
   </button>
 </div>
 
-<!-- 순서 동기화: 역학 코어 엔진 선로드 후 상호작용 UI 스크립트 배치 -->
-<script src="physics.js"></script>
+<!-- 스크립트 파일 기능별 분할 연동 -->
 <script src="ui.js"></script>
+<script src="physics.js"></script>
+
+<!-- 서비스 워커 백그라운드 등록 구현 -->
 <script>
-  if ('serviceWorker' in navigator) {
-    window.addEventListener('load', () => {
-      navigator.serviceWorker.register('./sw.js?v=1.0.2')
-        .then(reg => console.log('PWA 서비스 워커 등록 완료:', reg.scope))
-        .catch(err => console.log('PWA 서비스 워커 등록 실패:', err));
-    });
-  }
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker.register('./sw.js')
+    .then(reg => console.log('PWA 서비스 워커 등록 완료:', reg.scope))
+    .catch(err => console.log('PWA 서비스 워커 등록 실패:', err));
+  });
+}
 </script>
 </body>
 </html>
