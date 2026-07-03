@@ -1,5 +1,5 @@
 // ============================================================================
-// [UI & Interaction Core - Part 1] 국궁 시뮬레이터 데이터 영속성 및 결과 인젝션 엔진 (Fix)
+// [UI & Interaction Core - Part 1] 국궁 시뮬레이터 데이터 영속성 및 결과 인젝션 엔진 (Perfect Fix)
 // ============================================================================
 
 // 데이터 영속성 관리를 위한 전체 입력 필드 ID 전수 리스트
@@ -50,7 +50,7 @@ function loadSettings() {
   });
 }
 // ============================================================================
-// [UI & Interaction Core - Part 2] 국궁 시뮬레이터 데이터 영속성 및 결과 인젝션 엔진 (Fix)
+// [UI & Interaction Core - Part 2] 국궁 시뮬레이터 데이터 영속성 및 결과 인젝션 엔진 (Perfect Fix)
 // ============================================================================
 
 // [상시 노출형 패널 탭 스위칭 트리거 핸들러] - 결함 유발 잔재 코드 완벽 제거 완료
@@ -77,7 +77,7 @@ function switchTab(tabType, element) {
   }
 }
 
-// [물리 연산 연동 데이터 인젝션 인터페이스] - 화면 결과 멈춤 버그 완전 박멸 완료
+// [물리 연산 연동 데이터 인젝션 인터페이스] - NaN 및 렌더링 락업 크래시 완전 박멸 완료
 function updateFlightResultsUI(data) {
   if (!data) return;
   
@@ -88,23 +88,22 @@ function updateFlightResultsUI(data) {
   const impactVelocityEl = document.getElementById('resImpactVelocity');
   const impactEnergyEl = document.getElementById('resImpactEnergy');
 
-  if (maxDistanceEl && data.maxDistance !== undefined) 
-    maxDistanceEl.innerText = data.maxDistance.toFixed(2);
-    
-  if (maxHeightEl && data.maxHeight !== undefined) 
-    maxHeightEl.innerText = data.maxHeight.toFixed(2);
-    
-  if (lateralDeviationEl && data.lateralDeviation !== undefined) 
-    lateralDeviationEl.innerText = data.lateralDeviation.toFixed(2);
-    
-  if (flightTimeEl && data.flightTime !== undefined) 
-    flightTimeEl.innerText = data.flightTime.toFixed(2);
-    
-  if (impactVelocityEl && data.impactVelocity !== undefined) 
-    impactVelocityEl.innerText = data.impactVelocity.toFixed(2);
-    
-  if (impactEnergyEl && data.impactEnergy !== undefined) 
-    impactEnergyEl.innerText = data.impactEnergy.toFixed(2);
+  // 데이터 안전 바인딩 유틸리티 (NaN이나 유효하지 않은 연산 결과가 들어와도 .toFixed 예외 폭발 완벽 방어)
+  const renderValue = (el, val) => {
+    if (!el) return;
+    if (val === undefined || val === null || isNaN(val) || !isFinite(val)) {
+      el.innerText = "0.00";
+    } else {
+      el.innerText = val.toFixed(2);
+    }
+  };
+
+  renderValue(maxDistanceEl, data.maxDistance);
+  renderValue(maxHeightEl, data.maxHeight);
+  renderValue(lateralDeviationEl, data.lateralDeviation);
+  renderValue(flightTimeEl, data.flightTime);
+  renderValue(impactVelocityEl, data.impactVelocity);
+  renderValue(impactEnergyEl, data.impactEnergy);
 }
 
 // 탑 뷰 / 사이드 뷰 / 프론트 뷰 세그먼트 가로 컨트롤 핸들러
