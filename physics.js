@@ -5,35 +5,48 @@
 let canvas, ctx;
 let animationFrameId = null;
 let trajectoryData = []; 
-let currentView = 'side'; // ui.js와의 타이밍 이슈 방지를 위한 안전한 기본값 선언
+let currentView = 'side'; // ui.js 선언 타이밍 충돌 방지용 안전 기본값
 
 // 초기화 이벤트 리스너 바인딩
 window.addEventListener('load', () => {
+    initPhysicsEngine();
+});
+
+// DOMContentLoaded 시점에 ui.js가 먼저 호출할 때를 대비한 동적 가드 엔진
+window.addEventListener('DOMContentLoaded', () => {
+    initPhysicsEngine();
+});
+
+// 물리 엔진 초기화 및 객체 획득 루틴
+function initPhysicsEngine() {
     canvas = document.getElementById('simCanvas');
     if (canvas) {
         ctx = canvas.getContext('2d');
         
-        // 모바일 초기화 타이밍 버그 방지: 화면이 안착할 때까지 미세한 시차를 두고 3번 강제 크기 정렬
+        // 모바일 웹앱 안착 타이밍 버그 방지 강제 정렬
         resizeCanvas();
         setTimeout(resizeCanvas, 50);
         setTimeout(resizeCanvas, 150);
         
+        window.removeEventListener('resize', resizeCanvas);
         window.addEventListener('resize', resizeCanvas);
     }
-});
+}
 
 // 브라우저 리사이징 대응 뷰포트 정렬 (모바일 강제 스케일링 보정)
 function resizeCanvas() {
-    if (!canvas) return;
+    if (!canvas) {
+        canvas = document.getElementById('simCanvas');
+        if (!canvas) return;
+        ctx = canvas.getContext('2d');
+    }
     const container = canvas.parentElement;
-    
-    // 모바일 웹앱 구동 시 부모 박스가 크기를 간혹 0으로 잡으면 스마트폰 전체 화면 너비를 강제로 주입
     const targetWidth = container.clientWidth || window.innerWidth * 0.9;
     const targetHeight = container.clientHeight || 200; 
+    
     canvas.width = targetWidth;
     canvas.height = targetHeight;
     
-    // 도화지 크기가 잡히면 즉시 연산하고 강제로 그림을 그립니다.
     if (typeof fireArrow === 'function') {
         fireArrow();
     }
@@ -41,15 +54,15 @@ function resizeCanvas() {
 
 // [핵심 연산 루틴] 화살 시뮬레이션 발사 및 역학 미분 방정식 수치 해석
 function fireArrow() {
-    // 1. UI 입력 폼 데이터 캡처 (모바일 빈 값 및 컴포넌트 미안착 대비 옵셔널 체이닝 방어 코드 탑재)
-    const v0 = parseFloat(document.getElementById('velocity')?.value) || 50;
+    // 1. UI 입력 폼 데이터 캡처 (모바일 컴포넌트 미안착 대비 옵셔널 체이닝 및 NaN 차단)
+    const v0 = Math.max(0.1, parseFloat(document.getElementById('velocity')?.value) || 50);
     const thetaDeg = parseFloat(document.getElementById('angle')?.value) || 30;
     const psiDeg = parseFloat(document.getElementById('yawAngle')?.value) || 0;
     
     const cd = parseFloat(document.getElementById('dragCoeff')?.value) || 0.35;
     const cl = parseFloat(document.getElementById('liftCoeff')?.value) || 0.05;
-    const wGram = parseFloat(document.getElementById('weight')?.value) || 25;
-    const dMm = parseFloat(document.getElementById('diameter')?.value) || 5.5;
+    const wGram = Math.max(0.1, parseFloat(document.getElementById('weight')?.value) || 25);
+    const dMm = Math.max(0.1, parseFloat(document.getElementById('diameter')?.value) || 5.5);
     const h0 = parseFloat(document.getElementById('launchHeight')?.value) || 1.5;
     
     const windX = parseFloat(document.getElementById('windX')?.value) || 0;
@@ -75,7 +88,7 @@ function fireArrow() {
     let maxDistance = 0; let maxHeight = z;
     let maxLoopGuard = 10000; 
     trajectoryData = [{ x: x, y: y, z: z }];
-    // 3. 전진 오일러 역학 해석 통합 연산 루프 (무한 루프 스레드 마비 방어 대책 탑재)
+    // 3. 전진 오일러 역학 해석 통합 연산 루프 (데이터 오염 및 무한 루프 완전 방어)
     while (z >= 0 && maxLoopGuard > 0) {
         maxLoopGuard--;
         const relVx = vx - windX;
@@ -89,7 +102,7 @@ function fireArrow() {
         const fdy = -fd * (relVy / relV);
         const fdz = -fd * (relVz / relV);
         
-        // 상방 유도 양력 계산 (하강 국면에서 역학적 무한 치솟음 버그 완전 제어)
+        // 상방 유도 양력 계산 (하강 국면에서 역학적 치솟음 방지 가드 탑재)
         const fl = 0.5 * cl * rho * area * relV * relV;
         const flz = vz > 0 ? fl : -fl * 0.1; 
         
@@ -97,6 +110,9 @@ function fireArrow() {
         const ax = fdx / mass;
         const ay = fdy / mass;
         const az = -g + (fdz / mass) + (flz / mass);
+        
+        // 데이터 오염 방어 (NaN 검증 가드)
+        if (isNaN(ax) || isNaN(ay) || isNaN(az)) break;
         
         // 속도 및 위치 좌표 갱신
         vx += ax * dt; vy += ay * dt; vz += az * dt;
@@ -108,15 +124,15 @@ function fireArrow() {
     }
     
     // 4. 최종 영점 충돌 순간 역학 산출
-    const finalV = Math.sqrt(vx * vx + vy * vy + vz * vz);
-    const impactEnergy = 0.5 * mass * finalV * finalV;
+    const finalV = Math.sqrt(vx * vx + vy * vy + vz * vz) || 0;
+    const impactEnergy = 0.5 * mass * finalV * finalV || 0;
     const flightResults = {
-        maxDistance: maxDistance,
-        maxHeight: maxHeight,
-        lateralDeviation: y,
-        flightTime: t,
-        impactVelocity: finalV,
-        impactEnergy: impactEnergy
+        maxDistance: isNaN(maxDistance) ? 0 : maxDistance,
+        maxHeight: isNaN(maxHeight) ? 0 : maxHeight,
+        lateralDeviation: isNaN(y) ? 0 : y,
+        flightTime: isNaN(t) ? 0 : t,
+        impactVelocity: isNaN(finalV) ? 0 : finalV,
+        impactEnergy: isNaN(impactEnergy) ? 0 : impactEnergy
     };
     
     // UI 모듈로 데이터 전송
@@ -130,7 +146,12 @@ function fireArrow() {
 
 // HTML5 Canvas 그래픽스 신 드로잉 메인 엔진 루틴
 function drawScene() {
-    if (!ctx || !canvas) return;
+    if (!canvas) {
+        canvas = document.getElementById('simCanvas');
+        if (!canvas) return;
+        ctx = canvas.getContext('2d');
+    }
+    if (!ctx) return;
     ctx.clearRect(0, 0, canvas.width, canvas.height);
     
     // --------------------------------------------------------------------------
@@ -173,7 +194,7 @@ function drawScene() {
         ctx.textAlign = 'center';
         ctx.fillText('높이 Z (m)', startX, topY - 30);
         
-        // 거리 눈금 주입 (0m ~ 160m 구간) - 문법 버그 및 데이터 완전 복구 완료
+        // 거리 눈금 주입 (0m ~ 160m 구간) - 생략 결함 전수 완전 복구 완료
         const distances =;
         distances.forEach(d => {
             const tickX = startX + (d / 160) * (canvas.width * 0.8);
@@ -187,7 +208,7 @@ function drawScene() {
             ctx.fillText(d + 'm', tickX, groundY + 18);
         });
         
-        // 높이 눈금 주입 (0m ~ 40m 구간) - 문법 버그 및 데이터 완전 복구 완료
+        // 높이 눈금 주입 (0m ~ 40m 구간) - 생략 결함 전수 완전 복구 완료
         const heights =;
         ctx.font = '11px -apple-system';
         ctx.fillStyle = '#515154';
@@ -199,7 +220,7 @@ function drawScene() {
             ctx.fillText(h + 'm', startX - 10, tickY);
         });
         
-        // 145m 국궁 과녁 십자 보조선 (모바일 표준 규격 대괄호 배열 주입 완료)
+        // 145m 국궁 과녁 십자 보조선 (모바일 크래시 방어용 대괄호 인자 주입 완료)
         const targetX145 = startX + (145 / 160) * (canvas.width * 0.8);
         const targetYPos = groundY - (targetH / 40) * (canvas.height * 0.7);
         ctx.strokeStyle = 'rgba(255, 69, 58, 0.3)';
