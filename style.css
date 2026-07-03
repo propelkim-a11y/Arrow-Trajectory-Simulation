@@ -15,8 +15,11 @@ body {
     display: flex;
     flex-direction: column;
     padding: 20px;
-    padding-bottom: 90px; 
+    padding-bottom: 95px; /* 탭 바 공간 확보 */
+    box-sizing: border-box;
+    min-height: 0; /* flex 자식의 최소 크기 제한 해제 */
 }
+
 
 h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 16px; text-align: center; }
 
@@ -43,6 +46,7 @@ h1 { font-size: 24px; font-weight: 700; letter-spacing: -0.5px; margin-bottom: 1
 /* 메인 캔버스 영역 */
 .sim-container {
     flex: 1;
+    min-height: 0; /* 중요: 캔버스가 부모를 찢고 나가지 않도록 방지 */
     background: #ffffff;
     border-radius: 20px;
     box-shadow: 0 4px 20px rgba(0, 0, 0, 0.04);
