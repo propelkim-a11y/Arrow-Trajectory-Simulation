@@ -1,48 +1,54 @@
 // ============================================================================
-// [UI & Interaction Core] 국궁 시뮬레이터 상시 노출형 패널 스위칭 엔진
+// [UI & Interaction Core] 국궁 시뮬레이터 로컬 스토리지 데이터 백업 및 복구 엔진
 // ============================================================================
 
-// 로컬 스토리지 저장 및 불러오기 전수 변수 리스트 통합 관리
+// 데이터 영속성 관리를 위한 전체 입력 필드 ID 전수 리스트
 const INPUT_IDS = [
   'velocity', 'angle', 'yawAngle', 'launchHeight',
   'diameter', 'dragCoeff', 'liftCoeff', 'weight',
   'targetHeight', 'windX', 'windY', 'airDensity'
 ];
 
-// 설정값 로컬 스토리지에 세션 백업
+// [데이터 저장] 현재 입력 폼에 기입된 수치들을 브라우저에 스냅샷으로 영구 백업
 function saveSettings() {
   INPUT_IDS.forEach(id => {
     const el = document.getElementById(id);
-    if (el) localStorage.setItem('arrow_sim_' + id, el.value);
+    if (el) {
+      localStorage.setItem('arrow_sim_persistent_' + id, el.value);
+    }
   });
 }
 
-// 로컬 스토리지 백업 데이터 셋업 엔진 및 이벤트 리스너 통합 바인딩
+// [데이터 복구] 앱 실행 시 과거 백업된 세션이 존재하면 안전하게 데이터 로드
 function loadSettings() {
   INPUT_IDS.forEach(id => {
-    const savedValue = localStorage.getItem('arrow_sim_' + id);
+    const savedValue = localStorage.getItem('arrow_sim_persistent_' + id);
     const el = document.getElementById(id);
-    if (el && savedValue !== null) {
+    
+    // 과거 저장된 수치가 있을 때만 주입하며, 없을 경우 HTML 기본값(Default)을 온전히 보존
+    if (el && savedValue !== null && savedValue !== "") {
       el.value = savedValue;
     }
     
-    // [포물선 상시 즉시 표시] 값이 변경될 때마다 자동 백업 및 물리 연산 실시간 재호출
+    // [실시간 백업 인터페이스 수호] 인풋 값이 변경되는 즉시 저장하고 포물선을 재연산
     if (el) {
       el.addEventListener('input', () => {
         saveSettings();
-        if (typeof fireArrow === 'function') fireArrow();
+        if (typeof fireArrow === 'function') {
+          fireArrow();
+        }
       });
     }
   });
 }
 
-// [상시 노출형 전용 패널 탭 스위칭 트리거 핸들러]
+// [상시 노출형 패널 탭 스위칭 트리거 핸들러]
 function switchTab(tabType, element) {
-  // 1. 하단 탭바 메뉴 전체 활성화 클래스 안전하게 강제 초기화 제거
+  // 1. 하단 탭바 메뉴 전체 활성화 클래스 안전하게 일괄 차단 제거
   const tabBarItems = document.querySelectorAll('.tab-bar .tab-item');
   tabBarItems.forEach(item => item.classList.remove('active'));
   
-  // 2. 화면에 고정 노출되는 상시 설정 패널 컴포넌트 전체 비활성화
+  // 2. 화면에 고정 노출되는 상시 설정 패널 컨포넌트 전체 비활성화
   const tabPanels = document.querySelectorAll('.tab-panel');
   tabPanels.forEach(panel => panel.classList.remove('active'));
 
@@ -53,9 +59,11 @@ function switchTab(tabType, element) {
     targetPanel.classList.add('active');
   }
 
-  // 4. 레이아웃 변경에 따른 데이터 정밀 데이터 수집 유도 및 물리 캔버스 재수립
+  // 4. 패널 이동 시점에도 실시간 데이터 동기화 및 물리 연산 갱신 트리거 작동
   saveSettings();
-  if (typeof fireArrow === 'function') fireArrow();
+  if (typeof fireArrow === 'function') {
+    fireArrow();
+  }
 }
 
 // [물리 연산 연동 데이터 인젝션 인터페이스]
@@ -84,10 +92,21 @@ function changeView(viewType, element) {
   buttons.forEach(btn => btn.classList.remove('active'));
   element.classList.add('active');
   currentView = viewType;
-  if (typeof drawScene === 'function') drawScene();
+  
+  // 시점 변경 시 연산된 궤적 데이터를 기반으로 스크린 드로잉만 재수립
+  if (typeof drawScene === 'function') {
+    drawScene();
+  }
 }
 
-// 도큐먼트 초기화 로드 라이프사이클 바인딩
+// [라이프사이클 동기화] HTML 로드가 끝나는 즉시 데이터를 로드하고 포물선 첫 프레임을 투영
 window.addEventListener('DOMContentLoaded', () => {
   loadSettings();
+  
+  // 브라우저 첫 구동 시 복구된 이전 설정값을 반영하여 포물선 궤적 그림을 상시 자동 표출
+  setTimeout(() => {
+    if (typeof fireArrow === 'function') {
+      fireArrow();
+    }
+  }, 50); // DOM 트리 안착을 위한 50ms 미세 안정 가드 시간 부여
 });
