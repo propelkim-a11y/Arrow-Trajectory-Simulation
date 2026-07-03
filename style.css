@@ -14,7 +14,6 @@ body {
     flex-direction: column;
 }
 
-/* 상단 75%를 유연하게 차지하는 시뮬레이터 공간 */
 .main-screen {
     height: 75vh;
     display: flex;
@@ -25,39 +24,11 @@ body {
 }
 
 h1 { 
-    font-size: 20px; 
+    font-size: 18px; 
     font-weight: 700; 
     letter-spacing: -0.5px; 
-    margin-bottom: 8px;
+    margin-bottom: 6px;
     text-align: center; 
-}
-
-.segmented-control {
-    display: flex;
-    background: #e3e3e6;
-    padding: 3px;
-    border-radius: 9px;
-    margin-bottom: 8px;
-    align-self: center;
-    width: fit-content;
-}
-
-.segment-btn {
-    border: none; 
-    background: none; 
-    padding: 4px 16px; 
-    font-size: 12px;
-    font-weight: 500; 
-    color: #515154; 
-    border-radius: 7px; 
-    cursor: pointer;
-}
-
-.segment-btn.active {
-    background: #ffffff; 
-    color: #1d1d1f; 
-    box-shadow: 0px 2px 6px rgba(0, 0, 0, 0.1);
-    font-weight: 600;
 }
 
 .sim-container {
@@ -77,12 +48,11 @@ canvas {
     display: block; 
 }
 
-/* [변경] 발사 버튼을 캔버스 우측 상단으로 재배치 (하단 요소와 완전 격리) */
 .floating-actions {
     position: absolute;
-    top: 16px;
-    right: 16px;
-    z-index: 50;
+    top: 12px;
+    right: 12px;
+    z-index: 100;
 }
 
 .fire-btn {
@@ -102,9 +72,8 @@ canvas {
     transform: scale(0.96); 
 }
 
-/* 하단 25% 공간을 고정으로 차지하는 설정 탭 바디 영역 */
 #panel-container {
-    height: calc(25vh - 60px); /* 탭바 높이를 제외한 순수 패널 공간 */
+    height: calc(25vh - 60px); 
     background: #ffffff;
     border-top: 1px solid rgba(0,0,0,0.08);
     padding: 12px 16px;
@@ -112,12 +81,12 @@ canvas {
 }
 
 .fixed-panel {
-    display: none; /* 기본적으로 모두 숨김 */
+    display: none; 
     height: 100%;
 }
 
 .fixed-panel.active {
-    display: block; /* 활성화된 탭만 노출 */
+    display: block; 
 }
 
 .panel-title {
@@ -127,16 +96,10 @@ canvas {
     color: #1d1d1f;
 }
 
-/* 컴팩트 2열 가로 그리드 레이아웃 */
 .form-grid {
     display: grid;
     grid-template-columns: 1fr 1fr;
     gap: 8px 16px;
-}
-
-/* 비행 결과 탭의 가독성을 높이기 위한 2열 배열 */
-.form-grid.grid-2col {
-    grid-template-columns: 1fr 1fr;
 }
 
 .form-group {
@@ -186,7 +149,6 @@ canvas {
     text-align: right;
 }
 
-/* 고정 메뉴 네비게이션 탭바 (맨 밑바닥 고정) */
 .tab-bar {
     height: 60px;
     background: rgba(255, 255, 255, 0.92);
