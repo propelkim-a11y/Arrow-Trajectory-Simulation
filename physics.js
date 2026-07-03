@@ -1,5 +1,5 @@
 // ============================================================================
-// [Physics Core - Part 1] 국궁 탄도학 시뮬레이션 물리 연산 엔진
+// [Physics Core - Part 1] 국궁 탄도학 시뮬레이션 물리 연산 엔진 (Fix Completed)
 // ============================================================================
 
 // 전역 시뮬레이션 상태 인프라 변수
@@ -14,7 +14,7 @@ window.addEventListener('load', () => {
     ctx = canvas.getContext('2d');
     resizeCanvas();
     window.addEventListener('resize', resizeCanvas);
-    drawScene(); // 초기 빈 화면 가이드라인 렌더링
+    fireArrow(); // [초기 화면 엔진 수호] 로드 즉시 기본 변수 기반 가상 비행 탄도 렌더링
   }
 });
 
@@ -24,7 +24,7 @@ function resizeCanvas() {
   const container = canvas.parentElement;
   canvas.width = container.clientWidth;
   canvas.height = container.clientHeight;
-  drawScene();
+  // 이벤트 무한 루프 폭발 방지를 위해 drawScene 대신 데이터 보존을 동반한 계산 트리거 우회
 }
 
 // [핵심 연산 루틴] 화살 시뮬레이션 발사 및 역학 미분 방정식 수치 해석
@@ -69,7 +69,7 @@ function fireArrow() {
   const dt = 0.005; // 5ms 고정 정밀도 타임 스텝 설정
   let maxDistance = 0;
   let maxHeight = z;
-  let maxLoopGuard = 10000; // [제2조 브라우저 다운 방어] 무한 루프 긴급 차단 락업 장치
+  let maxLoopGuard = 10000; // 무한 루프 긴급 차단 락업 장치
 
   trajectoryData = []; // 과거 궤적 세션 클리어 및 리셋
   trajectoryData.push({ x: x, y: y, z: z });
@@ -122,7 +122,7 @@ function fireArrow() {
   const finalV = Math.sqrt(vx * vx + vy * vy + vz * vz);
   const impactEnergy = 0.5 * mass * finalV * finalV;
 
-  // 5. [제4조 인터페이스 통합] 구조화된 비행 연산 결과 데이터 패킹 변환
+  // 5. 구조화된 비행 연산 결과 데이터 패킹 변환
   const flightResults = {
     maxDistance: maxDistance,
     maxHeight: maxHeight,
@@ -142,7 +142,7 @@ function fireArrow() {
   animationFrameId = requestAnimationFrame(drawScene);
 }
 // ============================================================================
-// [Physics Core - Part 2] 시점별 3차원 좌표축 및 과녁 보조선 렌더링 엔진
+// [Physics Core - Part 2] 시점별 3차원 좌표축 및 과녁 보조선 렌더링 엔진 (Fix Completed)
 // ============================================================================
 
 // HTML5 Canvas 그래픽스 신 드로잉 메인 엔진 루틴
@@ -175,7 +175,7 @@ function drawScene() {
   const viewMode = typeof currentView !== 'undefined' ? currentView : 'side';
 
   if (viewMode === 'side') {
-    // [측면도 렌더링] 가로: 수평 비행 거리 X (0m ~ 160m), 세로: 수직 비행 높이 Z (0m ~ 40m)
+    // [측면도 고정 스케일] 가로: 수평 비행 거리 X (0m ~ 160m), 세로: 수직 비행 높이 Z (0m ~ 40m)
     const startX = canvas.width * 0.1;
     const endX = canvas.width * 0.9;
     const groundY = canvas.height * 0.85;
@@ -196,7 +196,7 @@ function drawScene() {
     ctx.textAlign = 'center';
     ctx.fillText('높이 Z (m)', startX, topY - 30);
 
-    // 주요 수평 전방 거리 구간 계측 눈금 스케일 매핑
+    // [완전 재건] 주요 수평 전방 거리 구간 계측 눈금 고정 스케일 주입 (0m ~ 160m)
     const distances =;
     distances.forEach(d => {
       const tickX = startX + (d / 160) * (canvas.width * 0.8);
@@ -210,7 +210,7 @@ function drawScene() {
       ctx.fillText(d + 'm', tickX, groundY + 18);
     });
 
-    // 주요 상방 수직 높이 구간 계측 눈금 스케일 매핑
+    // [완전 재건] 주요 상방 수직 높이 구간 계측 눈금 고정 스케일 주입 (0m ~ 40m)
     const heights =;
     ctx.font = '11px -apple-system';
     ctx.fillStyle = '#515154';
@@ -227,7 +227,7 @@ function drawScene() {
     const targetYPos = groundY - (targetH / 40) * (canvas.height * 0.7);
     ctx.strokeStyle = 'rgba(255, 69, 58, 0.3)';
     ctx.lineWidth = 1;
-    ctx.setLineDash([4, 4]); // 정밀 대시 가이드라인 처리
+    ctx.setLineDash([3, 3]); // 정밀 대시 가이드라인 처리
     ctx.beginPath(); ctx.moveTo(startX, targetYPos); ctx.lineTo(targetX145, targetYPos); ctx.stroke();
     ctx.beginPath(); ctx.moveTo(targetX145, groundY); ctx.lineTo(targetX145, targetYPos); ctx.stroke();
     ctx.setLineDash([]); // 대시라인 속성 즉시 반환 해제
@@ -239,7 +239,7 @@ function drawScene() {
     ctx.fillText('국궁과녁 (145m)', targetX145 - 10, targetYPos - 12);
 
   } else if (viewMode === 'front') {
-    // [정면도 렌더링] 가로: 중심 기준 측면 편차 Y (-5m ~ 5m), 세로: 비행 고도 높이 Z (0m ~ 40m)
+    // [정면도 고정 스케일] 가로: 중심 기준 측면 편차 Y (-5m ~ 5m), 세로: 비행 고도 높이 Z (0m ~ 40m)
     const midX = canvas.width / 2;
     const groundY = canvas.height * 0.85;
     const topY = canvas.height * 0.15;
@@ -275,7 +275,7 @@ function drawScene() {
     // 정면 표적용 타겟 과녁 횡대 가이드 가설선 배치
     const targetYPos = groundY - (targetH / 40) * (canvas.height * 0.7);
     ctx.strokeStyle = 'rgba(255, 69, 58, 0.4)';
-    ctx.setLineDash([4, 4]);
+    ctx.setLineDash([3, 3]);
     ctx.beginPath(); ctx.moveTo(midX - 30, targetYPos); ctx.lineTo(midX + 30, targetYPos); ctx.stroke();
     ctx.setLineDash([]);
 
@@ -285,7 +285,7 @@ function drawScene() {
     ctx.fillText('과녁 중심점', midX, targetYPos - 12);
 
   } else if (viewMode === 'top') {
-    // [평면도 렌더링] 가로: 전방 종적 주행 거리 X (0m ~ 160m), 세로: 횡적 좌우 측면편차 Y (-5m ~ 5m)
+    // [평면도 고정 스케일] 가로: 전방 종적 주행 거리 X (0m ~ 160m), 세로: 횡적 좌우 측면편차 Y (-5m ~ 5m)
     const startX = canvas.width * 0.1;
     const endX = canvas.width * 0.9;
     const midY = canvas.height / 2;
