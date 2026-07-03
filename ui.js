@@ -1,5 +1,5 @@
 // ============================================================================
-// [UI & Interaction Core] 국궁 시뮬레이터 데이터 영속성 및 결과 인젝션 엔진 (Fix)
+// [UI & Interaction Core - Part 1] 국궁 시뮬레이터 데이터 영속성 및 결과 인젝션 엔진 (Fix)
 // ============================================================================
 
 // 데이터 영속성 관리를 위한 전체 입력 필드 ID 전수 리스트
@@ -40,7 +40,18 @@ function loadSettings() {
       });
     }
   });
+
+  // [레이스 컨디션 차단 가드] 복구 완료 후 강제 연쇄 이벤트 전파로 첫 프레임 계산 강제 활성화
+  INPUT_IDS.forEach(id => {
+    const el = document.getElementById(id);
+    if (el) {
+      el.dispatchEvent(new Event('input'));
+    }
+  });
 }
+// ============================================================================
+// [UI & Interaction Core - Part 2] 국궁 시뮬레이터 데이터 영속성 및 결과 인젝션 엔진 (Fix)
+// ============================================================================
 
 // [상시 노출형 패널 탭 스위칭 트리거 핸들러] - 결함 유발 잔재 코드 완벽 제거 완료
 function switchTab(tabType, element) {
@@ -110,8 +121,8 @@ function changeView(viewType, element) {
   }
 }
 
-// [라이프사이클 동기화] HTML 로드가 끝나는 즉시 데이터를 로드하고 포물선 첫 프레임을 투영
-window.addEventListener('DOMContentLoaded', () => {
+// [라이프사이클 동기화] HTML 및 외부 리소스(physics.js)가 완벽히 로드된 직후 완전 결착 구동
+window.addEventListener('load', () => {
   loadSettings();
   
   // 브라우저 첫 구동 시 복구된 이전 설정값을 반영하여 포물선 궤적 그림과 결과를 상시 자동 표출
@@ -119,5 +130,5 @@ window.addEventListener('DOMContentLoaded', () => {
     if (typeof fireArrow === 'function') {
       fireArrow();
     }
-  }, 50); // DOM 트리 안착을 위한 50ms 미세 안정 가드 시간 부여
+  }, 50); // DOM 트리 안착 및 전역 그래픽스 바인딩을 위한 50ms 미세 안정 가드 시간 부여
 });
