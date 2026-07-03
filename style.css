@@ -77,7 +77,6 @@ h1 {
   overflow: hidden;
   position: relative;
   margin-bottom: 10px;
-  touch-action: none; /* 모바일 전체 화면 드래그로 인한 튕김 방지 */
 }
 
 canvas { 
@@ -123,7 +122,6 @@ canvas {
   height: 161px; 
   min-height: 161px;
   max-height: 161px;
-  touch-action: none;
 }
 
 /* 비활성화 상태에서는 화면 공간 100% 압축 차단 */
@@ -156,7 +154,6 @@ canvas {
   overflow-y: auto; /* 5번째 줄부터는 터치 및 스크롤을 통해 노출 */
   -webkit-overflow-scrolling: touch; /* 모바일 기기 가속 패널 부드러운 스크롤 */
   padding-right: 2px;
-  touch-action: pan-y; /* 오직 내부 세로 스크롤만 허용 */
 }
 
 /* 스크롤바 디자인 슬림화 및 프리미엄 최소화 처리 */
@@ -206,16 +203,6 @@ canvas {
   font-size: 12px; 
   font-weight: 600; 
   outline: none; 
-}
-
-/* [iOS 전용 버그 픽스] 모바일 기기 터치 시 화면이 강제로 확대(줌인)되는 현상 방지 */
-@media screen and (max-width: 768px) {
-  .input-wrapper input {
-    font-size: 16px; /* iOS의 확대 기준인 16px을 만족시킴 */
-    transform: scale(0.75); /* 시각적 크기는 12px(16px * 0.75)로 정밀 정형화 */
-    transform-origin: right center;
-    width: 80px; /* 축소 스케일에 맞춘 최적 폭 조정 */
-  }
 }
 
 /* 결과값 출력 래퍼 전용 스타일 */
@@ -282,9 +269,6 @@ canvas {
   color: #0071e3; 
 }
 
-/* HTML 내 첫 번째 span(이모지)의 렌더링 규격 안정화 */
-.tab-item span:first-child,
 .tab-icon { 
   font-size: 15px; 
-  line-height: 1;
 }
