@@ -64,15 +64,18 @@ function fireArrow() {
     arrowState.pitch = pitchRad; 
     arrowState.yaw = yawRad;
 
-    // 실시간 출력 결과 데이터 초기화
+    // [수정] 발사 버튼 클릭 즉시 이전 데이터를 0과 시작값으로 초기 리셋
     flightMetrics = { 
         maxDistance: 0, 
         maxHeight: launchH, 
         sideDeviation: 0, 
         flightTime: 0, 
-        impactVelocity: 0, 
+        impactVelocity: v0, 
         impactEnergy: 0 
     };
+    
+    // 초기화된 공백 상태를 UI에 선제적으로 업데이트
+    updateResultUI();
 
     trajectory = [{ x: arrowState.x, y: arrowState.y, z: arrowState.z }];
     isFlying = true;
@@ -89,20 +92,20 @@ function animate() {
     const m = (parseFloat(document.getElementById('weight').value) || 25) / 1000;    // g -> kg
     const rho = parseFloat(document.getElementById('airDensity').value) || 1.225;
     
-    const windX = parseFloat(document.getElementById('windX').value) || 0; // 종풍 (맞바람 -, 뒷바람 +)
-    const windZ = parseFloat(document.getElementById('windY').value) || 0; // 횡풍 입력값(windY)을 실제 3차원 수평 측면축(z축)으로 매핑
+    const windX = parseFloat(document.getElementById('windX').value) || 0; // 종풍
+    const windZ = parseFloat(document.getElementById('windY').value) || 0; // 횡풍 입력값을 z축으로 매핑
 
     const g = 9.81; 
-    const dt = 0.016; // 프레임당 고정 시간 간격 (약 60fps)
-    const area = Math.PI * Math.pow(d / 2, 2); // 화살의 전면 투형 단면적
+    const dt = 0.016; // 약 60fps 프레임당 고정 시간 증분
+    const area = Math.PI * Math.pow(d / 2, 2); // 화살 전면 단면적
 
-    // 바람을 고려한 화살과 대기 사이의 3차원 상대 속도 벡터 계산
+    // 바람을 고려한 대기 상대 속도 벡터 계산
     const relVx = arrowState.vx - windX; 
     const relVy = arrowState.vy; 
     const relVz = arrowState.vz - windZ;
     const vRel = Math.sqrt(relVx * relVx + relVy * relVy + relVz * relVz) || 0.001;
 
-    // 유체역학 표준 공식 기반 항력 및 양력 크기 연산
+    // 유체역학 공식 기반 항력 및 양력 크기 연산
     const dragF = 0.5 * rho * vRel * vRel * cd * area;
     const liftF = 0.5 * rho * vRel * vRel * cl * area;
 
@@ -110,7 +113,7 @@ function animate() {
     const flowPitch = Math.atan2(relVy, Math.sqrt(relVx * relVx + relVz * relVz));
     const flowYaw = Math.atan2(relVz, relVx);
 
-    // 1. 항력 가속도 분해 (상대 풍속 벡터의 정반대 방향)
+    // 1. 항력 가속도 분해 (상대 풍속 벡터의 정반대)
     const dragAx = (-dragF * Math.cos(flowPitch) * Math.cos(flowYaw)) / m;
     const dragAy = (-dragF * Math.sin(flowPitch)) / m;
     const dragAz = (-dragF * Math.cos(flowPitch) * Math.sin(flowYaw)) / m;
@@ -141,27 +144,35 @@ function animate() {
     // 실시간 이동 궤적 배열 기록
     trajectory.push({ x: arrowState.x, y: arrowState.y, z: arrowState.z });
 
-    // 실시간 비행 결과 분석 수치 업데이트
+    // [수정] 실시간 비행 결과 분석 수치 실시간 수집 및 누적 업데이트
     flightMetrics.flightTime += dt;
+    flightMetrics.maxDistance = arrowState.x;    // 실시간 거리 트래킹
+    flightMetrics.sideDeviation = arrowState.z;   // 실시간 측면 편차 트래킹
+
     if (arrowState.y > flightMetrics.maxHeight) {
-        flightMetrics.maxHeight = arrowState.y; // 비행 도중 최고 높이 갱신
+        flightMetrics.maxHeight = arrowState.y; // 비행 도중 최고 높이 실시간 갱신
     }
 
-    // 지면(y <= 0) 충돌 검사 및 최종 결과 도출
+    // 현재 프레임의 속도 벡터 크기 및 운동 에너지 실시간 계산
+    const vCurrent = Math.sqrt(arrowState.vx * arrowState.vx + arrowState.vy * arrowState.vy + arrowState.vz * arrowState.vz);
+    flightMetrics.impactVelocity = vCurrent;
+    flightMetrics.impactEnergy = 0.5 * m * vCurrent * vCurrent;
+
+    // [수정] 매 프레임마다 결과 창 UI를 동적 갱신하여 0으로 멈춰있는 현상 해결
+    updateResultUI();
+
+    // 지면(y <= 0) 충돌 검사 및 최종 결과 고정
     if (arrowState.y <= 0) { 
         arrowState.y = 0; 
         isFlying = false; 
 
-        // 충돌 순간 최종 물리 결과값 산출
-        flightMetrics.maxDistance = arrowState.x;  // 수평 이동 비행 거리
-        flightMetrics.sideDeviation = arrowState.z; // 바람 등에 의한 측면 좌우 변위
-        
-        // 최종 속도 벡터 크기 및 최종 충돌 운동 에너지(E = 0.5 * m * v^2) 계산
-        const vFinal = Math.sqrt(arrowState.vx * arrowState.vx + arrowState.vy * arrowState.vy + arrowState.vz * arrowState.vz);
-        flightMetrics.impactVelocity = vFinal;
-        flightMetrics.impactEnergy = 0.5 * m * vFinal * vFinal;
+        // 충돌 순간 최종 물리 결과값 최종 셋업
+        flightMetrics.maxDistance = arrowState.x;
+        flightMetrics.sideDeviation = arrowState.z;
+        flightMetrics.impactVelocity = vCurrent;
+        flightMetrics.impactEnergy = 0.5 * m * vFinalVel * vFinalVel;
 
-        // UI 4번째 탭(비행 결과) 영역에 연산 데이터 텍스트 주입
+        // 최종 확정 데이터 전송
         updateResultUI();
     }
 
@@ -199,15 +210,14 @@ function drawScene() {
     const targetH = parseFloat(document.getElementById('targetHeight').value) || 0;
     const targetScreenX = dprWidth - 80;
 
-    // 시점별 3차원 월드 공간 -> 2차원 모니터 화면 뷰포트 좌표 변환 엔진
+    // 시점별 3차원 월드 공간 -> 2차원 모니터 화면 뷰포트 좌표 변환 구조
     function toScreen(pX, pY, pZ) {
-        if (currentView === 'side') { // 측면도: 수평축 = X(거리), 수직축 = Y(높이)
+        if (currentView === 'side') { 
             return { x: ORIGIN_X_OFFSET + (pX * SCALE), y: dprHeight - GROUND_Y_OFFSET - (pY * SCALE) };
         }
-        if (currentView === 'top') {  // 평면도: 수평축 = X(거리), 수직축 = Z(좌우 편차)
+        if (currentView === 'top') {  
             return { x: ORIGIN_X_OFFSET + (pX * SCALE), y: (dprHeight / 2) + (pZ * SCALE) };
         }
-        // 정면도: 수평축 = Z(좌우 편차), 수직축 = Y(높이)
         return { x: (dprWidth / 2) + (pZ * SCALE), y: dprHeight - GROUND_Y_OFFSET - (pY * SCALE) };
     }
 
@@ -233,43 +243,47 @@ function drawScene() {
         ctx.stroke();
     }
 
-    // 과녁(Target) 그리기 (환경 설정의 과녁 고도 차이 반영)
+    // 과녁(Target) 그리기
     const tgt = toScreen((targetScreenX - ORIGIN_X_OFFSET) / SCALE, targetH, 0);
     ctx.fillStyle = '#ff3b30'; ctx.beginPath(); ctx.arc(tgt.x, tgt.y, 12, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(tgt.x, tgt.y, 6, 0, Math.PI * 2); ctx.fill();
     if (currentView === 'side' || currentView === 'front') {
-        ctx.strokeStyle = '#1d1d1f'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(tgt.x, tgt.y + 12); ctx.lineTo(tgt.x, dprHeight - GROUND_Y_OFFSET); ctx.stroke();
+        ctx.strokeStyle = '#1d1d1f'; 
+        ctx.lineWidth = 2; 
+        ctx.beginPath(); 
+        ctx.moveTo(tgt.x, tgt.y + 12); 
+        ctx.lineTo(tgt.x, dprHeight - GROUND_Y_OFFSET); 
+        ctx.stroke();
     }
-        // 누적 비행 궤적 포인트를 이어 선으로 그리기
+
+    // 누적 비행 궤적 포인트를 이어 선으로 그리기
     if (trajectory.length > 1) {
         ctx.strokeStyle = '#0071e3'; 
         ctx.lineWidth = 2.5; 
         ctx.beginPath();
         
-        // 문법 오류 교정: trajectory(0) -> trajectory[0]
+        // 배열 접근 문법 교정: trajectory(0) -> trajectory[0]
         const start = toScreen(trajectory[0].x, trajectory[0].y, trajectory[0].z);
         ctx.moveTo(start.x, start.y);
         
         for (let i = 1; i < trajectory.length; i++) {
-            // 문법 오류 교정: trajectory(i) -> trajectory[i]
+            // 배열 접근 문법 교정: trajectory(i) -> trajectory[i]
             const pt = toScreen(trajectory[i].x, trajectory[i].y, trajectory[i].z);
             ctx.lineTo(pt.x, pt.y);
         }
         ctx.stroke();
     }
 
-    // 현재 프레임의 실시간 화살 오브젝트(화살촉, 몸통, 깃) 그래픽 드로잉
+    // 현재 프레임의 실시간 화살 오브젝트 그래픽 드로잉
     const arrowPos = toScreen(arrowState.x, arrowState.y, arrowState.z);
     ctx.save();
     ctx.translate(arrowPos.x, arrowPos.y);
     
-    // 시점에 따른 렌더링 회전 제어
     let angleRad = 0;
     if (currentView === 'side') angleRad = -arrowState.pitch;
     else if (currentView === 'top') angleRad = arrowState.yaw;
     ctx.rotate(angleRad);
     
-    // 화살대
     ctx.strokeStyle = '#515154'; 
     ctx.lineWidth = 2; 
     ctx.beginPath(); 
@@ -277,7 +291,6 @@ function drawScene() {
     ctx.lineTo(0, 0); 
     ctx.stroke();
     
-    // 화살촉
     ctx.fillStyle = '#1d1d1f'; 
     ctx.beginPath(); 
     ctx.moveTo(0, 0); 
@@ -286,7 +299,6 @@ function drawScene() {
     ctx.closePath(); 
     ctx.fill();
     
-    // 오렌지색 화살깃
     ctx.fillStyle = '#ff9500'; 
     ctx.beginPath(); 
     ctx.moveTo(-20, 0); 
