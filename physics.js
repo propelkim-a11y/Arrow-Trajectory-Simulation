@@ -80,27 +80,19 @@ function fireArrow() {
     maxLoopGuard--;
 
     // 대기 속도(Airspeed) 물리 모델링에 따른 바람의 상대 속도 연산 복원
-    // 항력과 양력은 대기와의 상대 속도를 기반으로 크기가 결정되고 화살 비행 축방향(Heading)을 추종함
     const relVx = vx - windX;
     const relVy = vy - windY;
     const relVz = vz;
     const relV = Math.sqrt(relVx * relVx + relVy * relVy + relVz * relVz) || 0.0001;
 
-    // 화살 자체의 비행 속력 (순수 관성 속도 축)
-    const vArrow = Math.sqrt(vx * vx + vy * vy + vz * vz) || 0.0001;
-
     // 공기 유체 저항 항력(Drag Force) 물리 법칙 계산
     const fd = 0.5 * cd * rho * area * relV * relV;
-    // 항력의 방향은 대기 상대 속도의 정반대 방향(유체 항력 벡터 분해)
     const fdx = -fd * (relVx / relV);
     const fdy = -fd * (relVy / relV);
     const fdz = -fd * (relVz / relV);
 
     // 비행 안정성 상방 유도 양력(Lift Force) 물리 법칙 계산 복원
-    // 양력은 진행 방향(대기 속도 벡터)에 수직인 평면 위쪽 방향으로 작용
     const fl = 0.5 * cl * rho * area * relV * relV;
-    
-    // 수평 성분의 크기와 고각 성분을 추출하여 양력 벡터 투영
     const relV_horiz = Math.sqrt(relVx * relVx + relVy * relVy) || 0.0001;
     const flx = -fl * (relVz / relV) * (relVx / relV_horiz);
     const fly = -fl * (relVz / relV) * (relVy / relV_horiz);
@@ -208,7 +200,7 @@ function drawScene() {
     ctx.textAlign = 'center';
     ctx.fillText('높이 Z (m)', startX, topY - 30);
 
-    // 수평 거리 눈금 스케일 데이터 고정 정형화 (0m ~ 160m 구간)
+    // 수평 거리 눈금 스케일 데이터 완전 주입 (0m ~ 160m 구간 20m 단위)
     const distances =;
     distances.forEach(d => {
       const tickX = startX + (d / 160) * (canvas.width * 0.8);
@@ -222,7 +214,7 @@ function drawScene() {
       ctx.fillText(d + 'm', tickX, groundY + 18);
     });
 
-    // 상방 수직 높이 눈금 스케일 데이터 고정 정형화 (0m ~ 40m 구간)
+    // 상방 수직 높이 눈금 스케일 데이터 완전 주입 (0m ~ 40m 구간 10m 단위)
     const heights =;
     ctx.font = '11px -apple-system';
     ctx.fillStyle = '#515154';
@@ -313,7 +305,7 @@ function drawScene() {
     ctx.textAlign = 'center';
     ctx.fillText('측면 편차 Y (m)', startX, midY - (canvas.height * 0.4) - 20);
 
-    // 평면 기준 종방향 거리 스케일 단위 눈금 상시 고정 투영 (0m ~ 160m 구간)
+    // 평면 기준 종방향 거리 스케일 단위 눈금 완전 주입 (0m ~ 160m 구간 20m 단위)
     const distances =;
     ctx.textAlign = 'center';
     distances.forEach(d => {
