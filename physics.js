@@ -1,5 +1,5 @@
 // =========================================================================
-// [Part 1/15] 초기 상수 선언 및 물리 공간 상태 정의
+// [Part 4/15] physics.js - 전역 변수 및 초기화 셋업
 // =========================================================================
 
 const canvas = document.getElementById('simCanvas');
@@ -9,9 +9,9 @@ let dprWidth = 0;
 let dprHeight = 0;
 
 // [통일된 월드 공간 스케일 세팅]
-const MAX_WORLD_X = 180;   // 최대 전진 거리 180m
-const MAX_WORLD_Y = 30;    // 최대 높이 30m (정면도/측면도 공통)
-const MAX_WORLD_Z = 15;    // 좌우 최대 관측 편차 범위 (±15m, 총 30m 폭)
+const MAX_WORLD_X = 180;   // 최대 전진 거리 180m (측면도/평면도)
+const MAX_WORLD_Y = 30;    // 최대 높이 30m (측면도/정면도 보조)
+const MAX_WORLD_Z = 15;    // 좌우 최대 관측 편차 범위 (±15m, 평면도)
 const TARGET_SLANT_R = 145; // 사대 0점부터 과녁 바닥 전면까지의 고정 경사 거리 (145m 부동)
 
 // 국궁 표준 과녁 물리 제원
@@ -48,7 +48,7 @@ let flightMetrics = {
     impactEnergy: 0
 };
 
-// [신설] 4번째 서브 뷰: 과녁 무한 연장 평면 투영용 2D 오프셋 저장 객체
+// 4번째 서브 뷰: 과녁 무한 연장 평면 투영용 2D 오프셋 저장 객체
 let targetHitMetrics = {
     isHit: false,      // 실제 2m x 2.667m 나무 틀 내부에 적중했는지 여부
     localZ: 0,         // 과녁 정중앙(홍심) 기준 좌우 편차 (m)
@@ -62,7 +62,7 @@ let hasIntersectedTargetPlane = false; // 과녁 연장 평면 통과 완료 플
 const ORIGIN_X_OFFSET = 35; 
 const GROUND_Y_OFFSET = 30; 
 // =========================================================================
-// [Part 2/15] 기하학적 원호 지형 역산 및 화살 초기 발사 함수
+// [Part 5/15] physics.js - 원호 역산 공식 및 발사 처리 루틴
 // =========================================================================
 
 function getDynamicTargetGeometry() {
@@ -80,7 +80,7 @@ function fireArrow() {
     const v0 = parseFloat(document.getElementById('velocity').value) || 50;
     const angleDeg = parseFloat(document.getElementById('angle').value) || 0;
     const yawDeg = parseFloat(document.getElementById('yawAngle').value) || 0;
-    const launchH = parseFloat(document.getElementById('launchHeight').value) || 0;
+    const launchH = parseFloat(document.getElementById('launchHeight').value) || 1.5;
 
     const pitchRad = (angleDeg * Math.PI) / 180;
     const yawRad = (yawDeg * Math.PI) / 180;
@@ -118,7 +118,7 @@ function fireArrow() {
     animate();
 }
 // =========================================================================
-// [Part 3/15] 물리 루프 (Animate) - 대기 상대 속도 및 공기역학 계산
+// [Part 6/15] physics.js - 에어로다이내믹스 유체 역학 연산 부
 // =========================================================================
 
 function animate() {
@@ -157,10 +157,8 @@ function animate() {
 
     const dragF = 0.5 * rho * vRel * vRel * cd * effectiveArea;
     const liftF = 0.5 * rho * vRel * vRel * (cl + dynamicLiftCoeff) * effectiveArea;
-
-    // 공기역학적 힘을 가속도로 변환 (Part 4에서 오일러 적분 및 조건 검사 계속)
 // =========================================================================
-// [Part 4/15] 물리 루프 - 3차원 벡터 분해 및 오일러 적분
+// [Part 7/15] physics.js - 3차원 벡터 가속도 분해 및 오일러 적분
 // =========================================================================
 
     const dragAx = (-dragF * Math.cos(flowPitch) * Math.cos(flowYaw)) / m;
@@ -203,7 +201,7 @@ function animate() {
         flightMetrics.maxHeight = arrowState.y; 
     }
 // =========================================================================
-// [Part 5/15] 물리 루프 - 15도 경사 과녁 평면 교차 및 타겟팅 연산
+// [Part 8/15] physics.js - 뒤로 15도 누운 과녁 평면 영사 연산 (핵심 판정식)
 // =========================================================================
 
     // 뒤로 15도 누운 과녁 평면의 법선 벡터 (n_x, n_y, n_z) 구하기
@@ -211,7 +209,7 @@ function animate() {
     const nx = Math.cos(TGT_TILT);
     const ny = Math.sin(TGT_TILT);
 
-    // 이전 프레임과 현재 프레임에서 과녁 평면까지의 거리(부호 있는 거리) 연산
+    // 이전 프레임과 현재 프레임에서 과녁 평면까지의 부호 있는 거리 연산
     const distPrev = nx * (prevX - targetBaseX) + ny * (prevY - targetH);
     const distCurr = nx * (arrowState.x - targetBaseX) + ny * (arrowState.y - targetH);
 
@@ -245,13 +243,12 @@ function animate() {
         }
     }
 // =========================================================================
-// [Part 6/15] 물리 루프 - 과녁 축 도과 및 바닥 높이 도달 판정
+// [Part 9/15] physics.js - 145m 비행시간 축 및 과녁 고도 기준 최대거리 잠금 판정
 // =========================================================================
 
     // 비행 시간 기록 고정: 원호상 과녁 바닥 수평 거리(targetBaseX) 돌파 검증
     if (!hasReachedTargetX && arrowState.x >= targetBaseX) {
         hasReachedTargetX = true;
-        // 돌파한 프레임의 비행 누적 시간으로 타임 고정
     }
 
     // 최대 거리 기록 고정: 발사 후 하강기에 과녁 바닥 높이(targetH) 선과 최초 교차 판정
@@ -298,7 +295,7 @@ function animate() {
     }
 }
 // =========================================================================
-// [Part 7/15] 비행 결과 UI 데이터 출력 함수
+// [Part 10/15] physics.js - 4분할 시점별 화면 축척 매핑 엔진
 // =========================================================================
 
 function updateResultUI() {
@@ -316,9 +313,6 @@ function updateResultUI() {
     if (resVel) resVel.innerText = flightMetrics.impactVelocity.toFixed(2) + " m/s";
     if (resEnergy) resEnergy.innerText = flightMetrics.impactEnergy.toFixed(2) + " J";
 }
-// =========================================================================
-// [Part 8/15] 4차원 시점 스케일링 및 축척 매핑 엔진
-// =========================================================================
 
 function drawScene() {
     if (dprWidth === 0 || dprHeight === 0) return;
@@ -344,8 +338,7 @@ function drawScene() {
     const frontScaleZ = (dprWidth - ORIGIN_X_OFFSET - 20) / (MAX_WORLD_Z * 2);
     const frontScaleY = availH / MAX_WORLD_Y;
 
-    // 4. [신설 요구사항] 과녁 정면 확대 서브 뷰 축척 (가로축: 좌우 편차 ±2m, 세로축: 상하 편차 ±2m 총 4m 스케일 마진)
-    // 폰 화면 전체를 정방형 과녁 및 연장 평면 격자로 꽉 채우도록 바인딩
+    // 4. 과녁 정면 확대 서브 뷰 축척 (가로축: 좌우 편차 ±2m, 세로축: 상하 편차 ±2m 총 4m 스케일 마진)
     const targetViewScale = Math.min(dprWidth / 4.0, dprHeight / 4.0);
 
     function toScreen(pX, pY, pZ) {
@@ -367,17 +360,16 @@ function drawScene() {
                 y: dprHeight - GROUND_Y_OFFSET - (pY * frontScaleY)
             };
         }
-        // [신설] 과녁 가상 오프셋 뷰 변환: 화면 중앙이 과녁 정중앙(홍심), Z는 좌우, Y는 경사면 높이
         if (currentView === 'target') {
             return {
-                x: (dprWidth / 2) + (pZ * targetViewScale), // 양수면 우측 이동
-                y: (dprHeight / 2) - (pY * targetViewScale) // Y 로컬 오프셋이 양수면 위쪽 이동
+                x: (dprWidth / 2) + (pZ * targetViewScale), 
+                y: (dprHeight / 2) - (pY * targetViewScale) 
             };
         }
         return { x: 0, y: 0 };
     }
 // =========================================================================
-// [Part 9/15] 2D 그래픽 환경 구축 - 측면도 격자 자 눈금선 렌더링
+// [Part 11/15] physics.js - 측면도 및 세로 평면도 격자 눈금선 렌더링
 // =========================================================================
 
     ctx.strokeStyle = '#e5e5ea'; ctx.lineWidth = 1; ctx.font = '10px -apple-system'; ctx.fillStyle = '#8e8e93';
@@ -399,9 +391,6 @@ function drawScene() {
         ctx.strokeStyle = '#1d1d1f'; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.moveTo(ORIGIN_X_OFFSET, dprHeight - GROUND_Y_OFFSET); ctx.lineTo(ORIGIN_X_OFFSET + (MAX_WORLD_X * scaleX), dprHeight - GROUND_Y_OFFSET); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(ORIGIN_X_OFFSET, 0); ctx.lineTo(ORIGIN_X_OFFSET, dprHeight - GROUND_Y_OFFSET); ctx.stroke();
-// =========================================================================
-// [Part 10/15] 2D 그래픽 환경 구축 - 평면도 세로 눈금선 렌더링
-// =========================================================================
 
     } else if (currentView === 'top') {
         // 전진 거리 수직 안내선 (20m 단위로 하단에서 위로 정렬)
@@ -420,7 +409,7 @@ function drawScene() {
         ctx.strokeStyle = '#86868b'; ctx.lineWidth = 1.5; ctx.beginPath();
         ctx.moveTo(dprWidth / 2, 0); ctx.lineTo(dprWidth / 2, dprHeight - 25); ctx.stroke();
 // =========================================================================
-// [Part 11/15] 2D 그래픽 환경 구축 - 정면도 격자 자 눈금선 렌더링
+// [Part 12/15] physics.js - 정면도 정밀 격자 자 눈금선 렌더링
 // =========================================================================
 
     } else if (currentView === 'front') {
@@ -444,11 +433,12 @@ function drawScene() {
         
         ctx.strokeStyle = '#86868b'; ctx.lineWidth = 1.2; ctx.beginPath();
         ctx.moveTo(centerX, 0); ctx.lineTo(centerX, dprHeight - GROUND_Y_OFFSET); ctx.stroke();
+    }
 // =========================================================================
-// [Part 12/15] 2D 그래픽 환경 구축 - 과녁 확대 뷰 정밀 격자 눈금선 렌더링
+// [Part 13/15] physics.js - 과녁 확대 시점 조밀 격자선 렌더링
 // =========================================================================
 
-    } else if (currentView === 'target') {
+    if (currentView === 'target') {
         // 과녁 정면 확대 뷰 가이드 격자선 그리기 (0.5m 조밀 간격, 총 범위 가로/세로 ±2m 마진)
         ctx.strokeStyle = '#e5e5ea'; ctx.lineWidth = 0.8;
         
@@ -475,9 +465,10 @@ function drawScene() {
     
     ctx.lineWidth = 1.5; // 기본 선 굵기 복원
 // =========================================================================
-// [Part 13/15] 과녁 객체 그래픽 드로잉 - 3차원 투영 및 국궁 규격 표현
+// [Part 14/15] physics.js - 4분할 시점별 국궁 표준 경사 과녁 및 명중 마커 드로잉
 // =========================================================================
 
+    // 과녁 객체 그래픽 드로잉 파트
     if (currentView === 'side') {
         const fBottom = toScreen(targetBaseX, safeTargetH, 0);
         const frontTopX = targetBaseX + TGT_H * Math.sin(TGT_TILT);
@@ -499,7 +490,6 @@ function drawScene() {
     } else if (currentView === 'front') {
         const projH = TGT_H * Math.cos(TGT_TILT);
         const tgtCenter = toScreen(targetBaseX, safeTargetH, 0);
-        
         const leftX = toScreen(targetBaseX, safeTargetH, -TGT_W / 2).x;
         const rightX = toScreen(targetBaseX, safeTargetH, TGT_W / 2).x;
         const topY = toScreen(targetBaseX, safeTargetH + projH, 0).y;
@@ -513,7 +503,6 @@ function drawScene() {
     } else if (currentView === 'top') {
         const projTopX = targetBaseX + TGT_H * Math.sin(TGT_TILT);
         const thickX = TGT_D * Math.cos(TGT_TILT);
-
         const fLeftBot = toScreen(targetBaseX, safeTargetH, -TGT_W / 2);
         const fRightBot = toScreen(targetBaseX, safeTargetH, TGT_W / 2);
         const bLeftTop = toScreen(projTopX + thickX, safeTargetH, -TGT_W / 2);
@@ -522,50 +511,35 @@ function drawScene() {
         ctx.fillStyle = '#ff3b30'; 
         ctx.beginPath(); ctx.moveTo(fLeftBot.x, fLeftBot.y); ctx.lineTo(fRightBot.x, fRightBot.y); ctx.lineTo(bRightTop.x, bRightTop.y); ctx.lineTo(bLeftTop.x, bLeftTop.y); ctx.closePath(); ctx.fill();
         ctx.strokeStyle = '#1d1d1f'; ctx.stroke();
-// =========================================================================
-// [Part 14/15] 과녁 객체 그래픽 드로잉 - 과녁 확대 뷰 및 충돌 마커 렌더링
-// =========================================================================
 
     } else if (currentView === 'target') {
-        // 과녁 평면 중심(홍심)을 0,0으로 상정하고 2m x 2.667m 뼈대 폴리곤 생성
-        // 과녁 중심(0,0)을 기점으로 상하 ±1.3335m, 좌우 ±1m 경계선 드로잉
         const tLeftX = toScreen(0, 0, -TGT_W / 2).x;
         const tRightX = toScreen(0, 0, TGT_W / 2).x;
         const tTopY = toScreen(0, TGT_H / 2, 0).y;
         const tBottomY = toScreen(0, -TGT_H / 2, 0).y;
 
-        // 전통 국궁 표준 과녁 디자인 구현 (백색 바탕, 붉은 테두리 및 중앙 홍심)
-        ctx.fillStyle = '#ffffff';
-        ctx.fillRect(tLeftX, tTopY, tRightX - tLeftX, tBottomY - tTopY);
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(tLeftX, tTopY, tRightX - tLeftX, tBottomY - tTopY);
+        ctx.strokeStyle = '#ff3b30'; ctx.lineWidth = 5; ctx.strokeRect(tLeftX, tTopY, tRightX - tLeftX, tBottomY - tTopY);
         
-        ctx.strokeStyle = '#ff3b30'; ctx.lineWidth = 5;
-        ctx.strokeRect(tLeftX, tTopY, tRightX - tLeftX, tBottomY - tTopY);
-        
-        // 정중앙 붉은 홍심 원형 드로잉
         ctx.fillStyle = '#ff3b30';
         const tCenter = toScreen(0, 0, 0);
         ctx.beginPath(); ctx.arc(tCenter.x, tCenter.y, 14, 0, Math.PI * 2); ctx.fill();
         ctx.lineWidth = 1.5;
 
-        // [핵심 요구사항 반영] 화살이 과녁 평면(또는 연장 무한 평면)을 과도 통과 완료했다면 타겟팅 충돌 흔적 표시
+        // 화살이 과녁 평면을 통과 완료했다면 타겟팅 충돌 흔적 표시
         if (hasIntersectedTargetPlane) {
             const hitScr = toScreen(0, targetHitMetrics.localY, targetHitMetrics.localZ);
             
-            // 명중(관중)했으면 녹색 섬광 이펙트, 빗나갔으면 보라색 유색 경고 마커 도트 인디케이터 렌더링
             if (targetHitMetrics.isHit) {
-                ctx.fillStyle = '#34c759'; // 애플 그린 명중 도트
+                ctx.fillStyle = '#34c759'; // 명중 그린 도트
                 ctx.strokeStyle = 'rgba(52, 199, 89, 0.4)'; ctx.lineWidth = 8;
                 ctx.beginPath(); ctx.arc(hitScr.x, hitScr.y, 6, 0, Math.PI * 2); ctx.stroke(); ctx.fill();
-                
-                // 관중(HIT) 텍스트 배너 표현
                 ctx.fillStyle = '#34c759'; ctx.font = 'bold 13px -apple-system'; ctx.textAlign = 'center';
                 ctx.fillText("🎯 관중 (HIT!)", dprWidth / 2, tTopY - 14);
             } else {
-                ctx.fillStyle = '#af52de'; // 애플 퍼플 불합격 불관중 도트
+                ctx.fillStyle = '#af52de'; // 빗나감 퍼플 도트
                 ctx.strokeStyle = 'rgba(175, 82, 222, 0.3)'; ctx.lineWidth = 6;
                 ctx.beginPath(); ctx.arc(hitScr.x, hitScr.y, 5, 0, Math.PI * 2); ctx.stroke(); ctx.fill();
-                
-                // 빗나감 오차 거리 배너 텍스트 주입
                 ctx.fillStyle = '#af52de'; ctx.font = 'bold 12px -apple-system'; ctx.textAlign = 'center';
                 ctx.fillText(`❌ 탈타 (오차: 좌우 ${targetHitMetrics.localZ.toFixed(2)}m, 상하 ${targetHitMetrics.localY.toFixed(2)}m)`, dprWidth / 2, tTopY - 14);
             }
@@ -573,7 +547,6 @@ function drawScene() {
         }
     }
 
-    // 과녁 연직 지지대 바 고정 (정면 및 측면 전용)
     if (currentView === 'side' || currentView === 'front') {
         const tgtFloor = toScreen(targetBaseX, 0, 0); 
         const tgtBasePos = toScreen(targetBaseX, safeTargetH, 0);
@@ -581,13 +554,13 @@ function drawScene() {
         ctx.moveTo(tgtBasePos.x, tgtBasePos.y); ctx.lineTo(tgtBasePos.x, tgtFloor.y); ctx.stroke();
     }
 // =========================================================================
-// [Part 15/15] 누적 궤적 선 연결, 실시간 화살 드로잉 및 파일 마감 구문
+// [Part 15/15] physics.js - 궤적 누적선 연결, 실시간 화살 렌더링 및 기동 마감 구문
 // =========================================================================
 
     // 누적 비행 궤적 그리기 (과녁 확대 뷰 시점일 때는 비행 궤적 선 렌더링 스킵하여 시야 확보)
     if (currentView !== 'target' && trajectory.length > 1) {
         ctx.strokeStyle = '#0071e3'; ctx.lineWidth = 2.5; ctx.beginPath();
-        const start = toScreen(trajectory[0].x, trajectory[0].y, trajectory[0].z); 
+        const start = toScreen(trajectory.x, trajectory.y, trajectory.z); 
         ctx.moveTo(start.x, start.y);
         for (let i = 1; i < trajectory.length; i++) { 
             const pt = toScreen(trajectory[i].x, trajectory[i].y, trajectory[i].z); 
@@ -596,7 +569,7 @@ function drawScene() {
         ctx.stroke();
     }
 
-    // 실시간 화살 오브젝트 그래픽 표현 (과녁 확대 뷰 시점일 때는 탄착점 마커가 있으므로 화살 드로잉 스킵)
+    // 실시간 화살 오브젝트 렌더링 (과녁 확대 뷰 시점일 때는 탄착점 마커가 있으므로 화살 드로잉 스킵)
     if (currentView !== 'target') {
         const arrowPos = toScreen(arrowState.x, arrowState.y, arrowState.z);
         ctx.save(); 
