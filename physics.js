@@ -7,6 +7,7 @@ let dprHeight = 0;
 // 고정할 3차원 월드 공간 최대 크기 정의
 const MAX_WORLD_X = 160; // 최대 거리 160m
 const MAX_WORLD_Y = 40;  // 최대 높이 40m
+const TARGET_BASE_X = 145; // 사대 0점부터 과녁 바닥까지의 고정 수평 거리 (145m)
 
 function resizeCanvas() {
     const rect = canvas.getBoundingClientRect();
@@ -107,7 +108,7 @@ function animate() {
     const flowYaw = Math.atan2(relVz, relVx);
     const attackAngle = arrowState.pitch - flowPitch;
 
-    const effectiveArea = area * 2.5; // 패러독스 가산 단면적 보정
+    const effectiveArea = area * 2.5; 
     const dynamicLiftCoeff = 2.0 * Math.sin(attackAngle) * Math.cos(attackAngle);
 
     const dragF = 0.5 * rho * vRel * vRel * cd * effectiveArea;
@@ -159,7 +160,6 @@ function animate() {
         updateResultUI();
     }
 
-    // [고정 스케일 대응] 160m 고정 범위를 벗어나면 시뮬레이션 종료
     if (arrowState.x > MAX_WORLD_X || arrowState.x < -10) {
         isFlying = false;
     }
@@ -192,11 +192,9 @@ function drawScene() {
     
     const targetH = parseFloat(document.getElementById('targetHeight').value) || 0;
 
-    // 가용 가로폭과 세로폭 연산 (여백 제외)
     const availableWidth = dprWidth - ORIGIN_X_OFFSET - 80;
     const availableHeight = dprHeight - GROUND_Y_OFFSET - 20;
 
-    // [핵심 변경] 거리 160m, 높이 40m 공간을 강제로 픽셀 스케일에 가둠
     const scaleX = availableWidth / MAX_WORLD_X;
     const scaleY = availableHeight / MAX_WORLD_Y;
 
@@ -210,7 +208,7 @@ function drawScene() {
         if (currentView === 'top') {  
             return { 
                 x: ORIGIN_X_OFFSET + (pX * scaleX), 
-                y: (dprHeight / 2) + (pZ * scaleX) // 평면도는 X 스케일 준용
+                y: (dprHeight / 2) + (pZ * scaleX) 
             };
         }
         return { 
@@ -219,25 +217,22 @@ function drawScene() {
         };
     }
 
-    // 160m x 40m 정적 눈금선 및 텍스트 렌더링 (측면도 전용)
+    // 눈금선 및 텍스트 렌더링 (측면도 전용)
     if (currentView === 'side') {
         ctx.strokeStyle = '#e5e5ea'; ctx.lineWidth = 1; ctx.font = '10px -apple-system'; ctx.fillStyle = '#8e8e93';
         
-        // 20m 간격으로 거리 눈금선 생성 (0m ~ 160m 고정)
         for (let xMeters = 0; xMeters <= MAX_WORLD_X; xMeters += 20) {
             let scrX = ORIGIN_X_OFFSET + (xMeters * scaleX);
             ctx.beginPath(); ctx.moveTo(scrX, 0); ctx.lineTo(scrX, dprHeight - GROUND_Y_OFFSET); ctx.stroke();
             ctx.textAlign = 'center'; ctx.fillText(xMeters + 'm', scrX, dprHeight - GROUND_Y_OFFSET + 18);
         }
         
-        // 10m 간격으로 높이 눈금선 생성 (0m ~ 40m 고정)
         for (let yMeters = 0; yMeters <= MAX_WORLD_Y; yMeters += 10) {
             let scrY = dprHeight - GROUND_Y_OFFSET - (yMeters * scaleY);
             ctx.beginPath(); ctx.moveTo(ORIGIN_X_OFFSET, scrY); ctx.lineTo(dprWidth, scrY); ctx.stroke();
             ctx.textAlign = 'right'; ctx.fillText(yMeters + 'm', ORIGIN_X_OFFSET - 8, scrY + 3);
         }
         
-        // 축 베이스 라인
         ctx.strokeStyle = '#1d1d1f'; ctx.lineWidth = 2;
         ctx.beginPath(); ctx.moveTo(ORIGIN_X_OFFSET, dprHeight - GROUND_Y_OFFSET); ctx.lineTo(ORIGIN_X_OFFSET + (MAX_WORLD_X * scaleX), dprHeight - GROUND_Y_OFFSET); ctx.stroke();
         ctx.beginPath(); ctx.moveTo(ORIGIN_X_OFFSET, 0); ctx.lineTo(ORIGIN_X_OFFSET, dprHeight - GROUND_Y_OFFSET); ctx.stroke();
@@ -247,20 +242,25 @@ function drawScene() {
         ctx.stroke();
     }
 
-    // 과녁(Target) 그리기 (160m 내 고정 픽셀 변환)
-    const tgt = toScreen(145, targetH, 0); // 국궁 표준 거리인 145m 지점에 과녁 배치 설정
+    // [핵심 반영] 과녁 그리기: 사대 원점 기준 수평 거리 145m 상시 고정 적용
+    const tgt = toScreen(TARGET_BASE_X, targetH, 0); 
     ctx.fillStyle = '#ff3b30'; ctx.beginPath(); ctx.arc(tgt.x, tgt.y, 12, 0, Math.PI * 2); ctx.fill();
     ctx.fillStyle = '#ffffff'; ctx.beginPath(); ctx.arc(tgt.x, tgt.y, 6, 0, Math.PI * 2); ctx.fill();
+    
+    // 과녁 지지대: 과녁 중심(tgt.y)에서 과녁 바닥(지면 고도 0점)까지 수직선으로 연결
     if (currentView === 'side' || currentView === 'front') {
-        ctx.strokeStyle = '#1d1d1f'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(tgt.x, tgt.y + 12); ctx.lineTo(tgt.x, dprHeight - GROUND_Y_OFFSET); ctx.stroke();
+        const tgtFloor = toScreen(TARGET_BASE_X, 0, 0); // 과녁 바닥의 화면 좌표 계산
+        ctx.strokeStyle = '#1d1d1f'; ctx.lineWidth = 2; ctx.beginPath(); 
+        ctx.moveTo(tgt.x, tgt.y + 12); 
+        ctx.lineTo(tgt.x, tgtFloor.y); // 지면 고도선이 아닌 과녁 바닥 지점으로 고정
+        ctx.stroke();
     }
 
     // 누적 비행 궤적 그리기
     if (trajectory.length > 1) {
         ctx.strokeStyle = '#0071e3'; ctx.lineWidth = 2.5; ctx.beginPath();
-        const start = toScreen(trajectory[0].x, trajectory[0].y, trajectory[0].z);
+        const start = toScreen(trajectory[0].x, trajectory[0].y, trajectory[0].z); 
         ctx.moveTo(start.x, start.y);
-        
         for (let i = 1; i < trajectory.length; i++) {
             const pt = toScreen(trajectory[i].x, trajectory[i].y, trajectory[i].z);
             ctx.lineTo(pt.x, pt.y);
