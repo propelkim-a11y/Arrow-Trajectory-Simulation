@@ -171,7 +171,7 @@ function drawScene() {
   // --------------------------------------------------------------------------
   ctx.font = '11px -apple-system, BlinkMacSystemFont, "SF Pro Text"';
   ctx.textBaseline = 'middle';
-
+  
   // 글로벌 세션 뷰 타입 로직 분기 검증
   const viewMode = typeof currentView !== 'undefined' ? currentView : 'side';
 
