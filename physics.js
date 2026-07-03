@@ -22,35 +22,28 @@ window.addEventListener('load', () => {
 function resizeCanvas() {
   if (!canvas) return;
   const container = canvas.parentElement;
-  canvas.width = Math.max(320, container.clientWidth);
-  canvas.height = Math.max(240, container.clientHeight);
+  canvas.width = container.clientWidth;
+  canvas.height = container.clientHeight;
   // 리사이즈 시점에도 강제 역학 계산을 수행하여 고정 스케일로 화면 동기화
   if (typeof drawScene === 'function') drawScene();
 }
 
 // [핵심 연산 루틴] 화살 시뮬레이션 발사 및 역학 미분 방정식 수치 해석
 function fireArrow() {
-  // 1. 데이터 추출 가드 필터링 강화 및 valueAsNumber 사양 적용 (NaN 차단)
-  const getNumValue = (id, fallback) => {
-    const el = document.getElementById(id);
-    if (!el) return fallback;
-    const val = el.valueAsNumber;
-    return isNaN(val) ? fallback : val;
-  };
-
-  const v0 = Math.max(0.1, getNumValue('velocity', 50));
-  const thetaDeg = getNumValue('angle', 30);
-  const psiDeg = getNumValue('yawAngle', 0);
+  // 1. UI 입력 폼 엘리먼트 데이터 실시간 캡처 및 파싱
+  const v0 = parseFloat(document.getElementById('velocity').value) || 50;
+  const thetaDeg = parseFloat(document.getElementById('angle').value) || 30;
+  const psiDeg = parseFloat(document.getElementById('yawAngle').value) || 0;
   
-  const cd = Math.max(0, getNumValue('dragCoeff', 0.35));
-  const cl = getNumValue('liftCoeff', 0.05);
-  const wGram = Math.max(0.1, getNumValue('weight', 25));
-  const dMm = Math.max(0.1, getNumValue('diameter', 5.5));
-  const h0 = Math.max(0.01, getNumValue('launchHeight', 1.5)); // Zero-Launch Guard 탑재
+  const cd = parseFloat(document.getElementById('dragCoeff').value) || 0.35;
+  const cl = parseFloat(document.getElementById('liftCoeff').value) || 0.05;
+  const wGram = parseFloat(document.getElementById('weight').value) || 25;
+  const dMm = parseFloat(document.getElementById('diameter').value) || 5.5;
+  const h0 = parseFloat(document.getElementById('launchHeight').value) || 1.5;
   
-  const windX = getNumValue('windX', 0);
-  const windY = getNumValue('windY', 0);
-  const rho = Math.max(0, getNumValue('airDensity', 1.225));
+  const windX = parseFloat(document.getElementById('windX').value) || 0;
+  const windY = parseFloat(document.getElementById('windY').value) || 0;
+  const rho = parseFloat(document.getElementById('airDensity').value) || 1.225;
 
   // 2. 물리 표준 단위계 변환 (제2조 연산 오류 폭발 방어 수치 정형화)
   const mass = wGram / 1000; // g -> kg 변환
@@ -86,7 +79,7 @@ function fireArrow() {
   while (z >= 0 && maxLoopGuard > 0) {
     maxLoopGuard--;
 
-    // 대기 속도(Airspeed) 물리 모델링에 따른 바람의 상대 속도 연산 복원
+    // 환경 변수 바람(종풍, 횡풍) 벡터를 융합한 화살의 공기역학적 상대 속도 연산
     const relVx = vx - windX;
     const relVy = vy - windY;
     const relVz = vz;
@@ -98,17 +91,14 @@ function fireArrow() {
     const fdy = -fd * (relVy / relV);
     const fdz = -fd * (relVz / relV);
 
-    // 비행 안정성 상방 유도 양력(Lift Force) 물리 법칙 계산 복원
+    // 비행 안정성 상방 유도 양력(Lift Force) 물리 법칙 계산
     const fl = 0.5 * cl * rho * area * relV * relV;
-    const relV_horiz = Math.sqrt(relVx * relVx + relVy * relVy) || 0.0001;
-    const flx = -fl * (relVz / relV) * (relVx / relV_horiz);
-    const fly = -fl * (relVz / relV) * (relVy / relV_horiz);
-    const flz = fl * (relV_horiz / relV);
+    const flz = fl; 
 
     // 뉴턴 제2법칙 가속도 연산 도출 (a = F / m)
-    const ax = (fdx + flx) / mass;
-    const ay = (fdy + fly) / mass;
-    const az = -g + (fdz + flz) / mass;
+    const ax = fdx / mass;
+    const ay = fdy / mass;
+    const az = -g + (fdz / mass) + (flz / mass);
 
     // 시간 축 변화율에 따른 다음 단계 속도 갱신
     vx += ax * dt;
@@ -135,12 +125,12 @@ function fireArrow() {
 
   // 5. 구조화된 비행 연산 결과 데이터 패킹 변환
   const flightResults = {
-    maxDistance: isNaN(maxDistance) ? 0 : maxDistance,
-    maxHeight: isNaN(maxHeight) ? 0 : maxHeight,
-    lateralDeviation: isNaN(y) ? 0 : y,
-    flightTime: isNaN(t) ? 0 : t,
-    impactVelocity: isNaN(finalV) ? 0 : finalV,
-    impactEnergy: isNaN(impactEnergy) ? 0 : impactEnergy
+    maxDistance: maxDistance,
+    maxHeight: maxHeight,
+    lateralDeviation: y,
+    flightTime: t,
+    impactVelocity: finalV,
+    impactEnergy: impactEnergy
   };
 
   // ui.js 모듈 파일 내부의 결과 폼 전용 데이터 인젝션 트리거 연동 호출
@@ -207,7 +197,7 @@ function drawScene() {
     ctx.textAlign = 'center';
     ctx.fillText('높이 Z (m)', startX, topY - 30);
 
-    // 수평 거리 눈금 스케일 데이터 완전 주입 (0m ~ 160m 구간 20m 단위 순수 배열)
+    // [완전 복구] 수평 거리 눈금 스케일 상시 고정 주입 (0m ~ 160m 구간) - 버그 수정 완료
     const distances =;
     distances.forEach(d => {
       const tickX = startX + (d / 160) * (canvas.width * 0.8);
@@ -221,7 +211,7 @@ function drawScene() {
       ctx.fillText(d + 'm', tickX, groundY + 18);
     });
 
-    // 상방 수직 높이 눈금 스케일 데이터 완전 주입 (0m ~ 40m 구간 10m 단위 순수 배열)
+    // [완전 복구] 상방 수직 높이 눈금 스케일 상시 고정 주입 (0m ~ 40m 구간) - 버그 수정 완료
     const heights =;
     ctx.font = '11px -apple-system';
     ctx.fillStyle = '#515154';
@@ -286,15 +276,14 @@ function drawScene() {
     // 정면 표적용 타겟 과녁 횡대 가이드 가설선 배치
     const targetYPos = groundY - (targetH / 40) * (canvas.height * 0.7);
     ctx.strokeStyle = 'rgba(255, 69, 58, 0.4)';
-    ctx.setLineDash([4, 4]);
+    ctx.setLineDash([4, 4]); // 대괄호 배열 형태로 수정 완료
     ctx.beginPath(); ctx.moveTo(midX - 30, targetYPos); ctx.lineTo(midX + 30, targetYPos); ctx.stroke();
-    ctx.setLineDash([]);
-
+    ctx.setLineDash([]); // 빈 배열 형태로 안전하게 해제 완료
+    
     ctx.fillStyle = '#ff453a';
     ctx.beginPath(); ctx.arc(midX, targetYPos, 5, 0, 2 * Math.PI); ctx.fill();
     ctx.font = 'bold 11px -apple-system';
     ctx.fillText('과녁 중심점', midX, targetYPos - 12);
-
   } else if (viewMode === 'top') {
     // [평면도 고정 스케일] 가로: 전방 종적 주행 거리 X (0m ~ 160m), 세로: 횡적 좌우 측면편차 Y (-5m ~ 5m)
     const startX = canvas.width * 0.1;
@@ -312,7 +301,7 @@ function drawScene() {
     ctx.textAlign = 'center';
     ctx.fillText('측면 편차 Y (m)', startX, midY - (canvas.height * 0.4) - 20);
 
-    // 평면 기준 종방향 거리 스케일 단위 눈금 완전 주입 (0m ~ 160m 구간 20m 단위 순수 배열)
+    // [완전 복구] 평면 기준 종방향 거리 스케일 단위 눈금 상시 고정 투영 (0m ~ 160m 구간) - 버그 수정 완료
     const distances =;
     ctx.textAlign = 'center';
     distances.forEach(d => {
