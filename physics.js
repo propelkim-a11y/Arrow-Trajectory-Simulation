@@ -465,7 +465,7 @@ function drawScene() {
     
     ctx.lineWidth = 1.5; // 기본 선 굵기 복원
     // =========================================================================
-    // [과녁 객체 그래픽 드로잉 - 제공된 국궁 표준 과녁 디자인 완벽 반영]
+    // [과녁 객체 그래픽 드로잉 - 정밀 기하학적 홍심 위치 및 비율 보정본]
     // =========================================================================
     if (currentView === 'side') {
         // 1. 측면도: 경사각과 두께가 살아있는 3차원 단면 드로잉
@@ -484,39 +484,41 @@ function drawScene() {
         ctx.beginPath(); ctx.moveTo(fBottom.x, fBottom.y); ctx.lineTo(fTop.x, fTop.y); ctx.lineTo(bTop.x, bTop.y); ctx.lineTo(bBottom.x, bBottom.y); ctx.closePath(); ctx.fill();
         ctx.strokeStyle = '#1d1d1f'; ctx.lineWidth = 1; ctx.stroke();
 
-        // [이미지 반영] 측면에서 본 전면부 과녁판 테두리 및 띠 분할선 표시
+        // 전면부 과녁판 테두리 표시
         ctx.strokeStyle = '#1d1d1f'; ctx.lineWidth = 3;
         ctx.beginPath(); ctx.moveTo(fBottom.x, fBottom.y); ctx.lineTo(fTop.x, fTop.y); ctx.stroke();
         
     } else if (currentView === 'front') {
-        // 2. 정면도: 제공해주신 과녁 비율을 전체 월드 스케일에 맞춰 축척 드로잉
+        // 2. 정면도: 뒤로 15도 누워 생기는 세로 수축(projH)을 정확히 반영한 외곽 및 내부 사각형 정렬
         const projH = TGT_H * Math.cos(TGT_TILT);
-        const tgtCenter = toScreen(targetBaseX, safeTargetH, 0);
         const leftX = toScreen(targetBaseX, safeTargetH, -TGT_W / 2).x;
         const rightX = toScreen(targetBaseX, safeTargetH, TGT_W / 2).x;
+        const bottomY = toScreen(targetBaseX, safeTargetH, 0).y;
         const topY = toScreen(targetBaseX, safeTargetH + projH, 0).y;
-        const bottomY = tgtCenter.y;
         
         const w = rightX - leftX;
-        const h = bottomY - topY;
+        const h = bottomY - topY; // 실제 드로잉되는 찌그러진 가상 높이
 
         // [이미지 반영] 흰색 외곽 전체 바탕 사각형
         ctx.fillStyle = '#ffffff'; ctx.fillRect(leftX, topY, w, h);
         ctx.strokeStyle = '#1d1d1f'; ctx.lineWidth = 1.5; ctx.strokeRect(leftX, topY, w, h);
 
-        // [이미지 반영] 상단 검은색 띠 (전체 높이의 약 15% 비율)
+        // [이미지 반영] 상단 검은색 띠 (전체 흰색 판 높이의 15%, 여백 8%)
         const topBarH = h * 0.15;
         ctx.fillStyle = '#1d1d1f';
         ctx.fillRect(leftX + w * 0.1, topY + h * 0.08, w * 0.8, topBarH);
 
-        // [이미지 반영] 하단 메인 검은색 사각형 패널
+        // [이미지 반영] 하단 메인 검은색 사각형 패널 (전체 흰색 판 높이의 62%, 상단에서 30% 아래 지점)
         const mainBoxTop = topY + h * 0.3;
         const mainBoxH = h * 0.62;
         ctx.fillRect(leftX + w * 0.1, mainBoxTop, w * 0.8, mainBoxH);
 
-        // [이미지 반영] 하단 검은색 패널 중앙의 선명한 붉은색 홍심 원
-        ctx.fillStyle = '#ff3b30'; ctx.beginPath();
-        ctx.arc(leftX + w * 0.5, mainBoxTop + mainBoxH * 0.5, w * 0.3, 0, Math.PI * 2);
+        // [홍심 보정] 검은색 사각형 패널의 정중앙에 위치하도록 중심 Y축 및 반지름 보정
+        // 정면 뷰포트 스케일에서는 Z축 스케일(w 바탕)을 기준으로 반지름 비율을 산정해야 찌그러지지 않고 동그랗게 보입니다.
+        const radius = w * 0.23; // 과녁 가로폭 비례 과도하게 커지지 않도록 0.23 비율로 정밀 튜닝
+        ctx.fillStyle = '#ff3b30'; 
+        ctx.beginPath();
+        ctx.arc(leftX + w * 0.5, mainBoxTop + mainBoxH * 0.5, radius, 0, Math.PI * 2);
         ctx.fill();
 
     } else if (currentView === 'top') {
@@ -534,7 +536,7 @@ function drawScene() {
         ctx.strokeStyle = '#1d1d1f'; ctx.lineWidth = 1.5; ctx.stroke();
 
     } else if (currentView === 'target') {
-        // 4. 과녁 확대 뷰: 제공해주신 비례 이미지를 모니터 화면 가득 "원본 그대로" 초고해상도 영사
+        // 4. 과녁 확대 뷰: 제공해주신 비례 이미지를 모니터 화면 가득 "원본 그대로" 초고해상도 정방형 영사
         const tLeftX = toScreen(0, 0, -TGT_W / 2).x;
         const tRightX = toScreen(0, 0, TGT_W / 2).x;
         const tTopY = toScreen(0, TGT_H / 2, 0).y;
@@ -543,23 +545,24 @@ function drawScene() {
         const w = tRightX - tLeftX;
         const h = tBottomY - tTopY;
 
-        // [이미지 완벽 매핑] 흰색 외곽 액자 바탕
+        // 흰색 외곽 액자 바탕
         ctx.fillStyle = '#ffffff'; ctx.fillRect(tLeftX, tTopY, w, h);
         ctx.strokeStyle = '#1d1d1f'; ctx.lineWidth = 2; ctx.strokeRect(tLeftX, tTopY, w, h);
 
-        // [이미지 완벽 매핑] 상단 검은색 가로 띠
+        // 상단 검은색 가로 띠
         const topBarH = h * 0.15;
         ctx.fillStyle = '#1d1d1f';
         ctx.fillRect(tLeftX + w * 0.1, tTopY + h * 0.08, w * 0.8, topBarH);
 
-        // [이미지 완벽 매핑] 하단 검은색 본체 사각형
+        // 하단 검은색 본체 사각형
         const mainBoxTop = tTopY + h * 0.3;
         const mainBoxH = h * 0.62;
         ctx.fillRect(tLeftX + w * 0.1, mainBoxTop, w * 0.8, mainBoxH);
 
-        // [이미지 완벽 매핑] 검은색 본체 한가운데 박히는 거대하고 강렬한 빨간색 홍심 원
-        ctx.fillStyle = '#ff3b30'; ctx.beginPath();
-        const rRadius = w * 0.3; // 이미지와 동일한 꽉 찬 반지름 비율 계산
+        // 검은색 본체 한가운데 박히는 거대하고 강렬한 빨간색 홍심 원형 정밀 정렬
+        const rRadius = w * 0.23; 
+        ctx.fillStyle = '#ff3b30'; 
+        ctx.beginPath();
         ctx.arc(tLeftX + w * 0.5, mainBoxTop + mainBoxH * 0.5, rRadius, 0, Math.PI * 2);
         ctx.fill();
 
@@ -581,13 +584,6 @@ function drawScene() {
         }
     }
 
-
-    if (currentView === 'side' || currentView === 'front') {
-        const tgtFloor = toScreen(targetBaseX, 0, 0); 
-        const tgtBasePos = toScreen(targetBaseX, safeTargetH, 0);
-        ctx.strokeStyle = '#515154'; ctx.lineWidth = 2; ctx.beginPath(); 
-        ctx.moveTo(tgtBasePos.x, tgtBasePos.y); ctx.lineTo(tgtBasePos.x, tgtFloor.y); ctx.stroke();
-    }
 // =========================================================================
 // [Part 15/15] physics.js - 궤적 누적선 연결, 실시간 화살 렌더링 및 기동 마감 구문
 // =========================================================================
