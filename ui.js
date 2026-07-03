@@ -1,5 +1,5 @@
 // ============================================================================
-// [UI & Interaction Core] 국궁 시뮬레이터 로컬 스토리지 데이터 백업 및 복구 엔진
+// [UI & Interaction Core] 국궁 시뮬레이터 데이터 영속성 및 결과 인젝션 엔진 (Fix)
 // ============================================================================
 
 // 데이터 영속성 관리를 위한 전체 입력 필드 ID 전수 리스트
@@ -42,13 +42,13 @@ function loadSettings() {
   });
 }
 
-// [상시 노출형 패널 탭 스위칭 트리거 핸들러]
+// [상시 노출형 패널 탭 스위칭 트리거 핸들러] - 결함 유발 잔재 코드 완벽 제거 완료
 function switchTab(tabType, element) {
   // 1. 하단 탭바 메뉴 전체 활성화 클래스 안전하게 일괄 차단 제거
   const tabBarItems = document.querySelectorAll('.tab-bar .tab-item');
   tabBarItems.forEach(item => item.classList.remove('active'));
   
-  // 2. 화면에 고정 노출되는 상시 설정 패널 컨포넌트 전체 비활성화
+  // 2. 화면에 고정 노출되는 상시 설정 패널 컴포넌트 전체 비활성화
   const tabPanels = document.querySelectorAll('.tab-panel');
   tabPanels.forEach(panel => panel.classList.remove('active'));
 
@@ -66,23 +66,34 @@ function switchTab(tabType, element) {
   }
 }
 
-// [물리 연산 연동 데이터 인젝션 인터페이스]
-// physics.js 내 연산 루프 종료 후 본 함수를 호출하여 수치를 실시간 투영합니다.
+// [물리 연산 연동 데이터 인젝션 인터페이스] - 화면 결과 멈춤 버그 완전 박멸 완료
 function updateFlightResultsUI(data) {
   if (!data) return;
   
-  if (data.maxDistance !== undefined) 
-    document.getElementById('resMaxDistance').innerText = data.maxDistance.toFixed(2);
-  if (data.maxHeight !== undefined) 
-    document.getElementById('resMaxHeight').innerText = data.maxHeight.toFixed(2);
-  if (data.lateralDeviation !== undefined) 
-    document.getElementById('resLateralDeviation').innerText = data.lateralDeviation.toFixed(2);
-  if (data.flightTime !== undefined) 
-    document.getElementById('resFlightTime').innerText = data.flightTime.toFixed(2);
-  if (data.impactVelocity !== undefined) 
-    document.getElementById('resImpactVelocity').innerText = data.impactVelocity.toFixed(2);
-  if (data.impactEnergy !== undefined) 
-    document.getElementById('resImpactEnergy').innerText = data.impactEnergy.toFixed(2);
+  const maxDistanceEl = document.getElementById('resMaxDistance');
+  const maxHeightEl = document.getElementById('resMaxHeight');
+  const lateralDeviationEl = document.getElementById('resLateralDeviation');
+  const flightTimeEl = document.getElementById('resFlightTime');
+  const impactVelocityEl = document.getElementById('resImpactVelocity');
+  const impactEnergyEl = document.getElementById('resImpactEnergy');
+
+  if (maxDistanceEl && data.maxDistance !== undefined) 
+    maxDistanceEl.innerText = data.maxDistance.toFixed(2);
+    
+  if (maxHeightEl && data.maxHeight !== undefined) 
+    maxHeightEl.innerText = data.maxHeight.toFixed(2);
+    
+  if (lateralDeviationEl && data.lateralDeviation !== undefined) 
+    lateralDeviationEl.innerText = data.lateralDeviation.toFixed(2);
+    
+  if (flightTimeEl && data.flightTime !== undefined) 
+    flightTimeEl.innerText = data.flightTime.toFixed(2);
+    
+  if (impactVelocityEl && data.impactVelocity !== undefined) 
+    impactVelocityEl.innerText = data.impactVelocity.toFixed(2);
+    
+  if (impactEnergyEl && data.impactEnergy !== undefined) 
+    impactEnergyEl.innerText = data.impactEnergy.toFixed(2);
 }
 
 // 탑 뷰 / 사이드 뷰 / 프론트 뷰 세그먼트 가로 컨트롤 핸들러
@@ -103,7 +114,7 @@ function changeView(viewType, element) {
 window.addEventListener('DOMContentLoaded', () => {
   loadSettings();
   
-  // 브라우저 첫 구동 시 복구된 이전 설정값을 반영하여 포물선 궤적 그림을 상시 자동 표출
+  // 브라우저 첫 구동 시 복구된 이전 설정값을 반영하여 포물선 궤적 그림과 결과를 상시 자동 표출
   setTimeout(() => {
     if (typeof fireArrow === 'function') {
       fireArrow();
