@@ -24,17 +24,14 @@
  
  <!-- 시점 토글 세그먼트 (정면 / 측면 / 평면) -->
  <div class="segmented-control">
- <button class="segment-btn" onclick="changeView('front', this)">정면</button>
- <button class="segment-btn active" onclick="changeView('side', this)">측면</button>
- <button class="segment-btn" onclick="changeView('top', this)">평면</button>
+  <button class="segment-btn" onclick="changeView('front', this)">정면</button>
+  <button class="segment-btn active" onclick="changeView('side', this)">측면</button>
+  <button class="segment-btn" onclick="changeView('top', this)">평면</button>
  </div>
  
- <!-- 시뮬레이터 캔버스 컨테이너 -->
+ <!-- 시뮬레이터 캔버스 컨테이너 (미니멀리즘 발사 버튼 삭제 마감) -->
  <div class="sim-container">
- <canvas id="simCanvas"></canvas>
- <div class="floating-actions">
- <button class="fire-btn" onclick="fireArrow()">발사</button>
- </div>
+  <canvas id="simCanvas"></canvas>
  </div>
 
  <!-- [상시 고정 패널 컴포넌트 구조 - 내부 스크롤 가이드 탑재] -->
@@ -143,7 +140,8 @@
     </div>
    </div>
   </div>
-  <!-- [탭 패널 4] 비행 결과 표시 (누락 구조 완전 정상화 마감) -->
+
+  <!-- [탭 패널 4] 비행 결과 표시 -->
   <div class="tab-panel" id="sheet-result">
    <div class="panel-title">비행 결과</div>
    <div class="form-grid">
