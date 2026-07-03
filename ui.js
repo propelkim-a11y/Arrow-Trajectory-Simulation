@@ -1,5 +1,5 @@
 // ============================================================================
-// [UI & Interaction Core - Part 1] 국궁 시뮬레이터 데이터 영속성 백업 관리 엔진
+// [UI & Interaction Core] 국궁 시뮬레이터 데이터 영속성 및 결과 인젝션 엔진 (Fix)
 // ============================================================================
 
 // 데이터 영속성 관리를 위한 전체 입력 필드 ID 전수 리스트
@@ -13,8 +13,7 @@ const INPUT_IDS = [
 function saveSettings() {
   INPUT_IDS.forEach(id => {
     const el = document.getElementById(id);
-    // 0이나 공백, NaN이 무분별하게 입력되어 데이터가 유실되는 현상을 엄격히 가드 처리 후 저장
-    if (el && el.value !== "" && !isNaN(el.valueAsNumber)) {
+    if (el) {
       localStorage.setItem('arrow_sim_persistent_' + id, el.value);
     }
   });
@@ -26,34 +25,24 @@ function loadSettings() {
     const savedValue = localStorage.getItem('arrow_sim_persistent_' + id);
     const el = document.getElementById(id);
     
-    // 저장소 오염 방어 가드: 정상적인 수치 스냅샷인 경우에만 덮어쓰기 허용 (0값 유실 차단)
-    if (el && savedValue !== null && savedValue !== "" && !isNaN(parseFloat(savedValue))) {
-      const parsed = parseFloat(savedValue);
-      if (parsed !== 0 || id === 'yawAngle' || id === 'windX' || id === 'windY') {
-        el.value = savedValue;
-      }
+    // 과거 저장된 수치가 있을 때만 주입하며, 없을 경우 HTML 기본값(Default)을 온전히 보존
+    if (el && savedValue !== null && savedValue !== "") {
+      el.value = savedValue;
     }
     
-    // [실시간 백업 인터페이스 수호] 인풋 값이 변경되는 즉시 유효성 검증 후 포물선을 재연산
+    // [실시간 백업 인터페이스 수호] 인풋 값이 변경되는 즉시 저장하고 포물선을 재연산
     if (el) {
       el.addEventListener('input', () => {
-        const val = el.valueAsNumber;
-        // 유저가 타이핑 중인 임시 소수점 공백 분기 차단 유효성 검사
-        if (!isNaN(val)) {
-          saveSettings();
-          if (typeof fireArrow === 'function') {
-            fireArrow();
-          }
+        saveSettings();
+        if (typeof fireArrow === 'function') {
+          fireArrow();
         }
       });
     }
   });
 }
-// ============================================================================
-// [UI & Interaction Core - Part 2] 상시 노출형 패널 탭 스위칭 및 결과 표출 엔진
-// ============================================================================
 
-// [상시 노출형 패널 탭 스위칭 트리거 핸들러] - 결과 패널 강제 연산 동기화 적용
+// [상시 노출형 패널 탭 스위칭 트리거 핸들러] - 결함 유발 잔재 코드 완벽 제거 완료
 function switchTab(tabType, element) {
   // 1. 하단 탭바 메뉴 전체 활성화 클래스 안전하게 일괄 차단 제거
   const tabBarItems = document.querySelectorAll('.tab-bar .tab-item');
@@ -70,31 +59,41 @@ function switchTab(tabType, element) {
     targetPanel.classList.add('active');
   }
 
-  // 4. 패널 이동 시점에도 가려진 탭 바인딩 락업을 차단하기 위해 강제 역학 해석 가동
+  // 4. 패널 이동 시점에도 실시간 데이터 동기화 및 물리 연산 갱신 트리거 작동
   saveSettings();
   if (typeof fireArrow === 'function') {
     fireArrow();
   }
 }
 
-// [물리 연산 연동 데이터 인젝션 인터페이스] - display: none 락업 완전 격파
+// [물리 연산 연동 데이터 인젝션 인터페이스] - 화면 결과 멈춤 버그 완전 박멸 완료
 function updateFlightResultsUI(data) {
   if (!data) return;
   
-  // display: none에 영향을 받는 innerText 대신 브라우저 메모리 상의 DOM 트리를 직접 강제 수정하는 textContent 사양 적용
-  const injectText = (id, value) => {
-    const el = document.getElementById(id);
-    if (el && value !== undefined && !isNaN(value)) {
-      el.textContent = value.toFixed(2);
-    }
-  };
+  const maxDistanceEl = document.getElementById('resMaxDistance');
+  const maxHeightEl = document.getElementById('resMaxHeight');
+  const lateralDeviationEl = document.getElementById('resLateralDeviation');
+  const flightTimeEl = document.getElementById('resFlightTime');
+  const impactVelocityEl = document.getElementById('resImpactVelocity');
+  const impactEnergyEl = document.getElementById('resImpactEnergy');
 
-  injectText('resMaxDistance', data.maxDistance);
-  injectText('resMaxHeight', data.maxHeight);
-  injectText('resLateralDeviation', data.lateralDeviation);
-  injectText('resFlightTime', data.flightTime);
-  injectText('resImpactVelocity', data.impactVelocity);
-  injectText('resImpactEnergy', data.impactEnergy);
+  if (maxDistanceEl && data.maxDistance !== undefined) 
+    maxDistanceEl.innerText = data.maxDistance.toFixed(2);
+    
+  if (maxHeightEl && data.maxHeight !== undefined) 
+    maxHeightEl.innerText = data.maxHeight.toFixed(2);
+ 
+  if (lateralDeviationEl && data.lateralDeviation !== undefined) 
+    lateralDeviationEl.innerText = data.lateralDeviation.toFixed(2);
+ 
+  if (flightTimeEl && data.flightTime !== undefined) 
+    flightTimeEl.innerText = data.flightTime.toFixed(2);
+ 
+  if (impactVelocityEl && data.impactVelocity !== undefined) 
+    impactVelocityEl.innerText = data.impactVelocity.toFixed(2);
+ 
+  if (impactEnergyEl && data.impactEnergy !== undefined) 
+    impactEnergyEl.innerText = data.impactEnergy.toFixed(2);
 }
 
 // 탑 뷰 / 사이드 뷰 / 프론트 뷰 세그먼트 가로 컨트롤 핸들러
@@ -111,7 +110,7 @@ function changeView(viewType, element) {
   }
 }
 
-// [라이프사이클 동기화] HTML 로드가 끝나는 즉시 데이터를 로드하고 포물선 첫 프레임 연산 결과 표출
+// [라이프사이클 동기화] HTML 로드가 끝나는 즉시 데이터를 로드하고 포물선 첫 프레임 장착
 window.addEventListener('DOMContentLoaded', () => {
   loadSettings();
   
@@ -120,5 +119,5 @@ window.addEventListener('DOMContentLoaded', () => {
     if (typeof fireArrow === 'function') {
       fireArrow();
     }
-  }, 60); // DOM 트리 안착 및 가려진 탭 노드의 메모리 활성화를 위한 60ms 미세 안정 가드 시간 부여
+  }, 50); // DOM 트리 안착을 위한 50ms 미세 안정 가드 시간 부여
 });
