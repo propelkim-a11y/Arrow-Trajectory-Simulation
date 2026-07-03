@@ -11,53 +11,23 @@
     <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta name="mobile-web-app-capable" content="yes">
     <link rel="stylesheet" href="style.css">
-    <style>
-        /* 좌우 분할 멀티 모니터 배치를 위한 기존 레이아웃 가중치 오버라이딩 */
-        .split-sim-wrapper {
-            display: flex;
-            width: 100%;
-            height: 100%;
-            gap: 8px;
-            padding: 4px;
-            box-sizing: border-box;
-        }
-        .canvas-box-main {
-            flex: 1.3;
-            height: 100%;
-            position: relative;
-        }
-        .canvas-box-target {
-            flex: 1;
-            height: 100%;
-            background: #fafafa;
-            border-left: 1px solid rgba(0,0,0,0.05);
-            position: relative;
-        }
-    </style>
 </head>
 <body>
 
-<!-- 상단 75% 영역: 메인 스크린 및 가로 분할 듀얼 캔버스 모니터 -->
-<div class="main-screen" style="height: 75vh;">
+<!-- 상단 75% 영역: 메인 스크린 및 시뮬레이터 캔버스 -->
+<div class="main-screen">
     <h1>Arrow Trajectory</h1>
     
+    <!-- 시점 토글 세그먼트: [과녁] 확대 서브 뷰 버튼 내장 완료 -->
     <div class="segmented-control">
         <button class="segment-btn" onclick="changeView('front', this)">정면</button>
         <button class="segment-btn active" onclick="changeView('side', this)">측면</button>
         <button class="segment-btn" onclick="changeView('top', this)">평면</button>
+        <button class="segment-btn" onclick="changeView('target', this)">과녁</button>
     </div>
     
-    <div class="sim-container" style="overflow: hidden;">
-        <div class="split-sim-wrapper">
-            <!-- [좌측 모니터] 시점별 메인 물리 엔진 트래킹 화면 -->
-            <div class="canvas-box-main">
-                <canvas id="simCanvas"></canvas>
-            </div>
-            <!-- [우측 모니터] 신설: 실축 비율 정면 과녁 및 빗나간 위치 플로팅 화면 -->
-            <div class="canvas-box-target">
-                <canvas id="targetCanvas"></canvas>
-            </div>
-        </div>
+    <div class="sim-container">
+        <canvas id="simCanvas"></canvas>
         <div class="floating-actions">
             <button class="fire-btn" onclick="fireArrow()">🏹 발사</button>
         </div>
@@ -89,7 +59,7 @@
         </div>
     </div>
 
-    <!-- [탭 3] 환경 설정 -->
+    <!-- [탭 3] 환경 설정 (모바일 음수 입력 우회 및 필터링 내장) -->
     <div class="fixed-panel" id="panel-env">
         <div class="panel-title">환경 설정</div>
         <div class="form-grid">
