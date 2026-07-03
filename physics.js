@@ -1,5 +1,5 @@
 // =================================================================================
-// [Physics Core - Part 1] 국궁 탄도학 시뮬레이션 물리 연산 엔진 (Fix Completed)
+// [Physics Core - Part 1] 국궁 탄도학 시뮬레이션 물리 연산 엔진 (Perfect Fix)
 // =================================================================================
 
 // 전역 시뮬레이션 상태 인프라 변수
@@ -30,23 +30,30 @@ function resizeCanvas() {
 
 // [핵심 연산 루틴] 화살 시뮬레이션 발사 및 역학 미분 방정식 수치 해석
 function fireArrow() {
-    // 1. UI 입력 폼 엘리먼트 데이터 실시간 캡처 및 파싱
-    const v0 = parseFloat(document.getElementById('velocity').value) || 50;
-    const thetaDeg = parseFloat(document.getElementById('angle').value) || 30;
-    const psiDeg = parseFloat(document.getElementById('yawAngle').value) || 0;
+    // 1. UI 입력 폼 엘리먼트 데이터 실시간 캡처 및 파싱 (빈 값 수치 오염 방어를 위한 삼항 조건 및 OR 가드 강화)
+    const getVal = (id, def) => {
+        const el = document.getElementById(id);
+        if (!el || el.value.trim() === "") return def;
+        const val = parseFloat(el.value);
+        return isNaN(val) ? def : val;
+    };
+
+    const v0 = getVal('velocity', 50);
+    const thetaDeg = getVal('angle', 30);
+    const psiDeg = getVal('yawAngle', 0);
     
-    const cd = parseFloat(document.getElementById('dragCoeff').value) || 0.35;
-    const cl = parseFloat(document.getElementById('liftCoeff').value) || 0.05;
-    const wGram = parseFloat(document.getElementById('weight').value) || 25;
-    const dMm = parseFloat(document.getElementById('diameter').value) || 5.5;
-    const h0 = parseFloat(document.getElementById('launchHeight').value) || 1.5;
+    const cd = getVal('dragCoeff', 0.35);
+    const cl = getVal('liftCoeff', 0.05);
+    const wGram = getVal('weight', 25);
+    const dMm = getVal('diameter', 5.5);
+    const h0 = getVal('launchHeight', 1.5);
     
-    const windX = parseFloat(document.getElementById('windX').value) || 0;
-    const windY = parseFloat(document.getElementById('windY').value) || 0;
-    const rho = parseFloat(document.getElementById('airDensity').value) || 1.225;
+    const windX = getVal('windX', 0);
+    const windY = getVal('windY', 0);
+    const rho = getVal('airDensity', 1.225);
 
     // 2. 물리 표준 단위계 변환 (제2조 연산 오류 폭발 방어 수치 정형화)
-    const mass = wGram / 1000; // g -> kg 변환
+    const mass = wGram / 1000 || 0.025; // 0 분모 격파 방어
     const radius = (dMm / 1000) / 2; // mm -> m 반지름 계산
     const area = Math.PI * Math.pow(radius, 2); // 화살 전면 투영 단면적
     const g = 9.80665; // 표준 중력 가속도 상수
@@ -143,7 +150,7 @@ function fireArrow() {
     animationFrameId = requestAnimationFrame(drawScene);
 }
 // =================================================================================
-// [Physics Core - Part 2] 시점별 3차원 좌표축 및 과녁 보조선 렌더링 엔진 (Fix Completed)
+// [Physics Core - Part 2] 시점별 3차원 좌표축 및 과녁 보조선 렌더링 엔진 (Perfect Fix)
 // =================================================================================
 
 // HTML5 Canvas 그래픽스 신 드로잉 메인 엔진 루틴
@@ -164,7 +171,8 @@ function drawScene() {
     }
 
     // 환경 변수 탭 폼에서 과녁 높이 데이터 안전 바인딩 파싱
-    const targetH = parseFloat(document.getElementById('targetHeight').value) || 1.3;
+    const targetHeightEl = document.getElementById('targetHeight');
+    const targetH = (targetHeightEl && targetHeightEl.value !== "") ? parseFloat(targetHeightEl.value) : 1.3;
 
     // --------------------------------------------------------------------------
     // 2. 프리미엄 계측 좌표축 및 과녁 보조선 레이어 (Axis Layer)
@@ -198,7 +206,7 @@ function drawScene() {
         ctx.fillText('높이 Z (m)', startX, topY - 30);
 
         // [완전 복구] 수평 거리 눈금 스케일 상시 고정 주입 (0m ~ 160m 구간)
-        const distances =;
+        const distances = ;
         distances.forEach(d => {
             const tickX = startX + (d / 160) * (canvas.width * 0.8);
             ctx.strokeStyle = d === 145 ? '#ff453a' : 'rgba(0,0,0,0.15)'; // 국궁 규격 145m 고대비 레드 분기
@@ -212,7 +220,7 @@ function drawScene() {
         });
 
         // [완전 복구] 상방 수직 높이 눈금 스케일 상시 고정 주입 (0m ~ 40m 구간)
-        const heights =;
+        const heights = ;
         ctx.font = '11px -apple-system';
         ctx.fillStyle = '#515154';
         ctx.textAlign = 'right';
@@ -303,7 +311,7 @@ function drawScene() {
         ctx.fillText('측면 편차 Y (m)', startX, midY - (canvas.height * 0.4) - 20);
 
         // [완전 복구] 평면 기준 종방향 거리 스케일 단위 눈금 상시 고정 투영 (0m ~ 160m 구간)
-        const distances =;
+        const distances = ;
         ctx.textAlign = 'center';
         distances.forEach(d => {
             const tickX = startX + (d / 160) * (canvas.width * 0.8);
