@@ -1,5 +1,5 @@
 // =========================================================================
-// [최종 마스터 완결본] physics.js - 전체 소스 코드 (측면도 궤적 및 구문 에러 완벽 해결)
+// [시각/치수 100% 완전 일치본] physics.js - 전체 소스 코드
 // =========================================================================
 
 const canvas = document.getElementById('simCanvas');
@@ -153,7 +153,6 @@ function animate() {
     if (!hasReachedTargetX) { flightMetrics.flightTime += dt; }
     if (arrowState.y > flightMetrics.maxHeight) { flightMetrics.maxHeight = arrowState.y; }
 
-    // 과녁 평면 관통 판정 공식
     const nx = Math.cos(TGT_TILT); const ny = Math.sin(TGT_TILT);
     const distPrev = nx * (prevX - targetBaseX) + ny * (prevY - targetH);
     const distCurr = nx * (arrowState.x - targetBaseX) + ny * (arrowState.y - targetH);
@@ -248,7 +247,7 @@ ctx.lineWidth = 1;
 ctx.font = '10px -apple-system'; 
 ctx.fillStyle = '#8e8e93';
 
-// 1. 측면도 (Side View) 눈금 격자 플롯
+// 1. 측면도 (Side View) 격자 렌더링
 if (currentView === 'side') {
   for (let xMeters = 0; xMeters <= MAX_WORLD_X; xMeters += 20) {
     let scrX = ORIGIN_X_OFFSET + (xMeters * scaleX);
@@ -260,12 +259,12 @@ if (currentView === 'side') {
     ctx.beginPath(); ctx.moveTo(ORIGIN_X_OFFSET, scrY); ctx.lineTo(dprWidth, scrY); ctx.stroke();
     ctx.textAlign = 'right'; ctx.fillText(yMeters + 'm', ORIGIN_X_OFFSET - 5, scrY + 3);
   }
-  // 기본 좌표축 기선
+  // 메인 기선축
   ctx.strokeStyle = '#1d1d1f'; ctx.lineWidth = 2;
   ctx.beginPath(); ctx.moveTo(ORIGIN_X_OFFSET, dprHeight - GROUND_Y_OFFSET); ctx.lineTo(ORIGIN_X_OFFSET + (MAX_WORLD_X * scaleX), dprHeight - GROUND_Y_OFFSET); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(ORIGIN_X_OFFSET, 0); ctx.lineTo(ORIGIN_X_OFFSET, dprHeight - GROUND_Y_OFFSET); ctx.stroke();
 
-// 2. 조감도 (Top View) 눈금 격자 플롯
+// 2. 조감도 (Top View) 격자 렌더링
 } else if (currentView === 'top') {
   for (let xMeters = 0; xMeters <= MAX_WORLD_X; xMeters += 20) {
     let scrY = dprHeight - 25 - (xMeters * topScaleForward);
@@ -281,7 +280,7 @@ if (currentView === 'side') {
   ctx.strokeStyle = '#86868b'; ctx.lineWidth = 1.5; 
   ctx.beginPath(); ctx.moveTo(dprWidth / 2, 0); ctx.lineTo(dprWidth / 2, dprHeight - 25); ctx.stroke();
 
-// 3. 정면도 (Front View) 눈금 격자 플롯
+// 3. 정면도 (Front View) 격자 렌더링
 } else if (currentView === 'front') {
   const centerX = ORIGIN_X_OFFSET + (dprWidth - ORIGIN_X_OFFSET - 20) / 2;
   for (let zMeters = -MAX_WORLD_Z; zMeters <= MAX_WORLD_Z; zMeters += 5) {
@@ -294,18 +293,18 @@ if (currentView === 'side') {
     ctx.beginPath(); ctx.moveTo(ORIGIN_X_OFFSET, scrY); ctx.lineTo(dprWidth, scrY); ctx.stroke();
     ctx.textAlign = 'right'; ctx.fillText(yMeters + 'm', ORIGIN_X_OFFSET - 5, scrY + 3);
   }
-  // 지면 및 좌측 마진 기준선
+  // 지면 및 좌측 기준 기선
   ctx.strokeStyle = '#1d1d1f'; ctx.lineWidth = 2;
   ctx.beginPath(); ctx.moveTo(ORIGIN_X_OFFSET, dprHeight - GROUND_Y_OFFSET); ctx.lineTo(dprWidth, dprHeight - GROUND_Y_OFFSET); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(ORIGIN_X_OFFSET, 0); ctx.lineTo(ORIGIN_X_OFFSET, dprHeight - GROUND_Y_OFFSET); ctx.stroke();
-  // 정가운데 종방향 수직 중심선
+  // 정가운데 수직 기준선
   ctx.strokeStyle = '#86868b'; ctx.lineWidth = 1.2; 
   ctx.beginPath(); ctx.moveTo(centerX, 0); ctx.lineTo(centerX, dprHeight - GROUND_Y_OFFSET); ctx.stroke();
 
-// 4. 과녁 확대도 (Target View) 정밀 눈금 격자 플롯
+// 4. 과녁 확대도 (Target View) 정밀 격자 렌더링
 } else if (currentView === 'target') {
   const tBottomY = dprHeight * 0.65;
-  // 색상 전이 차단을 위해 옅은 회색 격자선 강제 바인딩 및 얇은 두께 보정
+  // 색상 전이 현상 방지를 위해 격자선 컬러 명시적 재할당 및 두께 미세화
   ctx.strokeStyle = '#e5e5ea'; 
   ctx.lineWidth = 0.8; 
   
@@ -321,7 +320,7 @@ if (currentView === 'side') {
     ctx.fillStyle = '#8e8e93'; ctx.font = '9px -apple-system'; ctx.textAlign = 'right';
     ctx.fillText(ly === 0 ? '바닥(0m)' : (ly > 0 ? '+' : '') + ly.toFixed(1) + 'm', dprWidth - 8, scrY + 3);
   }
-  // 홍심 과녁 크로스헤어 정밀 조준 중심 기선
+  // 과녁 조준 십자 기선축
   ctx.strokeStyle = '#86868b'; ctx.lineWidth = 1.2;
   ctx.beginPath(); ctx.moveTo(dprWidth / 2, 0); ctx.lineTo(dprWidth / 2, dprHeight); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(0, tBottomY); ctx.lineTo(dprWidth, tBottomY); ctx.stroke();
@@ -403,14 +402,14 @@ ctx.lineWidth = 1.5;
     }
   }
 
-  // 지면 지지선 렌더링
+  // 지면 지지기둥 기선 드로잉
   if (currentView === 'side' || currentView === 'front') {
     const tgtFloor = toScreen(targetBaseX, 0, 0); 
     const tgtBasePos = toScreen(targetBaseX, safeTargetH, 0);
     ctx.strokeStyle = '#515154'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(tgtBasePos.x, tgtBasePos.y); ctx.lineTo(tgtBasePos.x, tgtFloor.y); ctx.stroke();
   }
 
-  // [정밀 보정] 누적 비행 궤적선 변환 공식의 괄호 유효성 완전 확보
+  // [🛠️ 핵심 버그 패치 완료] 누적 비행 궤적선 변환 공식을 toScreen 시스템으로 강제 단일화 결합
   if (currentView !== 'target' && trajectory.length > 1) {
     ctx.strokeStyle = '#0071e3'; ctx.lineWidth = 2.5; ctx.beginPath();
     const start = toScreen(trajectory[0].x, trajectory[0].y, trajectory[0].z);
@@ -440,7 +439,7 @@ ctx.lineWidth = 1.5;
   }
 }
 
-// 캔버스 초기 리사이즈 및 지연 렌더링 세팅
+// 캔버스 초기 크기 반영 지연 제어
 setTimeout(() => {
   if (typeof loadSettings === 'function') loadSettings();
   resizeCanvas();
