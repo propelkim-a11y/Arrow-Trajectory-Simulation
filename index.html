@@ -8,7 +8,7 @@
 </head>
 <body>
 
-<!-- 상단 75% 영역: 메인 스크린 및 시뮬레이터 캔버스 -->
+<!-- 상단 60% 영역: 메인 스크린 및 시뮬레이터 캔버스 -->
 <div class="main-screen">
     <h1>Arrow Trajectory</h1>
     
@@ -21,13 +21,12 @@
     
     <div class="sim-container">
         <canvas id="simCanvas"></canvas>
-        <div class="floating-actions">
-            <button class="fire-btn" onclick="fireArrow()">🏹 발사</button>
-        </div>
+        <!-- 💡 [변경] 아이콘을 제거하고 드래그 제어를 위해 floating-actions 위치를 버튼 자체로 일원화 -->
+        <button id="draggableFireBtn" class="fire-btn">발사</button>
     </div>
 </div>
 
-<!-- 하단 25% 영역: 상시 노출형 설정 및 결과 패널 컨테이너 -->
+<!-- 하단 40% 영역: 상시 노출형 설정 및 결과 패널 컨테이너 -->
 <div id="panel-container">
     
     <!-- [탭 1] 화살 설정 -->
@@ -92,9 +91,9 @@
 
 <!-- 맨 하단 메뉴 전환 탭바 -->
 <div class="tab-bar">
-    <button class="tab-item active" onclick="switchPanel('arrow')"><span class="tab-icon">🎯</span><span>화살 설정</span></button>
-    <button class="tab-item" onclick="switchPanel('method')"><span class="tab-icon">🏹</span><span>사법 설정</span></button>
-    <button class="tab-item" onclick="switchPanel('env')"><span class="tab-icon">🐓</span><span>환경 설정</span></button>
+    <button class="tab-item active" onclick="switchPanel('arrow')"><span class="tab-icon">🏹</span><span>화살 설정</span></button>
+    <button class="tab-item" onclick="switchPanel('method')"><span class="tab-icon">🎯</span><span>사법 설정</span></button>
+    <button class="tab-item" onclick="switchPanel('env')"><span class="tab-icon">🌍</span><span>환경 설정</span></button>
     <button class="tab-item" onclick="switchPanel('result')"><span class="tab-icon">📊</span><span>비행 결과</span></button>
 </div>
 
