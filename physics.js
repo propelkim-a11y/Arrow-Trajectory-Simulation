@@ -1,5 +1,5 @@
 // =========================================================================
-// [최종 기하학 보정] physics.js - 전체 소스 코드 (수직 높이 2.58m 완벽 반영)
+// [최종 마스터 완결본] physics.js - 전체 소스 코드 (측면도 궤적 및 구문 에러 완벽 해결)
 // =========================================================================
 
 const canvas = document.getElementById('simCanvas');
@@ -19,7 +19,7 @@ const TGT_W = 2.0;         // 가로 2m
 const TGT_H = 2.667;       // 실제 사선 세로 길이 2.667m
 const TGT_D = 0.5;         // 두께 0.5m
 const TGT_TILT = 15 * Math.PI / 180; // 뒤로 15도 기울어짐 (라디안)
-const TGT_PROJ_H = TGT_H * Math.cos(TGT_TILT); // 💡 정면/측면에서 보이는 수직 높이 = 정확히 2.576m (약 2.58m)
+const TGT_PROJ_H = TGT_H * Math.cos(TGT_TILT); // 정면/측면에서 보이는 수직 투영 높이 = 정확히 2.58m
 
 function resizeCanvas() {
     const rect = canvas.getBoundingClientRect();
@@ -153,7 +153,7 @@ function animate() {
     if (!hasReachedTargetX) { flightMetrics.flightTime += dt; }
     if (arrowState.y > flightMetrics.maxHeight) { flightMetrics.maxHeight = arrowState.y; }
 
-    // 과녁 평면 관통 정밀 판정
+    // 과녁 평면 관통 판정 공식
     const nx = Math.cos(TGT_TILT); const ny = Math.sin(TGT_TILT);
     const distPrev = nx * (prevX - targetBaseX) + ny * (prevY - targetH);
     const distCurr = nx * (arrowState.x - targetBaseX) + ny * (arrowState.y - targetH);
@@ -219,16 +219,11 @@ function drawScene() {
     const targetBaseX = tgtGeo.baseX; const safeTargetH = tgtGeo.height;
     const availW = dprWidth - ORIGIN_X_OFFSET - 10; const availH = dprHeight - GROUND_Y_OFFSET - 10;
 
-const scaleX = availW / MAX_WORLD_X; 
-const scaleY = availH / MAX_WORLD_Y;
-
+    const scaleX = availW / MAX_WORLD_X; const scaleY = availH / MAX_WORLD_Y;
 const topScaleForward = (dprHeight - 40) / MAX_WORLD_X; 
 const topScaleSide = (dprWidth - 20) / (MAX_WORLD_Z * 2);
-
 const frontScaleZ = (dprWidth - ORIGIN_X_OFFSET - 20) / (MAX_WORLD_Z * 2); 
 const frontScaleY = availH / MAX_WORLD_Y;
-
-// [과녁 뷰 크기 조절] 과녁보기 화면에서 가로 2m, 세로 2.58m 사각형이 꽉 차서 정비례하게 보이도록 뷰포트 스케일링 설정
 const targetViewScale = Math.min(dprWidth, dprHeight) / 5.5;
 
 function toScreen(pX, pY, pZ) {
@@ -247,13 +242,13 @@ function toScreen(pX, pY, pZ) {
   return { x: 0, y: 0 };
 }
 
-// 눈금선 기본 레이아웃 세팅
+// 눈금선 기본 스타일 레이아웃 설정
 ctx.strokeStyle = '#e5e5ea'; 
 ctx.lineWidth = 1; 
 ctx.font = '10px -apple-system'; 
 ctx.fillStyle = '#8e8e93';
 
-// 1. 측면도 (Side View) 격자 렌더링
+// 1. 측면도 (Side View) 눈금 격자 플롯
 if (currentView === 'side') {
   for (let xMeters = 0; xMeters <= MAX_WORLD_X; xMeters += 20) {
     let scrX = ORIGIN_X_OFFSET + (xMeters * scaleX);
@@ -265,12 +260,12 @@ if (currentView === 'side') {
     ctx.beginPath(); ctx.moveTo(ORIGIN_X_OFFSET, scrY); ctx.lineTo(dprWidth, scrY); ctx.stroke();
     ctx.textAlign = 'right'; ctx.fillText(yMeters + 'm', ORIGIN_X_OFFSET - 5, scrY + 3);
   }
-  // 메인 기선축
+  // 기본 좌표축 기선
   ctx.strokeStyle = '#1d1d1f'; ctx.lineWidth = 2;
   ctx.beginPath(); ctx.moveTo(ORIGIN_X_OFFSET, dprHeight - GROUND_Y_OFFSET); ctx.lineTo(ORIGIN_X_OFFSET + (MAX_WORLD_X * scaleX), dprHeight - GROUND_Y_OFFSET); ctx.stroke();
-  ctx.beginPath(); ctx.moveTo(ORIGIN_X_OFFSET, 0); ctx.lineTo(ORIGIN_X_OFFSET, dprHeight - GROUND_Y_OFFSET); stroke();
+  ctx.beginPath(); ctx.moveTo(ORIGIN_X_OFFSET, 0); ctx.lineTo(ORIGIN_X_OFFSET, dprHeight - GROUND_Y_OFFSET); ctx.stroke();
 
-// 2. 조감도 (Top View) 격자 렌더링
+// 2. 조감도 (Top View) 눈금 격자 플롯
 } else if (currentView === 'top') {
   for (let xMeters = 0; xMeters <= MAX_WORLD_X; xMeters += 20) {
     let scrY = dprHeight - 25 - (xMeters * topScaleForward);
@@ -282,11 +277,11 @@ if (currentView === 'side') {
     ctx.beginPath(); ctx.moveTo(scrX, 0); ctx.lineTo(scrX, dprHeight); ctx.stroke();
     ctx.textAlign = 'center'; ctx.fillText(zMeters === 0 ? '중앙(0m)' : zMeters + 'm', scrX, dprHeight - 8);
   }
-  // 사대 정중앙 분리선
+  // 사대 중앙 분리 기준축선
   ctx.strokeStyle = '#86868b'; ctx.lineWidth = 1.5; 
   ctx.beginPath(); ctx.moveTo(dprWidth / 2, 0); ctx.lineTo(dprWidth / 2, dprHeight - 25); ctx.stroke();
 
-// 3. 정면도 (Front View) 격자 렌더링
+// 3. 정면도 (Front View) 눈금 격자 플롯
 } else if (currentView === 'front') {
   const centerX = ORIGIN_X_OFFSET + (dprWidth - ORIGIN_X_OFFSET - 20) / 2;
   for (let zMeters = -MAX_WORLD_Z; zMeters <= MAX_WORLD_Z; zMeters += 5) {
@@ -299,18 +294,18 @@ if (currentView === 'side') {
     ctx.beginPath(); ctx.moveTo(ORIGIN_X_OFFSET, scrY); ctx.lineTo(dprWidth, scrY); ctx.stroke();
     ctx.textAlign = 'right'; ctx.fillText(yMeters + 'm', ORIGIN_X_OFFSET - 5, scrY + 3);
   }
-  // 기본 지면 테두리 축선
+  // 지면 및 좌측 마진 기준선
   ctx.strokeStyle = '#1d1d1f'; ctx.lineWidth = 2;
   ctx.beginPath(); ctx.moveTo(ORIGIN_X_OFFSET, dprHeight - GROUND_Y_OFFSET); ctx.lineTo(dprWidth, dprHeight - GROUND_Y_OFFSET); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(ORIGIN_X_OFFSET, 0); ctx.lineTo(ORIGIN_X_OFFSET, dprHeight - GROUND_Y_OFFSET); ctx.stroke();
-  // 정중앙 가상 조준 수직선
+  // 정가운데 종방향 수직 중심선
   ctx.strokeStyle = '#86868b'; ctx.lineWidth = 1.2; 
   ctx.beginPath(); ctx.moveTo(centerX, 0); ctx.lineTo(centerX, dprHeight - GROUND_Y_OFFSET); ctx.stroke();
 
-// 4. 과녁 확대도 (Target View) 정밀 격자 렌더링
+// 4. 과녁 확대도 (Target View) 정밀 눈금 격자 플롯
 } else if (currentView === 'target') {
   const tBottomY = dprHeight * 0.65;
-  // 색상 오염 방지를 위해 옅은 회색 복원 및 선 두께 얇게 최적화
+  // 색상 전이 차단을 위해 옅은 회색 격자선 강제 바인딩 및 얇은 두께 보정
   ctx.strokeStyle = '#e5e5ea'; 
   ctx.lineWidth = 0.8; 
   
@@ -320,30 +315,28 @@ if (currentView === 'side') {
     ctx.fillStyle = '#8e8e93'; ctx.font = '9px -apple-system'; ctx.textAlign = 'center';
     ctx.fillText(lz === 0 ? '중앙' : lz.toFixed(1) + 'm', scrX, dprHeight - 8);
   }
-  // 💡 자 눈금선을 과녁 수직 투영 높이(2.58m) 기준에 맞춰 상단 3.0m까지 플롯
   for (let ly = -0.5; ly <= 3.0; ly += 0.5) {
     let scrY = tBottomY - (ly * targetViewScale);
     ctx.beginPath(); ctx.moveTo(0, scrY); ctx.lineTo(dprWidth, scrY); ctx.stroke();
     ctx.fillStyle = '#8e8e93'; ctx.font = '9px -apple-system'; ctx.textAlign = 'right';
     ctx.fillText(ly === 0 ? '바닥(0m)' : (ly > 0 ? '+' : '') + ly.toFixed(1) + 'm', dprWidth - 8, scrY + 3);
   }
-  // 과녁 중심 크로스헤어 조준선축
+  // 홍심 과녁 크로스헤어 정밀 조준 중심 기선
   ctx.strokeStyle = '#86868b'; ctx.lineWidth = 1.2;
   ctx.beginPath(); ctx.moveTo(dprWidth / 2, 0); ctx.lineTo(dprWidth / 2, dprHeight); ctx.stroke();
   ctx.beginPath(); ctx.moveTo(0, tBottomY); ctx.lineTo(dprWidth, tBottomY); ctx.stroke();
 }
 
 ctx.lineWidth = 1.5;
-  // 과녁 객체 드로잉 파트
+  // 과녁 객체 드로잉
   if (currentView === 'side') {
-    // [보정 완료] 측면도에서 그리는 과녁판 높이를 경사 거리 TGT_H가 아닌 순수 '수직 투영 높이(TGT_PROJ_H)'인 2.58m로 매핑하여 화면 착시 원천 청산!
     const fBottom = toScreen(targetBaseX, safeTargetH, 0);
-    const frontTopX = targetBaseX + TGT_H * Math.sin(TGT_TILT);
-    const frontTopY = safeTargetH + TGT_PROJ_H; // 수직 높이 칼축 결합 (2.58m)
+    const frontTopX = targetBaseX + TGT_H * Math.sin(TGT_TILT); 
+    const frontTopY = safeTargetH + TGT_PROJ_H;
     const fTop = toScreen(frontTopX, frontTopY, 0);
     const thickX = TGT_D * Math.cos(TGT_TILT); 
     const thickY = -TGT_D * Math.sin(TGT_TILT);
-    const bBottom = toScreen(targetBaseX + thickX, safeTargetH + thickY, 0);
+    const bBottom = toScreen(targetBaseX + thickX, safeTargetH + thickY, 0); 
     const bTop = toScreen(frontTopX + thickX, frontTopY + thickY, 0);
 
     ctx.fillStyle = '#e5e5ea'; 
@@ -355,8 +348,8 @@ ctx.lineWidth = 1.5;
   } else if (currentView === 'front') {
     const leftX = toScreen(targetBaseX, safeTargetH, -TGT_W / 2).x; 
     const rightX = toScreen(targetBaseX, safeTargetH, TGT_W / 2).x;
-    const bottomY = toScreen(targetBaseX, safeTargetH, 0).y;
-    const topY = toScreen(targetBaseX, safeTargetH + TGT_PROJ_H, 0).y; // 수직 높이 2.58m 결합
+    const bottomY = toScreen(targetBaseX, safeTargetH, 0).y; 
+    const topY = toScreen(targetBaseX, safeTargetH + TGT_PROJ_H, 0).y;
     const w = rightX - leftX; 
     const h = bottomY - topY;
 
@@ -378,11 +371,10 @@ ctx.lineWidth = 1.5;
     ctx.strokeStyle = '#1d1d1f'; ctx.lineWidth = 1.5; ctx.stroke();
 
   } else if (currentView === 'target') {
-    // [보정 완료] 과녁 확대 뷰 세로 크기를 정확하게 수직 투영 높이인 2.58m 사각형 비율로 전면 대개정!
     const tLeftX = (dprWidth / 2) - (TGT_W / 2 * targetViewScale); 
     const tRightX = (dprWidth / 2) + (TGT_W / 2 * targetViewScale);
-    const tBottomY = dprHeight * 0.65;
-    const tTopY = tBottomY - (TGT_PROJ_H * targetViewScale); // 세로 길이를 2.58m 비례식으로 칼같이 변환
+    const tBottomY = dprHeight * 0.65; 
+    const tTopY = tBottomY - (TGT_PROJ_H * targetViewScale);
     const w = tRightX - tLeftX; 
     const h = tBottomY - tTopY;
 
@@ -393,7 +385,6 @@ ctx.lineWidth = 1.5;
     ctx.fillStyle = '#ff3b30'; ctx.beginPath(); ctx.arc(tLeftX + w * 0.5, (tTopY + h * 0.3) + (h * 0.62) * 0.5, w * 0.23, 0, Math.PI * 2); ctx.fill();
 
     if (hasIntersectedTargetPlane) {
-      // [정밀 보정 완료] 관중/탈타 마커도 사선 거리가 아닌 실제 수직 눈금 고도차(TGT_PROJ_H / 2)를 기반으로 플롯 위치 동기화
       const localYFromBottom = targetHitMetrics.localY + (TGT_PROJ_H / 2);
       const markerX = (dprWidth / 2) + (targetHitMetrics.localZ * targetViewScale);
       const markerY = tBottomY - (localYFromBottom * targetViewScale);
@@ -412,14 +403,14 @@ ctx.lineWidth = 1.5;
     }
   }
 
-  // 지면 지지대 수직선 드로잉
+  // 지면 지지선 렌더링
   if (currentView === 'side' || currentView === 'front') {
     const tgtFloor = toScreen(targetBaseX, 0, 0); 
     const tgtBasePos = toScreen(targetBaseX, safeTargetH, 0);
     ctx.strokeStyle = '#515154'; ctx.lineWidth = 2; ctx.beginPath(); ctx.moveTo(tgtBasePos.x, tgtBasePos.y); ctx.lineTo(tgtBasePos.x, tgtFloor.y); ctx.stroke();
   }
 
-  // 궤적 결합선 보정 및 누적 플롯
+  // [정밀 보정] 누적 비행 궤적선 변환 공식의 괄호 유효성 완전 확보
   if (currentView !== 'target' && trajectory.length > 1) {
     ctx.strokeStyle = '#0071e3'; ctx.lineWidth = 2.5; ctx.beginPath();
     const start = toScreen(trajectory[0].x, trajectory[0].y, trajectory[0].z);
@@ -449,7 +440,7 @@ ctx.lineWidth = 1.5;
   }
 }
 
-// 캔버스 크기 제어 및 지연 로드
+// 캔버스 초기 리사이즈 및 지연 렌더링 세팅
 setTimeout(() => {
   if (typeof loadSettings === 'function') loadSettings();
   resizeCanvas();
