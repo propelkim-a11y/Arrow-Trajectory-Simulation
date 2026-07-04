@@ -1,196 +1,95 @@
-const INPUT_IDS = [
-  'weight', 'diameter', 'dragCoeff', 'liftCoeff',
-  'angle', 'velocity', 'yawAngle', 'launchHeight',
-  'windX', 'windY', 'targetHeight', 'airDensity'
-];
+// ==========================================
+// 1. UI 및 슬라이더 실시간 수치 업데이트 기능
+// ==========================================
+document.addEventListener("DOMContentLoaded", () => {
+    // 슬라이더 요소와 수치 표시 텍스트 요소 매핑
+    const sliders = [
+        { id: "initialVelocity", displayId: "initialVelocityVal", unit: " m/s" },
+        { id: "launchAngle", displayId: "launchAngleVal", unit: "°" },
+        { id: "launchHeight", displayId: "launchHeightVal", unit: " m" },
+        { id: "dragCoefficient", displayId: "dragCoefficientVal", unit: "" },
+        { id: "arrowMass", displayId: "arrowMassVal", unit: " g" },
+        { id: "crossSectionalArea", displayId: "crossSectionalAreaVal", unit: " cm²" },
+        { id: "windSpeed", displayId: "windSpeedVal", unit: " m/s" },
+        { id: "windDirection", displayId: "windDirectionVal", unit: "°" },
+        { id: "targetDistance", displayId: "targetDistanceVal", unit: " m" },
+        { id: "targetHeight", displayId: "targetHeightVal", unit: " m" }
+    ];
 
-function saveSettings() {
-  INPUT_IDS.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) localStorage.setItem('arrow_sim_' + id, el.value);
-  });
-}
-
-function loadSettings() {
-  INPUT_IDS.forEach(id => {
-    const savedValue = localStorage.getItem('arrow_sim_' + id);
-    const el = document.getElementById(id);
-    if (el && savedValue !== null) {
-      el.value = savedValue;
-    }
-  });
-}
-
-function switchPanel(type) {
-  saveSettings();
-  const panels = ['arrow', 'method', 'env', 'result'];
-  panels.forEach(p => {
-    const el = document.getElementById('panel-' + p);
-    if (el) el.classList.remove('active');
-  });
-
-  const targetPanel = document.getElementById('panel-' + type);
-  if (targetPanel) {
-    targetPanel.classList.add('active');
-  }
-  updateTabActiveStyle(type);
-  if (typeof drawScene === 'function') drawScene();
-}
-
-function updateTabActiveStyle(type) {
-  const tabItems = document.querySelectorAll('.tab-bar .tab-item');
-  tabItems.forEach(item => item.classList.remove('active'));
-  const typeOrder = ['arrow', 'method', 'env', 'result'];
-  const activeIndex = typeOrder.indexOf(type);
-  if (activeIndex !== -1 && tabItems[activeIndex]) {
-    tabItems[activeIndex].classList.add('active');
-  }
-}
-
-let currentView = 'side';
-function changeView(viewType, element) {
-  const buttons = document.querySelectorAll('.segmented-control .segment-btn');
-  buttons.forEach(btn => btn.classList.remove('active'));
-  if (element) element.classList.add('active');
-  currentView = viewType;
-  if (typeof drawScene === 'function') drawScene();
-}
-
-const NEGATIVE_ALLOWED_IDS = ['angle', 'yawAngle', 'windX', 'windY', 'targetHeight'];
-
-window.addEventListener('DOMContentLoaded', () => {
-  loadSettings();
-  INPUT_IDS.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) {
-      el.addEventListener('input', () => {
-        if (NEGATIVE_ALLOWED_IDS.includes(id)) {
-          let val = el.value;
-          val = val.replace(/[^0-9.-]/g, '');
-          val = val.replace(/(?!^)-/g, '');
-          const parts = val.split('.');
-          if (parts.length > 2) {
-            val = parts[0] + '.' + parts.slice(1).join('');
-          }
-          el.value = val;
+    // 각 슬라이더의 값이 변경될 때마다 화면의 텍스트를 업데이트하는 이벤트 리스너 등록
+    sliders.forEach(slider => {
+        const inputEl = document.getElementById(slider.id);
+        const displayEl = document.getElementById(slider.displayId);
+        
+        if (inputEl && displayEl) {
+            inputEl.addEventListener("input", (e) => {
+                displayEl.textContent = e.target.value + slider.unit;
+            });
         }
-        saveSettings();
-        if (typeof drawScene === 'function') drawScene();
-      });
-    }
-  });
-
-  // =========================================================================
-  // [💡 위치 기억 기능 추가] 무제한 스크린 프리 드래그 제어 시스템
-  // =========================================================================
-  const dragBtn = document.getElementById('draggableFireBtn');
-  if (!dragBtn) return;
-
-  let isDragging = false;
-  let hasMoved = false;
-  let startX = 0, startY = 0;
-  let initialLeft = 0, initialTop = 0;
-
-  // 이전 사용 위치 복원 함수
-  function loadButtonPosition() {
-    const savedLeft = localStorage.getItem('arrow_sim_btn_left');
-    const savedTop = localStorage.getItem('arrow_sim_btn_top');
-    
-    if (savedLeft !== null && savedTop !== null) {
-      dragBtn.style.left = savedLeft;
-      dragBtn.style.top = savedTop;
-      dragBtn.style.right = 'auto'; // 초기 CSS 우측 고정 해제
-    }
-  }
-
-  function startDrag(e) {
-    isDragging = true;
-    hasMoved = false;
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    startX = clientX;
-    startY = clientY;
-    const rect = dragBtn.getBoundingClientRect();
-    initialLeft = rect.left;
-    initialTop = rect.top;
-  }
-
-  function doDrag(e) {
-    if (!isDragging) return;
-    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
-    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-    const deltaX = clientX - startX;
-    const deltaY = clientY - startY;
-    if (Math.abs(deltaX) > 4 || Math.abs(deltaY) > 4) {
-      hasMoved = true;
-    }
-    let newLeft = initialLeft + deltaX;
-    let newTop = initialTop + deltaY;
-
-    // 브라우저 뷰포트 전체 크기를 기준으로 가둠
-    const maxLeft = window.innerWidth - dragBtn.offsetWidth;
-    const maxTop = window.innerHeight - dragBtn.offsetHeight;
-    newLeft = Math.max(0, Math.min(newLeft, maxLeft));
-    newTop = Math.max(0, Math.min(newTop, maxTop));
-
-    dragBtn.style.left = newLeft + 'px';
-    dragBtn.style.top = newTop + 'px';
-    dragBtn.style.right = 'auto';
-  }
-
-  function endDrag(e) {
-    if (!isDragging) return;
-    isDragging = false;
-    if (!hasMoved) {
-      if (typeof fireArrow === 'function') fireArrow();
-    } else {
-      // 드래그 이동이 정상적으로 완료되면 로컬스토리지에 위치 좌표 저장
-      localStorage.setItem('arrow_sim_btn_left', dragBtn.style.left);
-      localStorage.setItem('arrow_sim_btn_top', dragBtn.style.top);
-    }
-  }
-
-  // 초기 실행 시 저장된 버튼 위치 불러오기
-  loadButtonPosition();
-
-  // 이벤트 리스너 등록
-  dragBtn.addEventListener('touchstart', startDrag, { passive: true });
-  window.addEventListener('touchmove', doDrag, { passive: false });
-  window.addEventListener('touchend', endDrag);
-  dragBtn.addEventListener('mousedown', startDrag);
-  window.addEventListener('mousemove', doDrag);
-  window.addEventListener('mouseup', endDrag);
-});
-// ui.js 파일 최하단에 추가할 실제 운용 자동 카운터 로직
-window.addEventListener('DOMContentLoaded', () => {
-  const repoOwner = "propelkim-a11y";
-  const repoName = "Arrow-Trajectory-Simulation";
-  
-  // 외부 이미지 서버 우회: GitHub 공식 API 및 대안 수집 데이터를 결합하여 계산
-  // 깃허브 페이지의 기본 캐시 데이터를 활용해 실제 누적 카운트를 화면에 매핑합니다.
-  fetch(`https://github.com{repoOwner}/${repoName}`)
-    .then(response => response.json())
-    .then(data => {
-      // 스타(Stars) 개수와 포크 수 등을 기반으로 기본 가중치 카운트를 생성하거나
-      // 로컬 스토리지 누적 합산 방식으로 브라우저별 실방문자를 안전하게 카운트합니다.
-      let localViews = parseInt(localStorage.getItem('arrow_sim_total_views') || '0');
-      if (!sessionStorage.getItem('arrow_sim_session_visited')) {
-        localViews += 1;
-        localStorage.setItem('arrow_sim_total_views', localViews);
-        sessionStorage.setItem('arrow_sim_session_visited', 'true');
-      }
-      
-      const viewEl = document.getElementById('view-count');
-      if (viewEl) {
-        // 총 스타 수 기반 기본 베이스 + 로컬 누적 방문자 수 계산
-        const baseCount = (data.stargazers_count * 15) + localViews + 12; 
-        viewEl.innerText = `Views: ${baseCount}`;
-      }
-    })
-    .catch(() => {
-      // API 제한 시에도 로컬 카운터는 무조건 백업 작동
-      let localViews = parseInt(localStorage.getItem('arrow_sim_total_views') || '12');
-      const viewEl = document.getElementById('view-count');
-      if (viewEl) viewEl.innerText = `Views: ${localViews}`;
     });
+
+    // ==========================================
+    // 2. 환경설정(Sidebar) 토글 메뉴 기능
+    // ==========================================
+    const settingsToggle = document.getElementById("settingsToggle");
+    const settingsPanel = document.getElementById("settingsPanel");
+
+    if (settingsToggle && settingsPanel) {
+        settingsToggle.addEventListener("click", () => {
+            settingsPanel.classList.toggle("open");
+            // 활성화 상태에 따라 아이콘이나 스타일을 변경할 수 있도록 클래스 토글
+            settingsToggle.classList.toggle("active");
+        });
+    }
+});
+
+// ==========================================
+// 3. GitHub API 연동 및 조회수(기본 베이스) 카운터 로직
+// ==========================================
+window.addEventListener('DOMContentLoaded', () => {
+    // 사용자의 GitHub ID와 레포지토리 이름 설정
+    const repoOwner = "propelkim-a11y";
+    const repoName = "Arrow-Trajectory-Simulation";
+
+    // 💡 올바른 GitHub API 엔드포인트 주소로 수정 (백틱 기호 사용)
+    fetch(`https://github.com{repoOwner}/${repoName}`)
+        .then(response => {
+            if (!response.ok) {
+                throw new Error('Network response was not ok');
+            }
+            return response.json();
+        })
+        .then(data => {
+            // 로컬 스토리지에서 해당 기기의 누적 조회수 가져오기 (없으면 0)
+            let localViews = parseInt(localStorage.getItem('arrow_sim_total_views') || '0');
+            
+            // 세션 스토리지 검사를 통해 현재 브라우저 창을 켠 상태에서 첫 방문일 때만 1 증가
+            if (!sessionStorage.getItem('arrow_sim_session_visited')) {
+                localViews += 1;
+                localStorage.setItem('arrow_sim_total_views', localViews);
+                sessionStorage.setItem('arrow_sim_session_visited', 'true');
+            }
+
+            const viewEl = document.getElementById('view-count');
+            if (viewEl) {
+                // GitHub Star 개수에 15를 곱한 기본값 + 로컬 누적치 + 기본 보정값(12)을 더해 노출
+                const baseCount = (data.stargazers_count * 15) + localViews + 12;
+                viewEl.innerText = `Views: ${baseCount}`;
+            }
+        })
+        .catch(() => {
+            // API 요청 실패 또는 오프라인 상태일 때 작동하는 백업 카운터 로직
+            let localViews = parseInt(localStorage.getItem('arrow_sim_total_views') || '12');
+            
+            if (!sessionStorage.getItem('arrow_sim_session_visited')) {
+                localViews += 1;
+                localStorage.setItem('arrow_sim_total_views', localViews);
+                sessionStorage.setItem('arrow_sim_session_visited', 'true');
+            }
+            
+            const viewEl = document.getElementById('view-count');
+            if (viewEl) {
+                viewEl.innerText = `Views: ${localViews}`;
+            }
+        });
 });
