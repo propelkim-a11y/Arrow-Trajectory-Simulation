@@ -56,7 +56,6 @@ function changeView(viewType, element) {
     if (typeof drawScene === 'function') drawScene();
 }
 
-// 💡 [음수 입력 최적화 기능] 마이너스 부호와 소수점이 실시간 타이핑 도중 깨지지 않게 보정하는 정규식 필터
 const NEGATIVE_ALLOWED_IDS = ['angle', 'yawAngle', 'windX', 'windY', 'targetHeight'];
 
 window.addEventListener('DOMContentLoaded', () => {
@@ -66,13 +65,12 @@ window.addEventListener('DOMContentLoaded', () => {
         if (el) {
             el.addEventListener('input', () => {
                 if (NEGATIVE_ALLOWED_IDS.includes(id)) {
-                    // 첫 글자 마이너스 허용, 소수점은 단 하나만 존재하도록 문자열 실시간 세탁
                     let val = el.value;
-                    val = val.replace(/[^0-9.-]/g, ''); // 숫자, 점, 마이너스 외 삭제
-                    val = val.replace(/(?!^)-/g, '');   // 첫 자리가 아닌 마이너스 제거
+                    val = val.replace(/[^0-9.-]/g, ''); 
+                    val = val.replace(/(?!^)-/g, '');   
                     const parts = val.split('.');
                     if (parts.length > 2) {
-                        val = parts[0] + '.' + parts.slice(1).join(''); // 소수점 두 개 이상 방지
+                        val = parts[0] + '.' + parts.slice(1).join(''); 
                     }
                     el.value = val;
                 }
@@ -82,40 +80,56 @@ window.addEventListener('DOMContentLoaded', () => {
         }
     });
 
-    // 발사 버튼 동적 드래그 제어부 병합
+    // 💡 [전면 개정] 무제한 스크린 프리 드래그 제어 시스템
     const dragBtn = document.getElementById('draggableFireBtn');
     if (!dragBtn) return;
 
-    let isDragging = false; let hasMoved = false;
-    let startX = 0, startY = 0; let initialLeft = 0, initialTop = 0;
+    let isDragging = false; 
+    let hasMoved = false;
+    let startX = 0, startY = 0; 
+    let initialLeft = 0, initialTop = 0;
 
     function startDrag(e) {
-        isDragging = true; hasMoved = false;
+        isDragging = true; 
+        hasMoved = false;
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
         const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        startX = clientX; startY = clientY;
+        startX = clientX; 
+        startY = clientY;
         const rect = dragBtn.getBoundingClientRect();
-        const container = dragBtn.parentElement.getBoundingClientRect();
-        initialLeft = rect.left - container.left; initialTop = rect.top - container.top;
+        initialLeft = rect.left; 
+        initialTop = rect.top;
     }
 
     function doDrag(e) {
         if (!isDragging) return;
         const clientX = e.touches ? e.touches[0].clientX : e.clientX;
         const clientY = e.touches ? e.touches[0].clientY : e.clientY;
-        const deltaX = clientX - startX; const deltaY = clientY - startY;
-        if (Math.abs(deltaX) > 3 || Math.abs(deltaY) > 3) { hasMoved = true; }
-        let newLeft = initialLeft + deltaX; let newTop = initialTop + deltaY;
-        const container = dragBtn.parentElement.getBoundingClientRect();
-        const maxLeft = container.width - dragBtn.offsetWidth; const maxTop = container.height - dragBtn.offsetHeight;
-        newLeft = Math.max(0, Math.min(newLeft, maxLeft)); newTop = Math.max(0, Math.min(newTop, maxTop));
-        dragBtn.style.left = newLeft + 'px'; dragBtn.style.top = newTop + 'px'; dragBtn.style.right = 'auto';
+        const deltaX = clientX - startX; 
+        const deltaY = clientY - startY;
+        if (Math.abs(deltaX) > 4 || Math.abs(deltaY) > 4) { 
+            hasMoved = true; 
+        }
+        let newLeft = initialLeft + deltaX; 
+        let newTop = initialTop + deltaY;
+        
+        // 브라우저 뷰포트 전체 크기를 기준으로 가둠
+        const maxLeft = window.innerWidth - dragBtn.offsetWidth;
+        const maxTop = window.innerHeight - dragBtn.offsetHeight;
+        newLeft = Math.max(0, Math.min(newLeft, maxLeft));
+        newTop = Math.max(0, Math.min(newTop, maxTop));
+        
+        dragBtn.style.left = newLeft + 'px'; 
+        dragBtn.style.top = newTop + 'px'; 
+        dragBtn.style.right = 'auto';
     }
 
     function endDrag(e) {
         if (!isDragging) return;
         isDragging = false;
-        if (!hasMoved) { if (typeof fireArrow === 'function') fireArrow(); }
+        if (!hasMoved) { 
+            if (typeof fireArrow === 'function') fireArrow(); 
+        }
     }
 
     dragBtn.addEventListener('touchstart', startDrag, { passive: true });
