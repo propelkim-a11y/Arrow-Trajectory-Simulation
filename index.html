@@ -28,7 +28,7 @@
   <!-- 40% : 하단 영역 라운드 카드형 설정 및 결과 패널 컨테이너 -->
   <div id="panel-container">
   
-    <!-- [1] 탭 화살 설정 -->
+    <!-- 탭 화살 설정 -->
     <div class="fixed-panel active" id="panel-arrow">
       <div class="panel-card">
         <div class="panel-title">화살 설정</div>
@@ -61,7 +61,7 @@
       </div>
     </div>
     
-    <!-- [2] 탭 사법 설정 -->
+    <!-- 탭 사법 설정 -->
     <div class="fixed-panel" id="panel-method">
       <div class="panel-card">
         <div class="panel-title">사법 설정</div>
@@ -96,7 +96,7 @@
       </div>
     </div>
     
-    <!-- [3] 탭 환경 설정 -->
+    <!-- 탭 환경 설정 -->
     <div class="fixed-panel" id="panel-env">
       <div class="panel-card">
         <div class="panel-title">환경 설정</div>
@@ -132,7 +132,7 @@
       </div>
     </div>
     
-    <!-- [4] 탭 비행 결과 -->
+    <!-- 탭 비행 결과 -->
     <div class="fixed-panel" id="panel-result">
       <div class="panel-card">
         <div class="panel-title">비행 결과 분석</div>
@@ -149,7 +149,7 @@
   
   </div>
   
-  <!-- [수정] 맨 아래 고정된 저작권 표시 영역 및 조회수 카운터 컨테이너 -->
+  <!-- 맨 아래 고정된 저작권 표시 영역 및 조회수 카운터 컨테이너 -->
   <div id="app-copyright">
     <div>Copyright © 2026 - . All Rights Reserved. 해현 활터왔소</div>
     <div id="hits-counter-container" style="margin-top: 4px; display: flex; justify-content: center; align-items: center;"></div>
@@ -163,29 +163,39 @@
     <button class="tab-item" onclick="switchPanel('result')"><span class="tab-icon">📊</span><span>비행 결과</span></button>
   </div>
 
-  <!-- 자동 조회수 카운터 연동 스크립트 -->
+  <!-- 자동 조회수 카운터 연동 스크립트 (오류 방지 및 안정화 버전) -->
   <script>
     (function() {
-      // 1. 현재 웹앱의 전체 페이지 주소(URL)를 가져옵니다.
-      const currentUrl = window.location.href;
+      // 1. 보안/로컬 파일 실행 대응: 주소가 도메인이 아닐 경우 깃허브 Pages 주소로 강제 지정합니다.
+      let currentUrl = window.location.href;
+      if (!currentUrl || currentUrl.startsWith('file://') || currentUrl.includes('localhost') || currentUrl.includes('127.0.0.1')) {
+        currentUrl = "https://github.io";
+      }
 
-      // 2. Hits 위젯 디자인 설정 (초록색 테마 일치)
+      // 2. Hits 위젯 디자인 설정
       const title = "hits";         
       const countBg = "79C83D";     
       const titleBg = "555555";     
 
-      // 3. 현재 주소를 포함하여 Hits API 주소 생성
-      const hitsSrc = `https://seeyoufarm.com{encodeURIComponent(currentUrl)}&count_bg=%23${countBg}&title_bg=%23${titleBg}&icon=&icon_color=%23E7E7E7&title=${title}&edge_flat=false`;
+      // 3. API 주소 조합
+      const cleanUrl = encodeURIComponent(currentUrl.trim());
+      const hitsSrc = `https://seeyoufarm.com{cleanUrl}&count_bg=%23${countBg}&title_bg=%23${titleBg}&icon=&icon_color=%23E7E7E7&title=${title}&edge_flat=false`;
 
-      // 4. HTML 태그 생성 및 링크 바인딩
+      // 4. HTML 구조 생성 및 로딩 실패(엑스박스) 예외 처리 추가
       const counterHtml = `
         <a href="https://seeyoufarm.com" target="_blank" rel="noopener noreferrer" style="display: flex; height: 20px;">
-          <img src="${hitsSrc}" alt="Hits Counter" style="height: 100%; display: block;" />
+          <img src="${hitsSrc}" 
+               alt="Hits Counter" 
+               style="height: 100%; display: block;" 
+               onerror="this.style.display='none'; console.log('Hits Counter 로딩 실패로 배지 숨김 처리됨');" />
         </a>
       `;
 
       // 5. 엘리먼트에 주입
-      document.getElementById('hits-counter-container').innerHTML = counterHtml;
+      const container = document.getElementById('hits-counter-container');
+      if (container) {
+        container.innerHTML = counterHtml;
+      }
     })();
   </script>
 
