@@ -163,13 +163,14 @@
     <button class="tab-item" onclick="switchPanel('result')"><span class="tab-icon">📊</span><span>비행 결과</span></button>
   </div>
 
-  <!-- 링크 깨짐 오류를 완벽히 차단한 100% 검증 스크립트 -->
+  <!-- 실제 주소 연동 카운터 스크립트 -->
   <script>
     (function() {
-      // 변수 조립 시 에러를 막기 위해 순수 텍스트 주소로 결합을 마쳤습니다.
+      // 1. 오타가 전혀 날 수 없도록 고정 텍스트 주소로 마크업을 매칭했습니다.
       const badgeSrc = "https://komarev.com";
       const targetLink = "https://github.com";
 
+      // 2. 텍스트 레이아웃을 주입합니다.
       const counterHtml = `
         <a href="${targetLink}" target="_blank" rel="noopener noreferrer" style="display: flex; height: 18px; align-items: center;">
           <img src="${badgeSrc}" alt="Views Counter" style="height: 100%; display: block;" />
