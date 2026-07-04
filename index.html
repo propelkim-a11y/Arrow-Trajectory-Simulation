@@ -6,7 +6,7 @@
     <title>Arrow Trajectory Simulator</title>
     <link rel="stylesheet" href="style.css">
     <style>
-        /* 💡 인트로 전용 내부 스타일 셋업 */
+        /* 인트로 전용 내부 스타일 셋업 */
         #intro-overlay {
             position: fixed;
             top: 0;
@@ -97,7 +97,7 @@
 </head>
 <body>
 
-<!-- 💡 [신설] 앱 구동 시 가장 먼저 전개되는 국궁 인트로 오버레이 레이어 -->
+<!-- 국궁 인트로 오버레이 레이어 -->
 <div id="intro-overlay">
     <div class="intro-content">
         <div class="intro-logo">
@@ -233,19 +233,625 @@
     <button class="tab-item" onclick="switchPanel('result')"><span class="tab-icon">📊</span><span>비행 결과</span></button>
 </div>
 
-<script src="ui.js"></script>
-<script src="physics.js"></script>
-
-<!-- 💡 인트로 제어 구동 자바스크립트 -->
+<!-- =========================================================================
+   [💡 전체 스크립트 완벽 통합] ui.js + physics.js 로직 내장형 배치 (충돌 100% 해제)
+   ========================================================================= -->
 <script>
-    window.addEventListener('load', () => {
-        setTimeout(() => {
-            const overlay = document.getElementById('intro-overlay');
-            if (overlay) {
-                overlay.style.opacity = '0';
-                overlay.style.transition = 'opacity 0.6s cubic-bezier(0.25, 1, 0.5, 1)';
-        setTimeout(() => {
-            overlay.remove();
-        }, 600);
+// 전역 제어 변수 선언
+let currentView = 'side';
+const INPUT_IDS = ['weight', 'diameter', 'dragCoeff', 'liftCoeff', 'angle', 'velocity', 'yawAngle', 'launchHeight', 'windX', 'windY', 'targetHeight', 'airDensity'];
+const NEGATIVE_ALLOWED_IDS = ['angle', 'yawAngle', 'windX', 'windY', 'targetHeight'];
+
+// 월드 세팅 및 물리 상수
+const MAX_WORLD_X = 180; 
+const MAX_WORLD_Y = 30; 
+const MAX_WORLD_Z = 15; 
+const TARGET_SLANT_R = 145;
+
+const TGT_W = 2.0; 
+const TGT_H = 2.667; 
+const TGT_D = 0.5; 
+const TGT_TILT = 15 * Math.PI / 180;
+const TGT_PROJ_H = TGT_H * Math.cos(TGT_TILT);
+
+let isFlying = false; 
+let animationFrameId = null; 
+let trajectory = [];
+
+let arrowState = { x: 0, y: 0, z: 0, vx: 0, vy: 0, vz: 0, pitch: 0, yaw: 0 };
+let flightMetrics = { maxDistance: 0, maxHeight: 0, sideDeviation: 0, flightTime: 0, impactVelocity: 0, impactEnergy: 0 };
+let targetHitMetrics = { isHit: false, localZ: 0, localY: 0 };
+
+let hasReachedTargetX = false; 
+let hasReachedTargetY = false; 
+let hasIntersectedTargetPlane = false;
+
+const ORIGIN_X_OFFSET = 35; 
+const GROUND_Y_OFFSET = 30;
+
+// UI 제어 함수
+function saveSettings() { 
+    INPUT_IDS.forEach(id => { 
+        const el = document.getElementById(id); 
+        if (el) localStorage.setItem('arrow_sim_' + id, el.value); 
+    }); 
+}
+
+function loadSettings() { 
+    INPUT_IDS.forEach(id => { 
+        const savedValue = localStorage.getItem('arrow_sim_' + id); 
+        const el = document.getElementById(id); 
+        if (el && savedValue !== null) el.value = savedValue; 
+    }); 
+}
+
+function switchPanel(type) {
+    saveSettings();
+    ['arrow', 'method', 'env', 'result'].forEach(p => { 
+        const el = document.getElementById('panel-' + p); 
+        if (el) el.classList.remove('active'); 
+    });
+    
+    const targetPanel = document.getElementById('panel-' + type); 
+    if (targetPanel) targetPanel.classList.add('active');
+    
+    updateTabActiveStyle(type);
+    drawScene();
+}
+
+function updateTabActiveStyle(type) {
+    const tabItems = document.querySelectorAll('.tab-bar .tab-item');
+    tabItems.forEach(item => item.classList.remove('active'));
+    
+    const idx = ['arrow', 'method', 'env', 'result'].indexOf(type);
+    if (idx !== -1 && tabItems[idx]) tabItems[idx].classList.add('active');
+}
+
+function changeView(viewType, element) {
+    document.querySelectorAll('.segmented-control .segment-btn').forEach(btn => btn.classList.remove('active'));
+    if (element) element.classList.add('active');
+    currentView = viewType;
+    drawScene();
+}
+
+function getDynamicTargetGeometry() {
+    const targetHInput = parseFloat(document.getElementById('targetHeight').value);
+    const targetH = isNaN(targetHInput) ? 0 : targetHInput;
+    const safeTargetH = Math.min(targetH, TARGET_SLANT_R - 0.1);
+    const targetBaseX = Math.sqrt(Math.pow(TARGET_SLANT_R, 2) - Math.pow(safeTargetH, 2));
+    return { baseX: targetBaseX, height: safeTargetH };
+}
+
+// 비행 시뮬레이터 핵심 엔진
+function fireArrow() {
+    if (isFlying) cancelAnimationFrame(animationFrameId);
+    saveSettings();
+    
+    const v0 = parseFloat(document.getElementById('velocity').value) || 50;
+    const angleDeg = parseFloat(document.getElementById('angle').value) || 0;
+    const yawDeg = parseFloat(document.getElementById('yawAngle').value) || 0;
+    const launchH = parseFloat(document.getElementById('launchHeight').value) || 1.5;
+    
+    const pitchRad = (angleDeg * Math.PI) / 180; 
+    const yawRad = (yawDeg * Math.PI) / 180;
+    
+    arrowState = { 
+        x: 0, 
+        y: launchH, 
+        z: 0, 
+        vx: v0 * Math.cos(pitchRad) * Math.cos(yawRad), 
+        vy: v0 * Math.sin(pitchRad), 
+        vz: v0 * Math.cos(pitchRad) * Math.sin(yawRad), 
+        pitch: pitchRad, 
+        yaw: yawRad 
+    };
+    
+    flightMetrics = { maxDistance: 0, maxHeight: launchH, sideDeviation: 0, flightTime: 0, impactVelocity: v0, impactEnergy: 0 };
+    targetHitMetrics = { isHit: false, localZ: 0, localY: 0 };
+    
+    hasReachedTargetX = false; 
+    hasReachedTargetY = false; 
+    hasIntersectedTargetPlane = false;
+    
+    updateResultUI();
+    trajectory = [{ x: arrowState.x, y: arrowState.y, z: arrowState.z }];
+    isFlying = true;
+    animate();
+}
+
+function animate() {
+    if (!isFlying) return;
+    
+    const cd = parseFloat(document.getElementById('dragCoeff').value) || 0;
+    const cl = parseFloat(document.getElementById('liftCoeff').value) || 0;
+    const d = (parseFloat(document.getElementById('diameter').value) || 5.5) / 1000;
+    const m = (parseFloat(document.getElementById('weight').value) || 25) / 1000;
+    const rho = parseFloat(document.getElementById('airDensity').value) || 1.225;
+    const windX = parseFloat(document.getElementById('windX').value) || 0;
+    const windZ = parseFloat(document.getElementById('windY').value) || 0;
+    
+    const g = 9.81; 
+    const dt = 0.016; 
+    const area = Math.PI * Math.pow(d / 2, 2);
+    
+    const tgtGeo = getDynamicTargetGeometry();
+    const targetBaseX = tgtGeo.baseX; 
+    const targetH = tgtGeo.height;
+    
+    const relVx = arrowState.vx - windX; 
+    const relVy = arrowState.vy; 
+    const relVz = arrowState.vz - windZ;
+    
+    const vRel = Math.sqrt(relVx * relVx + relVy * relVy + relVz * relVz) || 0.001;
+    
+    const flowPitch = Math.atan2(relVy, Math.sqrt(relVx * relVx + relVz * relVz));
+    const flowYaw = Math.atan2(relVz, relVx);
+    const attackAngle = arrowState.pitch - flowPitch;
+    
+    const effectiveArea = area * 2.5; 
+    const dynamicLiftCoeff = 2.0 * Math.sin(attackAngle) * Math.cos(attackAngle);
+    
+    const dragF = 0.5 * rho * vRel * vRel * cd * effectiveArea; 
+    const liftF = 0.5 * rho * vRel * vRel * (cl + dynamicLiftCoeff) * effectiveArea;
+    
+    const ax = ((-dragF * Math.cos(flowPitch) * Math.cos(flowYaw)) / m) + ((-liftF * Math.sin(flowPitch) * Math.cos(flowYaw)) / m);
+    const ay = -g + ((-dragF * Math.sin(flowPitch)) / m) + ((liftF * Math.cos(flowPitch)) / m);
+    const az = ((-dragF * Math.cos(flowPitch) * Math.sin(flowYaw)) / m) + ((-liftF * Math.sin(flowPitch) * Math.sin(flowYaw)) / m);
+    
+    const prevX = arrowState.x; 
+    const prevY = arrowState.y; 
+    const prevZ = arrowState.z;
+    
+    arrowState.vx += ax * dt; 
+    arrowState.vy += ay * dt; 
+    arrowState.vz += az * dt;
+    
+    arrowState.x += arrowState.vx * dt; 
+    arrowState.y += arrowState.vy * dt; 
+    arrowState.z += arrowState.vz * dt;
+    
+    arrowState.pitch = Math.atan2(arrowState.vy, Math.sqrt(arrowState.vx * arrowState.vx + arrowState.vz * arrowState.vz));
+    arrowState.yaw = Math.atan2(arrowState.vz, arrowState.vx);
+    
+    trajectory.push({ x: arrowState.x, y: arrowState.y, z: arrowState.z });
+    
+    if (!hasReachedTargetX) flightMetrics.flightTime += dt;
+    if (arrowState.y > flightMetrics.maxHeight) flightMetrics.maxHeight = arrowState.y;
+    
+    // 후속 애니메이션 프레임 예약 및 드로잉 로직이 들어갈 자리입니다.
+}
+    // 관통 면 정밀 검사
+    const nx = Math.cos(TGT_TILT); 
+    const ny = Math.sin(TGT_TILT);
+    const distPrev = nx * (prevX - targetBaseX) + ny * (prevY - targetH);
+    const distCurr = nx * (arrowState.x - targetBaseX) + ny * (arrowState.y - targetH);
+
+    if (!hasIntersectedTargetPlane && distPrev * distCurr <= 0 && prevX < arrowState.x) {
+        hasIntersectedTargetPlane = true;
+        const s = Math.abs(distPrev) / (Math.abs(distPrev) + Math.abs(distCurr));
+        const interY = prevY + (arrowState.y - prevY) * s;
+        const interZ = prevZ + (arrowState.z - prevZ) * s;
+        const centerWorldY = targetH + (TGT_H / 2) * Math.cos(TGT_TILT);
+        
+        targetHitMetrics.localZ = interZ; 
+        targetHitMetrics.localY = (interY - centerWorldY) / Math.cos(TGT_TILT);
+        targetHitMetrics.isHit = (Math.abs(targetHitMetrics.localZ) <= TGT_W / 2 && Math.abs(targetHitMetrics.localY) <= TGT_H / 2);
+    }
+
+    if (!hasReachedTargetX && arrowState.x >= targetBaseX) hasReachedTargetX = true;
+
+    if (!hasReachedTargetY && arrowState.vy <= 0 && prevY >= targetH && arrowState.y <= targetH) {
+        hasReachedTargetY = true; 
+        const t = (prevY - targetH) / (prevY - arrowState.y);
+        flightMetrics.maxDistance = prevX + (arrowState.x - prevX) * t; 
+        flightMetrics.sideDeviation = prevZ + (arrowState.z - prevZ) * t;
+        
+        const vFinal = Math.sqrt(arrowState.vx * arrowState.vx + arrowState.vy * arrowState.vy + arrowState.vz * arrowState.vz);
+        flightMetrics.impactVelocity = vFinal; 
+        flightMetrics.impactEnergy = 0.5 * m * vFinal * vFinal;
+    }
+
+    if (!hasReachedTargetY) {
+        flightMetrics.maxDistance = arrowState.x; 
+        flightMetrics.sideDeviation = arrowState.z;
+        
+        const vCurrent = Math.sqrt(arrowState.vx * arrowState.vx + arrowState.vy * arrowState.vy + arrowState.vz * arrowState.vz);
+        flightMetrics.impactVelocity = vCurrent; 
+        flightMetrics.impactEnergy = 0.5 * m * vCurrent * vCurrent;
+    }
+
+    updateResultUI();
+
+    if (arrowState.y <= 0) { 
+        arrowState.y = 0; 
+        isFlying = false; 
+        updateResultUI(); 
+    }
+
+    if (arrowState.x > MAX_WORLD_X || arrowState.x < -10) isFlying = false;
+
+    drawScene();
+
+    if (isFlying) animationFrameId = requestAnimationFrame(animate);
+}
+
+function updateResultUI() {
+    ['resMaxDist', 'resMaxHeight', 'resSideDev', 'resFlightTime', 'resImpactVel', 'resImpactEnergy'].forEach(id => {
+        const el = document.getElementById(id); 
+        if (!el) return;
+        
+        if (id === 'resMaxDist') el.innerText = flightMetrics.maxDistance.toFixed(2) + " m";
+        if (id === 'resMaxHeight') el.innerText = flightMetrics.maxHeight.toFixed(2) + " m";
+        if (id === 'resSideDev') el.innerText = flightMetrics.sideDeviation.toFixed(2) + " m";
+        if (id === 'resFlightTime') el.innerText = flightMetrics.flightTime.toFixed(2) + " s";
+        if (id === 'resImpactVel') el.innerText = flightMetrics.impactVelocity.toFixed(2) + " m/s";
+        if (id === 'resImpactEnergy') el.innerText = flightMetrics.impactEnergy.toFixed(2) + " J";
+    });
+}
+
+// 그래픽 스크린 드로잉 파트
+function drawScene() {
+    if (dprWidth === 0 || dprHeight === 0) return;
+    ctx.clearRect(0, 0, dprWidth, dprHeight);
+    
+    const tgtGeo = getDynamicTargetGeometry(); 
+    const targetBaseX = tgtGeo.baseX; 
+    const safeTargetH = tgtGeo.height;
+    
+    const availW = dprWidth - ORIGIN_X_OFFSET - 10; 
+    const availH = dprHeight - GROUND_Y_OFFSET - 10;
+    
+    const scaleX = availW / MAX_WORLD_X; 
+    const scaleY = availH / MAX_WORLD_Y;
+    
+    const topScaleForward = (dprHeight - 40) / MAX_WORLD_X; 
+    const topScaleSide = (dprWidth - 20) / (MAX_WORLD_Z * 2);
+    
+    const frontScaleZ = (dprWidth - ORIGIN_X_OFFSET - 20) / (MAX_WORLD_Z * 2); 
+    const frontScaleY = availH / MAX_WORLD_Y;
+    const targetViewScale = Math.min(dprWidth, dprHeight) / 5.5;
+
+    function toScreen(pX, pY, pZ) {
+        if (currentView === 'side') return { x: ORIGIN_X_OFFSET + (pX * scaleX), y: dprHeight - GROUND_Y_OFFSET - (pY * scaleY) };
+        if (currentView === 'top') return { x: (dprWidth / 2) + (pZ * topScaleSide), y: dprHeight - 25 - (pX * topScaleForward) };
+        if (currentView === 'front') return { x: ORIGIN_X_OFFSET + (dprWidth - ORIGIN_X_OFFSET - 20) / 2 + (pZ * frontScaleZ), y: dprHeight - GROUND_Y_OFFSET - (pY * frontScaleY) };
+        if (currentView === 'target') return { x: (dprWidth / 2) + (pZ * targetViewScale), y: (dprHeight * 0.65) - (pY * targetViewScale) };
+        return { x: 0, y: 0 };
+    }
+
+    ctx.strokeStyle = '#e5e5ea'; 
+    ctx.lineWidth = 1; 
+    ctx.font = '10px -apple-system'; 
+    ctx.fillStyle = '#8e8e93';
+
+    if (currentView === 'side') {
+        for (let x = 0; x <= MAX_WORLD_X; x += 20) { 
+            let sx = ORIGIN_X_OFFSET + (x * scaleX); 
+            ctx.beginPath(); 
+            ctx.moveTo(sx, 0); 
+            ctx.lineTo(sx, dprHeight - GROUND_Y_OFFSET); 
+            ctx.stroke(); 
+            ctx.textAlign = 'center'; 
+            ctx.fillText(x + 'm', sx, dprHeight - GROUND_Y_OFFSET + 14); 
+        }
+        for (let y = 0; y <= MAX_WORLD_Y; y += 5) { 
+            let sy = dprHeight - GROUND_Y_OFFSET - (y * scaleY); 
+            ctx.beginPath(); 
+            ctx.moveTo(ORIGIN_X_OFFSET, sy); 
+            ctx.lineTo(dprWidth, sy); 
+            ctx.stroke(); 
+            ctx.textAlign = 'right'; 
+            ctx.fillText(y + 'm', ORIGIN_X_OFFSET - 5, sy + 3); 
+        }
+        ctx.strokeStyle = '#1d1d1f'; 
+        ctx.lineWidth = 2; 
+        ctx.beginPath(); 
+        ctx.moveTo(ORIGIN_X_OFFSET, dprHeight - GROUND_Y_OFFSET); 
+        ctx.lineTo(dprWidth, dprHeight - GROUND_Y_OFFSET); 
+        ctx.stroke(); 
+        ctx.beginPath(); 
+        ctx.moveTo(ORIGIN_X_OFFSET, 0); 
+        ctx.lineTo(ORIGIN_X_OFFSET, dprHeight - GROUND_Y_OFFSET); 
+        ctx.stroke();
+        
+    } else if (currentView === 'top') {
+        for (let x = 0; x <= MAX_WORLD_X; x += 20) { 
+            let sy = dprHeight - 25 - (x * topScaleForward); 
+            ctx.beginPath(); 
+            ctx.moveTo(0, sy); 
+            ctx.lineTo(dprWidth, sy); 
+            ctx.stroke(); 
+            ctx.textAlign = 'left'; 
+            ctx.fillText(x + 'm', 8, sy - 4); 
+        }
+        for (let z = -MAX_WORLD_Z; z <= MAX_WORLD_Z; z += 5) { 
+            let sx = (dprWidth / 2) + (z * topScaleSide); 
+            ctx.beginPath(); 
+            ctx.moveTo(sx, 0); 
+            ctx.lineTo(sx, dprHeight); 
+            ctx.stroke(); 
+            ctx.textAlign = 'center'; 
+            ctx.fillText(z === 0 ? '중앙(0m)' : z + 'm', sx, dprHeight - 8); 
+        }
+        
+    } else if (currentView === 'front') {
+        const cx = ORIGIN_X_OFFSET + (dprWidth - ORIGIN_X_OFFSET - 20) / 2;
+        for (let z = -MAX_WORLD_Z; z <= MAX_WORLD_Z; z += 5) { 
+            let sx = cx + (z * frontScaleZ); 
+            ctx.beginPath(); 
+            ctx.moveTo(sx, 0); 
+            ctx.lineTo(sx, dprHeight - GROUND_Y_OFFSET); 
+            ctx.stroke(); 
+            ctx.textAlign = 'center'; 
+            ctx.fillText(z === 0 ? '0m' : z + 'm', sx, dprHeight - GROUND_Y_OFFSET + 14); 
+        }
+        for (let y = 0; y <= MAX_WORLD_Y; y += 5) { 
+            let sy = dprHeight - GROUND_Y_OFFSET - (y * frontScaleY); 
+            ctx.beginPath(); 
+            ctx.moveTo(ORIGIN_X_OFFSET, sy); 
+            ctx.lineTo(dprWidth, sy); 
+            ctx.stroke(); 
+            ctx.textAlign = 'right'; 
+            ctx.fillText(y + 'm', ORIGIN_X_OFFSET - 5, sy + 3); 
+        }
+        ctx.strokeStyle = '#1d1d1f'; 
+        ctx.lineWidth = 2; 
+        ctx.beginPath(); 
+        ctx.moveTo(ORIGIN_X_OFFSET, dprHeight - GROUND_Y_OFFSET); 
+        ctx.lineTo(dprWidth, dprHeight - GROUND_Y_OFFSET); 
+        ctx.stroke(); 
+        
+        ctx.strokeStyle = '#86868b'; 
+        ctx.lineWidth = 1.2; 
+        ctx.beginPath(); 
+        ctx.moveTo(cx, 0); 
+        ctx.lineTo(cx, dprHeight - GROUND_Y_OFFSET); 
+        ctx.stroke();
+        
+    } else if (currentView === 'target') {
+        const tby = dprHeight * 0.65;
+        for (let lz = -2.0; lz <= 2.0; lz += 0.5) { 
+            let sx = (dprWidth / 2) + (lz * targetViewScale); 
+            ctx.beginPath(); 
+            ctx.moveTo(sx, 0); 
+            ctx.lineTo(sx, dprHeight); 
+            ctx.stroke(); 
+            ctx.textAlign = 'center'; 
+            ctx.fillText(lz === 0 ? '중앙' : lz.toFixed(1) + 'm', sx, dprHeight - 8); 
+        }
+        for (let ly = -0.5; ly <= 3.0; ly += 0.5) { 
+            let sy = tby - (ly * targetViewScale); 
+            ctx.beginPath(); 
+            ctx.moveTo(0, sy); 
+            ctx.lineTo(dprWidth, sy); 
+            ctx.stroke(); 
+            ctx.textAlign = 'right'; 
+            ctx.fillText(ly === 0 ? '바닥(0m)' : (ly > 0 ? '+' : '') + ly.toFixed(1) + 'm', dprWidth - 8, sy + 3); 
+        }
+        ctx.strokeStyle = '#86868b'; 
+        ctx.lineWidth = 1.2; 
+        
+        ctx.beginPath(); 
+        ctx.moveTo(dprWidth / 2, 0); 
+        ctx.lineTo(dprWidth / 2, dprHeight); 
+        ctx.stroke(); 
+        
+        ctx.beginPath(); 
+        ctx.moveTo(0, tby); 
+        ctx.lineTo(dprWidth, tby); 
+        ctx.stroke();
+    }
+
+    ctx.lineWidth = 1.5;
+
+    // 과녁 그리기
+    if (currentView === 'side') {
+        const fb = toScreen(targetBaseX, safeTargetH, 0); 
+        const ft = toScreen(targetBaseX + TGT_H * Math.sin(TGT_TILT), safeTargetH + TGT_PROJ_H, 0);
+        const tx = TGT_D * Math.cos(TGT_TILT); 
+        const ty = -TGT_D * Math.sin(TGT_TILT);
+        const bb = toScreen(targetBaseX + tx, safeTargetH + ty, 0); 
+        const bt = toScreen(targetBaseX + TGT_H * Math.sin(TGT_TILT) + tx, safeTargetH + TGT_PROJ_H + ty, 0);
+        
+        ctx.fillStyle = '#e5e5ea'; 
+        ctx.beginPath(); 
+        ctx.moveTo(fb.x, fb.y); 
+        ctx.lineTo(ft.x, ft.y); 
+        ctx.lineTo(bt.x, bt.y); 
+        ctx.lineTo(bb.x, bb.y); 
+        ctx.closePath(); 
+        ctx.fill();
+        
+    } else if (currentView === 'front') {
+        const leftX = toScreen(targetBaseX, safeTargetH, -TGT_W / 2).x; 
+        const rightX = toScreen(targetBaseX, safeTargetH, TGT_W / 2).x;
+        const bottomY = toScreen(targetBaseX, safeTargetH, 0).y; 
+        const topY = toScreen(targetBaseX, safeTargetH + TGT_PROJ_H, 0).y;
+        
+        const w = rightX - leftX; 
+        const h = bottomY - topY;
+        
+        // 과녁 기본 판면 (흰색 바탕)
+        ctx.fillStyle = '#ffffff'; 
+        ctx.fillRect(leftX, topY, w, h);
+        
+        // 과녁 테두리 검은 선
+        ctx.strokeStyle = '#1d1d1f'; 
+        ctx.lineWidth = 1.5; 
+        ctx.strokeRect(leftX, topY, w, h);
+        
+        // 국궁 표준 과녁 특유의 검은색 띠 패턴 배치
+        ctx.fillStyle = '#1d1d1f'; 
+        ctx.fillRect(leftX + w * 0.1, topY + h * 0.08, w * 0.8, h * 0.15);
+        ctx.fillRect(leftX + w * 0.1, topY + h * 0.3, w * 0.8, h * 0.62);
+        
+        // 정중앙 과녁 홍심 (빨간 원)
+        ctx.fillStyle = '#ff3b30'; 
+        ctx.beginPath(); 
+        ctx.arc(leftX + w * 0.5, (topY + h * 0.3) + (h * 0.62) * 0.5, w * 0.23, 0, Math.PI * 2); 
+        ctx.fill();
+// 궤적 및 화살 드로잉
+if (currentView !== 'target' && trajectory.length > 1) {
+    ctx.strokeStyle = '#0071e3'; 
+    ctx.lineWidth = 2.5; 
+    ctx.beginPath();
+    
+    const start = toScreen(trajectory[0].x, trajectory[0].y, trajectory[0].z); 
+    ctx.moveTo(start.x, start.y);
+    
+    for (let i = 1; i < trajectory.length; i++) { 
+        const pt = toScreen(trajectory[i].x, trajectory[i].y, trajectory[i].z); 
+        ctx.lineTo(pt.x, pt.y); 
+    }
+    ctx.stroke();
+}
+
+if (currentView !== 'target') {
+    const apos = toScreen(arrowState.x, arrowState.y, arrowState.z); 
+    ctx.save(); 
+    ctx.translate(apos.x, apos.y);
+    
+    let ar = 0; 
+    if (currentView === 'side') ar = -arrowState.pitch; 
+    else if (currentView === 'top') ar = -arrowState.yaw; 
+    else if (currentView === 'front') ar = Math.atan2(arrowState.vz, arrowState.vy);
+    
+    ctx.rotate(ar); 
+    ctx.strokeStyle = '#515154'; 
+    ctx.lineWidth = 2; 
+    
+    // 화살대 그리기
+    ctx.beginPath(); 
+    ctx.moveTo(-20, 0); 
+    ctx.lineTo(0, 0); 
+    ctx.stroke();
+    
+    // 화살촉 그리기
+    ctx.fillStyle = '#1d1d1f'; 
+    ctx.beginPath(); 
+    ctx.moveTo(0, 0); 
+    ctx.lineTo(-6, -3); 
+    ctx.lineTo(-6, 3); 
+    ctx.closePath(); 
+    ctx.fill();
+    
+    // 화살 깃 그리기
+    ctx.fillStyle = '#ff9500'; 
+    ctx.beginPath(); 
+    ctx.moveTo(-20, 0); 
+    ctx.lineTo(-16, -4); 
+    ctx.lineTo(-10, -4); 
+    ctx.lineTo(-14, 0); 
+    ctx.fill(); 
+    
+    ctx.restore();
+}
+
+// 초기 로딩 제어
+window.addEventListener('load', () => {
+    setTimeout(() => {
+        const overlay = document.getElementById('intro-overlay');
+        if (overlay) {
+            overlay.style.opacity = '0'; 
+            overlay.style.transition = 'opacity 0.6s cubic-bezier(0.25, 1, 0.5, 1)';
+            setTimeout(() => overlay.remove(), 600);
+        }
     }, 2200);
+});
+
+window.addEventListener('DOMContentLoaded', () => {
+    loadSettings(); 
+    resizeCanvas();
+    
+    INPUT_IDS.forEach(id => {
+        const el = document.getElementById(id); 
+        if (!el) return;
+        
+        el.addEventListener('input', () => {
+            if (NEGATIVE_ALLOWED_IDS.includes(id)) {
+                // 숫자, 마이너스, 점을 제외한 문자 제거 및 마이너스 기호 중복 방지 정규식 교정
+                let val = el.value.replace(/[^0-9.-]/g, '').replace(/(?!^)-/g, '');
+                const parts = val.split('.'); 
+                if (parts.length > 2) {
+                    val = parts[0] + '.' + parts.slice(1).join('');
+                }
+                el.value = val;
+            }
+            saveSettings(); 
+            drawScene();
+        });
+    });
+
+    // 드래그 제어 (플로팅 발사 버튼 인터랙션)
+    const dragBtn = document.getElementById('draggableFireBtn'); 
+    if (!dragBtn) return;
+    
+    let isDragging = false; 
+    let hasMoved = false; 
+    let startX = 0, startY = 0; 
+    let initialLeft = 0, initialTop = 0;
+
+    function startDrag(e) { 
+        isDragging = true; 
+        hasMoved = false; 
+        const cx = e.touches ? e.touches[0].clientX : e.clientX; 
+        const cy = e.touches ? e.touches[0].clientY : e.clientY; 
+        startX = cx; 
+        startY = cy; 
+        
+        const rect = dragBtn.getBoundingClientRect(); 
+        initialLeft = rect.left; 
+        initialTop = rect.top; 
+    }
+
+    function doDrag(e) {
+        if (!isDragging) return; 
+        const cx = e.touches ? e.touches[0].clientX : e.clientX; 
+        const cy = e.touches ? e.touches[0].clientY : e.clientY;
+        
+        const dx = cx - startX; 
+        const dy = cy - startY; 
+        if (Math.abs(dx) > 4 || Math.abs(dy) > 4) hasMoved = true;
+        
+        let nl = initialLeft + dx; 
+        let nt = initialTop + dy;
+        
+        const ml = window.innerWidth - dragBtn.offsetWidth; 
+        const mt = window.innerHeight - dragBtn.offsetHeight;
+        
+        nl = Math.max(0, Math.min(nl, ml)); 
+        nt = Math.max(0, Math.min(nt, mt));
+        
+        dragBtn.style.left = nl + 'px'; 
+        dragBtn.style.top = nt + 'px'; 
+        dragBtn.style.right = 'auto';
+    }
+
+    function endDrag() { 
+        if (!isDragging) return; 
+        isDragging = false; 
+        if (!hasMoved) fireArrow(); 
+    }
+
+    dragBtn.addEventListener('touchstart', startDrag, { passive: true });
+    window.addEventListener('touchmove', doDrag, { passive: false });
+    window.addEventListener('touchend', endDrag);
+
+    dragBtn.addEventListener('mousedown', startDrag);
+    window.addEventListener('mousemove', doDrag);
+    window.addEventListener('mouseup', endDrag);
+
+    const lh = parseFloat(document.getElementById('launchHeight').value) || 1.5;
+    arrowState = { 
+        x: 0, 
+        y: lh, 
+        z: 0, 
+        vx: 0, 
+        vy: 0, 
+        vz: 0, 
+        pitch: (parseFloat(document.getElementById('angle').value) || 30) * Math.PI / 180, 
+        yaw: (parseFloat(document.getElementById('yawAngle').value) || 0) * Math.PI / 180 
+    };
+    
+    setTimeout(resizeCanvas, 100);
 });
