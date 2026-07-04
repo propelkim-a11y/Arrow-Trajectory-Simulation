@@ -351,125 +351,54 @@ function drawScene() {
         ctx.strokeStyle = '#86868b'; ctx.lineWidth = 1.2; ctx.beginPath(); ctx.moveTo(centerX, 0); ctx.lineTo(centerX, dprHeight - GROUND_Y_OFFSET); ctx.stroke();
 
     } else if (currentView === 'target') {
-        ctx.strokeStyle = '#e5e5ea'; ctx.lineWidth = 0.8;
-        for (let lz = -2.0; lz <= 2.0; lz += 0.5) {
-            let scrPos = toScreen(0, 0, lz);
-            ctx.beginPath(); ctx.moveTo(scrPos.x, 0); ctx.lineTo(scrPos.x, dprHeight); ctx.stroke();
-            ctx.fillStyle = '#8e8e93'; ctx.font = '9px -apple-system'; ctx.textAlign = 'center';
-            ctx.fillText(lz === 0 ? '중앙' : lz.toFixed(1) + 'm', scrPos.x, dprHeight - 8);
-        }
-        for (let ly = -2.0; ly <= 2.0; ly += 0.5) {
-            let scrPos = toScreen(0, ly, 0);
-            ctx.beginPath(); ctx.moveTo(0, scrPos.y); ctx.lineTo(dprWidth, scrPos.y); ctx.stroke();
-            ctx.fillStyle = '#8e8e93'; ctx.font = '9px -apple-system'; ctx.textAlign = 'right';
-            ctx.fillText(ly === 0 ? '홍심' : (ly > 0 ? '+' : '') + ly.toFixed(1) + 'm', dprWidth - 8, scrPos.y + 3);
-        }
-        ctx.strokeStyle = '#86868b'; ctx.lineWidth = 1.2;
-        let centerScr = toScreen(0, 0, 0);
-        ctx.beginPath(); ctx.moveTo(centerScr.x, 0); ctx.lineTo(centerScr.x, dprHeight); ctx.stroke();
-        ctx.beginPath(); ctx.moveTo(0, centerScr.y); ctx.lineTo(dprWidth, centerScr.y); ctx.stroke();
-    }
-    
-    ctx.lineWidth = 1.5;
-
-      // 과녁 그리기 파트
-    if (currentView === 'side') {
-        const fBottom = toScreen(targetBaseX, safeTargetH, 0);
-        const frontTopX = targetBaseX + TGT_H * Math.sin(TGT_TILT);
-        const frontTopY = safeTargetH + TGT_H * Math.cos(TGT_TILT);
-        const fTop = toScreen(frontTopX, frontTopY, 0);
-        const thickX = TGT_D * Math.cos(TGT_TILT);
-        const thickY = -TGT_D * Math.sin(TGT_TILT);
-        const bBottom = toScreen(targetBaseX + thickX, safeTargetH + thickY, 0);
-        const bTop = toScreen(frontTopX + thickX, frontTopY + thickY, 0);
-
-        ctx.fillStyle = '#e5e5ea';
-        ctx.beginPath(); 
-        ctx.moveTo(fBottom.x, fBottom.y); 
-        ctx.lineTo(fTop.x, fTop.y); 
-        ctx.lineTo(bTop.x, bTop.y); 
-        ctx.lineTo(bBottom.x, bBottom.y); 
-        ctx.closePath(); 
-        ctx.fill();
+        // =========================================================================
+        // [과녁 확대 뷰] 기하학적 기준점 전면 개정: 화면 중앙 가로선을 '과녁 바닥(0m)'으로 고정
+        // =========================================================================
         
-        ctx.strokeStyle = '#1d1d1f'; 
-        ctx.lineWidth = 1; 
-        ctx.stroke();
+        // 1. 과녁 바닥면의 양 끝(좌우)을 화면 가로 중심축에 수평 정렬하기 위한 픽셀 폭 연산
+        const tLeftX = (dprWidth / 2) - (TGT_W / 2 * targetViewScale);
+        const tRightX = (dprWidth / 2) + (TGT_W / 2 * targetViewScale);
         
-        ctx.strokeStyle = '#1d1d1f'; 
-        ctx.lineWidth = 3;
-        ctx.beginPath(); 
-        ctx.moveTo(fBottom.x, fBottom.y); 
-        ctx.lineTo(fTop.x, fTop.y); 
-        ctx.stroke();
-
-    } else if (currentView === 'front') {
-        const projH = TGT_H * Math.cos(TGT_TILT);
-        const leftX = toScreen(targetBaseX, safeTargetH, -TGT_W / 2).x;
-        const rightX = toScreen(targetBaseX, safeTargetH, TGT_W / 2).x;
-        const bottomY = toScreen(targetBaseX, safeTargetH, 0).y;
-        const topY = toScreen(targetBaseX, safeTargetH + projH, 0).y;
+        // 2. 화면 정중앙(dprHeight / 2)을 과녁 바닥면(0m)으로 선언
+        const tBottomY = dprHeight / 2; 
         
-        const w = rightX - leftX;
-        const h = bottomY - topY;
+        // 3. 과녁판 자체는 바닥(0m)에서 위쪽 방향으로 세로 전체 길이(TGT_H)만큼 쭉 뻗어 올라감
+        const tTopY = tBottomY - (TGT_H * targetViewScale);
 
-        ctx.fillStyle = '#ffffff'; 
-        ctx.fillRect(leftX, topY, w, h);
-        
-        ctx.strokeStyle = '#1d1d1f'; 
-        ctx.lineWidth = 1.5; 
-        ctx.strokeRect(leftX, topY, w, h);
-
-        const topBarH = h * 0.15;
-        ctx.fillStyle = '#1d1d1f';
-        ctx.fillRect(leftX + w * 0.1, topY + h * 0.08, w * 0.8, topBarH);
-
-        const mainBoxTop = topY + h * 0.3;
-        const mainBoxH = h * 0.62;
-        ctx.fillRect(leftX + w * 0.1, mainBoxTop, w * 0.8, mainBoxH);
-
-        const radius = w * 0.23;
-        ctx.fillStyle = '#ff3b30'; 
-        ctx.beginPath();
-        ctx.arc(leftX + w * 0.5, mainBoxTop + mainBoxH * 0.5, radius, 0, Math.PI * 2);
-        ctx.fill();
-
-    } else if (currentView === 'top') {
-        const projTopX = targetBaseX + TGT_H * Math.sin(TGT_TILT);
-        const thickX = TGT_D * Math.cos(TGT_TILT);
-        const fLeftBot = toScreen(targetBaseX, safeTargetH, -TGT_W / 2);
-        const fRightBot = toScreen(targetBaseX, safeTargetH, TGT_W / 2);
-        const bLeftTop = toScreen(projTopX + thickX, safeTargetH, -TGT_W / 2);
-        const bRightTop = toScreen(projTopX + thickX, safeTargetH, TGT_W / 2);
-
-        ctx.fillStyle = '#ffffff';
-        ctx.beginPath(); 
-        ctx.moveTo(fLeftBot.x, fLeftBot.y); 
-        ctx.lineTo(fRightBot.x, fRightBot.y); 
-        ctx.lineTo(bRightTop.x, bRightTop.y); 
-        ctx.lineTo(bLeftTop.x, bLeftTop.y); 
-        ctx.closePath(); 
-        ctx.fill();
-        
-        ctx.strokeStyle = '#1d1d1f'; 
-        ctx.lineWidth = 1.5; 
-        ctx.stroke();
-
-    } else if (currentView === 'target') {
-        const tLeftX = toScreen(0, 0, -TGT_W / 2).x;
-        const tRightX = toScreen(0, 0, TGT_W / 2).x;
-        const tTopY = toScreen(0, TGT_H / 2, 0).y;
-        const tBottomY = toScreen(0, -TGT_H / 2, 0).y;
-        
         const w = tRightX - tLeftX;
-        const h = tBottomY - tTopY;
+        const h = tBottomY - tTopY; 
 
-        ctx.fillStyle = '#ffffff'; 
-        ctx.fillRect(tLeftX, tTopY, w, h);
+        // -----------------------------------------------------------------
+        // 과녁 확대 뷰 정밀 격자 눈금선 렌더링 (바닥 0m 축 기준 정렬)
+        // -----------------------------------------------------------------
+        ctx.strokeStyle = '#e5e5ea'; ctx.lineWidth = 0.8;
         
-        ctx.strokeStyle = '#1d1d1f'; 
-        ctx.lineWidth = 2; 
-        ctx.strokeRect(tLeftX, tTopY, w, h);
+        // 가로축 격자 (Z축 좌우 편차: 중앙 0m 기준 ±2m)
+        for (let lz = -2.0; lz <= 2.0; lz += 0.5) {
+            let scrX = (dprWidth / 2) + (lz * targetViewScale);
+            ctx.beginPath(); ctx.moveTo(scrX, 0); ctx.lineTo(scrX, dprHeight); ctx.stroke();
+            ctx.fillStyle = '#8e8e93'; ctx.font = '9px -apple-system'; ctx.textAlign = 'center';
+            ctx.fillText(lz === 0 ? '중앙' : lz.toFixed(1) + 'm', scrX, dprHeight - 8);
+        }
+        
+        // 세로축 격자 (Y축 고도 편차: 과녁 바닥 tBottomY를 0m 기준으로 위로 쌓아 올림)
+        for (let ly = -0.5; ly <= 3.0; ly += 0.5) {
+            let scrY = tBottomY - (ly * targetViewScale);
+            ctx.beginPath(); ctx.moveTo(0, scrY); ctx.lineTo(dprWidth, scrY); ctx.stroke();
+            ctx.fillStyle = '#8e8e93'; ctx.font = '9px -apple-system'; ctx.textAlign = 'right';
+            ctx.fillText(ly === 0 ? '바닥(0m)' : (ly > 0 ? '+' : '') + ly.toFixed(1) + 'm', dprWidth - 8, scrY + 3);
+        }
+        
+        // 기준 메인 십자선 강조
+        ctx.strokeStyle = '#86868b'; ctx.lineWidth = 1.2;
+        ctx.beginPath(); ctx.moveTo(dprWidth / 2, 0); ctx.lineTo(dprWidth / 2, dprHeight); ctx.stroke(); 
+        ctx.beginPath(); ctx.moveTo(0, tBottomY); ctx.lineTo(dprWidth, tBottomY); ctx.stroke(); 
+
+        // -----------------------------------------------------------------
+        // 국궁 표준 규격 일러스트 스케일 드로잉
+        // -----------------------------------------------------------------
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(tLeftX, tTopY, w, h);
+        ctx.strokeStyle = '#1d1d1f'; ctx.lineWidth = 2; ctx.strokeRect(tLeftX, tTopY, w, h);
 
         const topBarH = h * 0.15;
         ctx.fillStyle = '#1d1d1f';
@@ -479,55 +408,40 @@ function drawScene() {
         const mainBoxH = h * 0.62;
         ctx.fillRect(tLeftX + w * 0.1, mainBoxTop, w * 0.8, mainBoxH);
 
-        const rRadius = w * 0.23;
-        ctx.fillStyle = '#ff3b30'; 
-        ctx.beginPath();
+        const rRadius = w * 0.23; 
+        ctx.fillStyle = '#ff3b30'; ctx.beginPath();
         ctx.arc(tLeftX + w * 0.5, mainBoxTop + mainBoxH * 0.5, rRadius, 0, Math.PI * 2);
         ctx.fill();
 
+        // -----------------------------------------------------------------
+        // 화살이 과녁 평면을 통과했을 때 타켓팅 오차 도트 마커 영사 파트
+        // -----------------------------------------------------------------
         if (hasIntersectedTargetPlane) {
-            const hitScr = toScreen(0, targetHitMetrics.localY, targetHitMetrics.localZ);
+            const localYFromBottom = targetHitMetrics.localY + (TGT_H / 2);
+            const markerX = (dprWidth / 2) + (targetHitMetrics.localZ * targetViewScale);
+            const markerY = tBottomY - (localYFromBottom * targetViewScale);
             
             if (targetHitMetrics.isHit) {
-                ctx.fillStyle = '#34c759'; 
-                ctx.strokeStyle = 'rgba(52, 199, 89, 0.4)'; 
-                ctx.lineWidth = 8;
-                ctx.beginPath(); 
-                ctx.arc(hitScr.x, hitScr.y, 6, 0, Math.PI * 2); 
-                ctx.stroke(); 
-                ctx.fill();
-                
-                ctx.fillStyle = '#34c759'; 
-                ctx.font = 'bold 13px -apple-system'; 
-                ctx.textAlign = 'center';
+                ctx.fillStyle = '#34c759'; ctx.strokeStyle = 'rgba(52, 199, 89, 0.4)'; ctx.lineWidth = 8;
+                ctx.beginPath(); ctx.arc(markerX, markerY, 6, 0, Math.PI * 2); ctx.stroke(); ctx.fill();
+                ctx.fillStyle = '#34c759'; ctx.font = 'bold 13px -apple-system'; ctx.textAlign = 'center';
                 ctx.fillText("🎯 관중 (HIT!)", dprWidth / 2, tTopY - 14);
             } else {
-                ctx.fillStyle = '#af52de'; 
-                ctx.strokeStyle = 'rgba(175, 82, 222, 0.3)'; 
-                ctx.lineWidth = 6;
-                ctx.beginPath(); 
-                ctx.arc(hitScr.x, hitScr.y, 5, 0, Math.PI * 2); 
-                ctx.stroke(); 
-                ctx.fill();
-                
-                ctx.fillStyle = '#af52de'; 
-                ctx.font = 'bold 12px -apple-system'; 
-                ctx.textAlign = 'center';
-                ctx.fillText(`❌ 탈타 (오차: 좌우 ${targetHitMetrics.localZ.toFixed(2)}m, 상하 ${targetHitMetrics.localY.toFixed(2)}m)`, dprWidth / 2, tTopY - 14);
+                ctx.fillStyle = '#ff3b30'; ctx.strokeStyle = 'rgba(255, 59, 48, 0.3)'; ctx.lineWidth = 6;
+                ctx.beginPath(); ctx.arc(markerX, markerY, 5, 0, Math.PI * 2); ctx.stroke(); ctx.fill();
+                ctx.fillStyle = '#ff3b30'; ctx.font = 'bold 12px -apple-system'; ctx.textAlign = 'center';
+                ctx.fillText(`❌ 탈타 (오차: 좌우 ${targetHitMetrics.localZ.toFixed(2)}m, 바닥높이 ${localYFromBottom.toFixed(2)}m)`, dprWidth / 2, tTopY - 14);
             }
         }
     }
 
     if (currentView === 'side' || currentView === 'front') {
-        const tgtFloor = toScreen(targetBaseX, 0, 0);
+        const tgtFloor = toScreen(targetBaseX, 0, 0); 
         const tgtBasePos = toScreen(targetBaseX, safeTargetH, 0);
-        ctx.strokeStyle = '#515154'; 
-        ctx.lineWidth = 2; 
-        ctx.beginPath();
-        ctx.moveTo(tgtBasePos.x, tgtBasePos.y); 
-        ctx.lineTo(tgtBasePos.x, tgtFloor.y); 
-        ctx.stroke();
+        ctx.strokeStyle = '#515154'; ctx.lineWidth = 2; ctx.beginPath(); 
+        ctx.moveTo(tgtBasePos.x, tgtBasePos.y); ctx.lineTo(tgtBasePos.x, tgtFloor.y); ctx.stroke();
     }
+
 
     // 누적 비행 궤적 그리기
     if (currentView !== 'target' && trajectory.length > 1) {
