@@ -189,16 +189,18 @@ canvas {
 
 /* 💡 [신설] 설정판 밖, 맨 아래 탭바 바로 위에 부동으로 안착하는 저작권 레이아웃 스타일 */
 #app-copyright {
-    height: 26px;
-    background: #ffffff;
-    text-align: center;
-    font-size: 10px;
-    color: #86868b;
-    line-height: 26px;
-    border-top: 1px solid rgba(0, 0, 0, 0.05);
-    letter-spacing: -0.2px;
-    user-select: none;
+  height: 26px;
+  background: #ffffff;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  font-size: 10px;
+  color: #86868b;
+  border-top: 1px solid rgba(0,0,0,0.05);
+  letter-spacing: -0.2px;
+  user-select: none;
 }
+
 
 .tab-bar { 
     height: 60px; 
