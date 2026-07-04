@@ -4,12 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Arrow Trajectory Simulator</title>
-    <link rel="manifest" href="manifest.json">
-    <link rel="icon" type="image/png" sizes="32x32" href="icon.png">
-    <link rel="apple-touch-icon" sizes="180x180" href="icon.png">
-    <meta name="apple-mobile-web-app-capable" content="yes">
-    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-    <meta name="mobile-web-app-capable" content="yes">
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
@@ -18,7 +12,6 @@
 <div class="main-screen">
     <h1>Arrow Trajectory</h1>
     
-    <!-- 시점 토글 세그먼트: 정면, 측면, 평면, 과녁 4개 버튼 체제 완비 -->
     <div class="segmented-control">
         <button class="segment-btn" onclick="changeView('front', this)">정면</button>
         <button class="segment-btn active" onclick="changeView('side', this)">측면</button>
@@ -59,19 +52,19 @@
         </div>
     </div>
 
-    <!-- [탭 3] 환경 설정 (모바일 음수 자판 대응 완료) -->
+    <!-- [탭 3] 환경 설정 -->
     <div class="fixed-panel" id="panel-env">
         <div class="panel-title">환경 설정</div>
         <div class="form-grid">
             <div class="form-group">
-                <label>촉/오늬 바람</label>
+                <label>종풍 (맞/뒷바람)</label>
                 <div class="input-wrapper">
                     <input type="text" id="windX" value="0" inputmode="decimal" pattern="^-?[0-9]*\.?[0-9]*$" oninput="this.value = this.value.replace(/[^0-9.-]/g, '').replace(/(\..*)\./g, '$1').replace(/(?!^)-/g, '');">
                     <span class="unit">m/s</span>
                 </div>
             </div>
             <div class="form-group">
-                <label>옆 바람 </label>
+                <label>횡풍 (옆바람)</label>
                 <div class="input-wrapper">
                     <input type="text" id="windY" value="0" inputmode="decimal" pattern="^-?[0-9]*\.?[0-9]*$" oninput="this.value = this.value.replace(/[^0-9.-]/g, '').replace(/(\..*)\./g, '$1').replace(/(?!^)-/g, '');">
                     <span class="unit">m/s</span>
@@ -99,9 +92,9 @@
 
 <!-- 맨 하단 메뉴 전환 탭바 -->
 <div class="tab-bar">
-    <button class="tab-item active" onclick="switchPanel('arrow')"><span class="tab-icon">🎯</span><span>화살 설정</span></button>
-    <button class="tab-item" onclick="switchPanel('method')"><span class="tab-icon">🏹</span><span>사법 설정</span></button>
-    <button class="tab-item" onclick="switchPanel('env')"><span class="tab-icon">🐓</span><span>환경 설정</span></button>
+    <button class="tab-item active" onclick="switchPanel('arrow')"><span class="tab-icon">🏹</span><span>화살 설정</span></button>
+    <button class="tab-item" onclick="switchPanel('method')"><span class="tab-icon">🎯</span><span>사법 설정</span></button>
+    <button class="tab-item" onclick="switchPanel('env')"><span class="tab-icon">🌍</span><span>환경 설정</span></button>
     <button class="tab-item" onclick="switchPanel('result')"><span class="tab-icon">📊</span><span>비행 결과</span></button>
 </div>
 
