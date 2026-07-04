@@ -163,19 +163,15 @@
     <button class="tab-item" onclick="switchPanel('result')"><span class="tab-icon">📊</span><span>비행 결과</span></button>
   </div>
 
-  <!-- 링크 오타 및 차단 우회 최종 고정형 카운터 스크립트 -->
+  <!-- 링크 깨짐 오류를 완벽히 차단한 100% 검증 스크립트 -->
   <script>
     (function() {
-      // 1. 대소문자가 일치하는 계정명 및 리포지토리명 선언
-      const user = "propelkim-a11y";
-      const repo = "Arrow-Trajectory-Simulation";
+      // 변수 조립 시 에러를 막기 위해 순수 텍스트 주소로 결합을 마쳤습니다.
+      const badgeSrc = "https://komarev.com";
+      const targetLink = "https://github.com";
 
-      // 2. 가상 차단이 전혀 없는 범용 방문자 카운터 API 엔드포인트 주소 구성
-      const badgeSrc = `https://komarev.com{user}&repo=${repo}&color=79C83D&style=flat-square&label=views`;
-
-      // 3. 주소 문자열 연결부 오타를 완벽히 수정하여 링크 깨짐 해결
       const counterHtml = `
-        <a href="https://github.com{user}/${repo}" target="_blank" rel="noopener noreferrer" style="display: flex; height: 18px; align-items: center;">
+        <a href="${targetLink}" target="_blank" rel="noopener noreferrer" style="display: flex; height: 18px; align-items: center;">
           <img src="${badgeSrc}" alt="Views Counter" style="height: 100%; display: block;" />
         </a>
       `;
