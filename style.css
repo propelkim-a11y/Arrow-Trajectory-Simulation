@@ -75,11 +75,11 @@ canvas {
     display: block; 
 }
 
-/* 💡 [변경] 발사 버튼을 가로세로 60px 크기의 완벽한 동그라미 모양으로 변경 및 드래그 반응 최적화 */
+/* 💡 [전면 개정] 버튼을 fixed로 변경하여 상하단 레이아웃 경계를 깨고 폰 화면 전체를 돌아다니게 설정 */
 .fire-btn { 
-    position: absolute; 
-    top: 16px; 
-    right: 16px; 
+    position: fixed; 
+    top: 20vh; /* 초기 기동 시 적절한 우측 상단 배치 */
+    right: 24px; 
     width: 60px;
     height: 60px;
     background: #0071e3; 
@@ -87,15 +87,15 @@ canvas {
     font-size: 14px; 
     font-weight: 600; 
     border: none; 
-    border-radius: 50%; /* 반지름 50%로 완벽한 동그라미 구현 */
-    cursor: move; /* 움직일 수 있음을 시각화 */
-    box-shadow: 0 4px 12px rgba(0,113,227,0.35); 
+    border-radius: 50%; 
+    cursor: move; 
+    box-shadow: 0 4px 16px rgba(0,113,227,0.45); 
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 999;
+    z-index: 99999; /* 하단 탭바나 입력 자판보다 무조건 위에 오도록 레이어 순위 극대화 */
     user-select: none;
-    touch-action: none; /* 모바일 터치 드래그 브라우저 스크롤 간섭 방지 */
+    touch-action: none; 
 }
 
 .fire-btn:active {
