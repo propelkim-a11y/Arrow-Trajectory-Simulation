@@ -172,13 +172,12 @@ window.addEventListener('DOMContentLoaded', () => {
     // 1. ⚠️ 과거에 기기마다 제각각 쌓여있던 옛날 조회수 흔적을 강제로 삭제합니다.
     localStorage.removeItem('arrow_sim_total_views');
 
-    fetch(`https://github.com{repoOwner}/${repoName}`)
+fetch(`https://://github.com${repoOwner}/${repoName}`)
         .then(response => {
             if (!response.ok) throw new Error('Network error');
             return response.json();
         })
         .then(data => {
-            // 2. 과거 흔적이 지워졌으므로 0부터 깔끔하게 시작합니다.
             let localViews = parseInt(localStorage.getItem('arrow_sim_clean_views') || '0');
             
             if (!sessionStorage.getItem('arrow_sim_session_visited')) {
@@ -189,19 +188,22 @@ window.addEventListener('DOMContentLoaded', () => {
 
             const viewEl = document.getElementById('view-count');
             if (viewEl) {
-                // 3. 양쪽 기기 모두 깃허브 스타 수 기준의 완벽히 동일한 베이스 숫자가 출력됩니다.
                 const baseCount = (data.stargazers_count * 15) + localViews + 12;
                 viewEl.innerText = `Views: ${baseCount}`;
             }
         })
         .catch(() => {
-            let localViews = parseInt(localStorage.getItem('arrow_sim_clean_views') || '12');
+            // 2️⃣ [여기 고치기] 에러 시 백업 카운트 시작 숫자를 '0'으로 통일해야 편차가 안 생깁니다.
+            // 기존: let localViews = parseInt(localStorage.getItem('arrow_sim_clean_views') || '12');
+            // 변경 ➡️ 실패했을 때 기본값을 '0'으로 맞춰야 PC와 폰의 베이스 숫자가 똑같아집니다.
+            let localViews = parseInt(localStorage.getItem('arrow_sim_clean_views') || '0');
+            
             if (!sessionStorage.getItem('arrow_sim_session_visited')) {
                 localViews += 1;
                 localStorage.setItem('arrow_sim_clean_views', localViews);
                 sessionStorage.setItem('arrow_sim_session_visited', 'true');
             }
             const viewEl = document.getElementById('view-count');
-            if (viewEl) viewEl.innerText = `Views: ${localViews}`;
+            if (viewEl) viewEl.innerText = `Views: ${localViews + 12}`; // 보정값 12를 여기서 더해줍니다.
         });
 });
