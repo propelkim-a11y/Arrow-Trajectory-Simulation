@@ -14,7 +14,6 @@ body {
     flex-direction: column; 
 }
 
-/* 💡 [변경] 메인 스크린(그림판) 비율을 75%에서 60%로 줄여 여백 확보 */
 .main-screen { 
     height: 60vh; 
     display: flex; 
@@ -76,26 +75,33 @@ canvas {
     display: block; 
 }
 
-.floating-actions { 
+/* 💡 [변경] 발사 버튼을 가로세로 60px 크기의 완벽한 동그라미 모양으로 변경 및 드래그 반응 최적화 */
+.fire-btn { 
     position: absolute; 
     top: 16px; 
     right: 16px; 
-    z-index: 50; 
-}
-
-.fire-btn { 
-    padding: 10px 20px; 
+    width: 60px;
+    height: 60px;
     background: #0071e3; 
     color: #fff; 
     font-size: 14px; 
     font-weight: 600; 
     border: none; 
-    border-radius: 10px; 
-    cursor: pointer; 
-    box-shadow: 0 4px 10px rgba(0,113,227,0.25); 
+    border-radius: 50%; /* 반지름 50%로 완벽한 동그라미 구현 */
+    cursor: move; /* 움직일 수 있음을 시각화 */
+    box-shadow: 0 4px 12px rgba(0,113,227,0.35); 
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 999;
+    user-select: none;
+    touch-action: none; /* 모바일 터치 드래그 브라우저 스크롤 간섭 방지 */
 }
 
-/* 💡 [변경] 하단 설정판의 높이를 40% 영역으로 시원하게 대폭 확장 */
+.fire-btn:active {
+    background: #005bb5;
+}
+
 #panel-container { 
     height: calc(40vh - 60px); 
     background: #ffffff; 
@@ -120,7 +126,6 @@ canvas {
     color: #1d1d1f; 
 }
 
-/* 💡 [변경] 설정 그리드 여백을 조절하여 요소들이 더 시원하게 보이도록 배치 */
 .form-grid { 
     display: grid; 
     grid-template-columns: 1fr 1fr; 
