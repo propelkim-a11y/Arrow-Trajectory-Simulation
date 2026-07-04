@@ -1,235 +1,241 @@
-* { 
-    box-sizing: border-box; 
-    margin: 0; 
-    padding: 0; 
-} 
-
-body { 
-    font-family: -apple-system, sans-serif; 
-    background: #f5f5f7; 
-    color: #1d1d1f; 
-    height: 100vh; 
-    overflow: hidden; 
-    display: flex; 
-    flex-direction: column; 
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
 }
 
-.main-screen { 
-    height: 60vh; 
-    display: flex; 
-    flex-direction: column; 
-    padding: 12px 16px 4px 16px; 
-    box-sizing: border-box; 
-    min-height: 0; 
+body {
+  font-family: -apple-system, sans-serif;
+  background: #f5f5f7;
+  color: #1d1d1f;
+  height: 100vh;
+  overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
-h1 { 
-    font-size: 20px; 
-    font-weight: 700; 
-    margin-bottom: 8px; 
-    text-align: center; 
+.main-screen {
+  height: 60vh;
+  display: flex;
+  flex-direction: column;
+  padding: 12px 16px 4px 16px;
+  box-sizing: border-box;
+  min-height: 0;
 }
 
-.segmented-control { 
-    display: flex; 
-    background: #e3e3e6; 
-    padding: 3px; 
-    border-radius: 9px; 
-    margin-bottom: 8px; 
-    align-self: center; 
-    width: fit-content; 
+h1 {
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 8px;
+  text-align: center;
 }
 
-.segment-btn { 
-    border: none; 
-    background: none; 
-    padding: 4px 16px; 
-    font-size: 12px; 
-    font-weight: 500; 
-    color: #515154; 
-    border-radius: 7px; 
-    cursor: pointer; 
+.segmented-control {
+  display: flex;
+  background: #e3e3e6;
+  padding: 3px;
+  border-radius: 9px;
+  margin-bottom: 8px;
+  align-self: center;
+  width: fit-content;
 }
 
-.segment-btn.active { 
-    background: #ffffff; 
-    color: #1d1d1f; 
-    box-shadow: 0px 2px 6px rgba(0,0,0,0.1); 
-    font-weight: 600; 
+.segment-btn {
+  border: none;
+  background: none;
+  padding: 4px 16px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #515154;
+  border-radius: 7px;
+  cursor: pointer;
 }
 
-.sim-container { 
-    flex: 1; 
-    min-height: 0; 
-    background: #ffffff; 
-    border-radius: 16px; 
-    box-shadow: 0 2px 12px rgba(0,0,0,0.03); 
-    border: 1px solid rgba(0,0,0,0.04); 
-    overflow: hidden; 
-    position: relative; 
+.segment-btn.active {
+  background: #ffffff;
+  color: #1d1d1f;
+  box-shadow: 0px 2px 6px rgba(0,0,0,0.1);
+  font-weight: 600;
 }
 
-canvas { 
-    width: 100%; 
-    height: 100%; 
-    display: block; 
+.sim-container {
+  flex: 1;
+  min-height: 0;
+  background: #ffffff;
+  border-radius: 16px;
+  box-shadow: 0 2px 12px rgba(0,0,0,0.03);
+  border: 1px solid rgba(0,0,0,0.04);
+  overflow: hidden;
+  position: relative;
 }
 
-.fire-btn { 
-    position: fixed; 
-    top: 20vh; 
-    right: 24px; 
-    width: 60px;
-    height: 60px;
-    background: #0071e3; 
-    color: #fff; 
-    font-size: 14px; 
-    font-weight: 600; 
-    border: none; 
-    border-radius: 50%; 
-    cursor: move; 
-    box-shadow: 0 4px 16px rgba(0,113,227,0.45); 
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    z-index: 99999; 
-    user-select: none;
-    touch-action: none; 
+canvas {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
+
+.fire-btn {
+  position: fixed;
+  top: 20vh;
+  right: 24px;
+  width: 60px;
+  height: 60px;
+  background: #0071e3;
+  color: #fff;
+  font-size: 14px;
+  font-weight: 600;
+  border: none;
+  border-radius: 50%;
+  cursor: move;
+  box-shadow: 0 4px 16px rgba(0,113,227,0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 99999;
+  user-select: none;
+  touch-action: none;
 }
 
 .fire-btn:active {
-    background: #005bb5;
+  background: #005bb5;
 }
 
 /* 설정판 배경을 지형과 분리하여 깔끔하게 배경 처리 */
-#panel-container { 
-    height: calc(40vh - 86px); /* 저작권 바 영역 마진 확보 */
-    background: #f5f5f7; 
-    padding: 10px 16px; 
-    overflow-y: auto; 
+#panel-container {
+  /* [수정] 저작권 바 하단에 조회수 카운터 배지가 추가됨에 따라 여백 계산식을 86px에서 102px로 변경하여 내부 스크롤 잘림을 방지합니다 */
+  height: calc(40vh - 102px);
+  background: #f5f5f7;
+  padding: 10px 16px;
+  overflow-y: auto;
 }
 
-.fixed-panel { 
-    display: none; 
-    height: 100%; 
+.fixed-panel {
+  display: none;
+  height: 100%;
 }
 
-.fixed-panel.active { 
-    display: block; 
+.fixed-panel.active {
+  display: block;
 }
 
-/* 💡 [신설] 설정을 감싸는 세련된 라운드 카드 상자 디자인 */
+/* 설정을 감싸는 세련된 라운드 카드 상자 디자인 */
 .panel-card {
-    background: #ffffff;
-    border-radius: 14px;
-    padding: 14px 16px;
-    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
-    border: 1px solid rgba(0, 0, 0, 0.03);
+  background: #ffffff;
+  border-radius: 14px;
+  padding: 14px 16px;
+  box-shadow: 0 4px 14px rgba(0,0,0,0.04);
+  border: 1px solid rgba(0,0,0,0.03);
 }
 
-.panel-title { 
-    font-size: 14px; 
-    font-weight: 700; 
-    margin-bottom: 12px; 
-    color: #1d1d1f; 
+.panel-title {
+  font-size: 14px;
+  margin-bottom: 12px;
+  font-weight: 700;
+  color: #1d1d1f;
 }
 
-.form-grid { 
-    display: grid; 
-    grid-template-columns: 1fr 1fr; 
-    gap: 10px 12px; 
+.form-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 10px 12px;
 }
 
-.form-group { 
-    display: flex; 
-    justify-content: space-between; 
-    align-items: center; 
-    background: #f5f5f7; 
-    padding: 8px 12px; 
-    border-radius: 8px; 
-    height: 38px; 
+.form-group {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  background: #f5f5f7;
+  padding: 8px 12px;
+  border-radius: 8px;
+  height: 38px;
 }
 
-.form-group label { 
-    font-size: 12px; 
-    color: #515154; 
-    font-weight: 600; 
+.form-group label {
+  font-size: 12px;
+  color: #515154;
+  font-weight: 600;
 }
 
-.input-wrapper { 
-    display: flex; 
-    align-items: center; 
+.input-wrapper {
+  display: flex;
+  align-items: center;
 }
 
-.input-wrapper input { 
-    width: 60px; 
-    border: none; 
-    background: transparent; 
-    text-align: right; 
-    font-size: 13px; 
-    font-weight: 600; 
-    outline: none; 
-    color: #1d1d1f; 
+.input-wrapper input {
+  width: 60px;
+  border: none;
+  background: transparent;
+  text-align: right;
+  font-size: 13px;
+  font-weight: 600;
+  outline: none;
+  color: #1d1d1f;
 }
 
-.input-wrapper .unit { 
-    font-size: 11px; 
-    color: #86868b; 
-    margin-left: 4px; 
-    width: 32px; 
-    text-align: left; 
+.input-wrapper .unit {
+  font-size: 11px;
+  color: #86868b;
+  margin-left: 4px;
+  width: 32px;
+  text-align: left;
 }
 
-.result-value { 
-    font-size: 13px; 
-    font-weight: 700; 
-    color: #0071e3; 
-    text-align: right; 
+.result-value {
+  font-size: 13px;
+  font-weight: 700;
+  color: #0071e3;
+  text-align: right;
 }
 
-/* 💡 [신설] 설정판 밖, 맨 아래 탭바 바로 위에 부동으로 안착하는 저작권 레이아웃 스타일 */
+/* [수정] 설정판 밖, 맨 아래 탭바 바로 위에 부동으로 안착하는 저작권 및 조회수 카운터 레이아웃 스타일 */
 #app-copyright {
-    height: 26px;
-    background: #ffffff;
-    text-align: center;
-    font-size: 10px;
-    color: #86868b;
-    line-height: 26px;
-    border-top: 1px solid rgba(0, 0, 0, 0.05);
-    letter-spacing: -0.2px;
-    user-select: none;
+  /* 고정 height와 line-height 제거 후 내부 배지 추가를 고려하여 유연한 Flexbox 레이아웃으로 변경 */
+  min-height: 42px;
+  background: #ffffff;
+  text-align: center;
+  font-size: 10px;
+  color: #86868b;
+  padding: 6px 0;
+  border-top: 1px solid rgba(0,0,0,0.05);
+  letter-spacing: -0.2px;
+  user-select: none;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
 }
 
-.tab-bar { 
-    height: 60px; 
-    background: rgba(255,255,255,0.92); 
-    border-top: 0.5px solid rgba(0,0,0,0.1); 
-    display: flex; 
-    justify-content: space-around; 
-    align-items: center; 
+.tab-bar {
+  height: 60px;
+  background: rgba(255,255,255,0.92);
+  border-top: 0.5px solid rgba(0,0,0,0.1);
+  display: flex;
+  justify-content: space-around;
+  align-items: center;
 }
 
-.tab-item { 
-    background: none; 
-    border: none; 
-    display: flex; 
-    flex-direction: column; 
-    align-items: center; 
-    gap: 2px; 
-    color: #86868b; 
-    cursor: pointer; 
-    font-size: 10px; 
-    font-weight: 600; 
-    width: 25%; 
-    height: 100%; 
-    justify-content: center; 
+.tab-item {
+  background: none;
+  border: none;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+  color: #86868b;
+  cursor: pointer;
+  font-size: 10px;
+  font-weight: 600;
+  width: 25%;
+  height: 100%;
+  justify-content: center;
 }
 
-.tab-item.active { 
-    color: #0071e3; 
-    background: rgba(0,113,227,0.04); 
+.tab-item.active {
+  color: #0071e3;
+  background: rgba(0,113,227,0.04);
 }
 
-.tab-icon { 
-    font-size: 18px; 
+.tab-icon {
+  font-size: 18px;
 }
