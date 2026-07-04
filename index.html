@@ -1,133 +1,132 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <title>Arrow Trajectory Simulator</title>
-    <link rel="stylesheet" href="style.css">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>국궁 화살 탄도 시뮬레이터 (Arrow Trajectory Simulator)</title>
+  <link rel="stylesheet" href="style.css">
 </head>
 <body>
 
-<!-- 상단 60% 영역: 메인 스크린 및 시뮬레이터 캔버스 -->
-<div class="main-screen">
-    <h1>Arrow Trajectory</h1>
-    
+  <!-- 메인 시뮬레이션 뷰포트 영역 -->
+  <div id="canvas-container">
+    <!-- 정면, 측면, 평면, 과녁 통계 등 다각도 관측 스크린 캔버스 -->
+    <canvas id="simCanvas"></canvas>
+
+    <!-- 시점 제어 탭 (Segmented Control) -->
     <div class="segmented-control">
-        <button class="segment-btn" onclick="changeView('front', this)">정면</button>
-        <button class="segment-btn active" onclick="changeView('side', this)">측면</button>
-        <button class="segment-btn" onclick="changeView('top', this)">평면</button>
-        <button class="segment-btn" onclick="changeView('target', this)">과녁</button>
+      <button class="segment-btn active" onclick="changeView('side', this)">측면뷰 (Side)</button>
+      <button class="segment-btn" onclick="changeView('top', this)">평면뷰 (Top)</button>
+      <button class="segment-btn" onclick="changeView('front', this)">정면뷰 (Front)</button>
+      <button class="segment-btn" onclick="changeView('target', this)">과녁 확대 (Target)</button>
     </div>
+
+    <!-- 스크린 프리 드래그 발사 버튼 (ui.js를 통해 마지막 드래그 위치가 실시간 복원됨) -->
+    <button id="draggableFireBtn" class="fire-button">🎯 발사</button>
+  </div>
+
+  <!-- 데이터 입력 및 분석 패널 영역 -->
+  <div id="panel-container">
     
-    <div class="sim-container">
-        <canvas id="simCanvas"></canvas>
-        <button id="draggableFireBtn" class="fire-btn">발사</button>
-    </div>
-</div>
-
-<!-- 하단 40% 영역: 라운드 카드형 설정 및 결과 패널 컨테이너 -->
-<div id="panel-container">
-    
-    <!-- [탭 1] 화살 설정 -->
-    <div class="fixed-panel active" id="panel-arrow">
-        <div class="panel-card">
-            <div class="panel-title">화살 설정</div>
-            <div class="form-grid">
-                <div class="form-group"><label>화살 무게</label><div class="input-wrapper"><input type="number" id="weight" value="25"><span class="unit">g</span></div></div>
-                <div class="form-group"><label>화살 직경</label><div class="input-wrapper"><input type="number" id="diameter" value="5.5" step="0.1"><span class="unit">mm</span></div></div>
-                <div class="form-group"><label>항력 계수</label><div class="input-wrapper"><input type="number" id="dragCoeff" value="0.35" step="0.01"><span class="unit">cd</span></div></div>
-                <div class="form-group"><label>양력 계수</label><div class="input-wrapper"><input type="number" id="liftCoeff" value="0.05" step="0.01"><span class="unit">cl</span></div></div>
-            </div>
-        </div>
+    <!-- 네비게이션 탭 바 -->
+    <div class="tab-bar">
+      <div class="tab-item active" onclick="switchPanel('arrow')">화살 제원</div>
+      <div class="tab-item" onclick="switchPanel('method')">궁술/기법</div>
+      <div class="tab-item" onclick="switchPanel('env')">환경 변수</div>
+      <div class="tab-item" onclick="switchPanel('result')">결과 데이터</div>
     </div>
 
-    <!-- [탭 2] 사법 설정 -->
-    <div class="fixed-panel" id="panel-method">
-        <div class="panel-card">
-            <div class="panel-title">사법 설정</div>
-            <div class="form-grid">
-                <div class="form-group">
-                    <label>발시 각도</label>
-                    <div class="input-wrapper">
-                        <input type="text" id="angle" value="30" inputmode="text" pattern="^-?[0-9]*\.?[0-9]*$">
-                        <span class="unit">°</span>
-                    </div>
-                </div>
-                <div class="form-group"><label>초기 속도</label><div class="input-wrapper"><input type="number" id="velocity" value="50"><span class="unit">m/s</span></div></div>
-                <div class="form-group">
-                    <label>수평 각도</label>
-                    <div class="input-wrapper">
-                        <input type="text" id="yawAngle" value="0" inputmode="text" pattern="^-?[0-9]*\.?[0-9]*$">
-                        <span class="unit">°</span>
-                    </div>
-                </div>
-                <div class="form-group"><label>발시 높이</label><div class="input-wrapper"><input type="number" id="launchHeight" value="1.5" step="0.1"><span class="unit">m</span></div></div>
-            </div>
-        </div>
+    <!-- 1. 화살 제원 패널 -->
+    <div id="panel-arrow" class="panel-content active">
+      <div class="input-group">
+        <label for="weight">화살 무게 (돈/g)</label>
+        <input type="number" id="weight" step="0.1" value="6.5">
+      </div>
+      <div class="input-group">
+        <label for="diameter">화살 직경 (mm)</label>
+        <input type="number" id="diameter" step="0.1" value="7.5">
+      </div>
+      <div class="input-group">
+        <label for="dragCoeff">항력 계수 (Cd)</label>
+        <input type="number" id="dragCoeff" step="0.01" value="0.35">
+      </div>
+      <div class="input-group">
+        <label for="liftCoeff">양력 계수 (Cl)</label>
+        <input type="number" id="liftCoeff" step="0.01" value="0.05">
+      </div>
     </div>
 
-    <!-- [탭 3] 환경 설정 -->
-    <div class="fixed-panel" id="panel-env">
-        <div class="panel-card">
-            <div class="panel-title">환경 설정</div>
-            <div class="form-grid">
-                <div class="form-group">
-                    <label>종풍</label>
-                    <div class="input-wrapper">
-                        <input type="text" id="windX" value="0" inputmode="text" pattern="^-?[0-9]*\.?[0-9]*$">
-                        <span class="unit">m/s</span>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>횡풍</label>
-                    <div class="input-wrapper">
-                        <input type="text" id="windY" value="0" inputmode="text" pattern="^-?[0-9]*\.?[0-9]*$">
-                        <span class="unit">m/s</span>
-                    </div>
-                </div>
-                <div class="form-group">
-                    <label>과녁 고도차</label>
-                    <div class="input-wrapper">
-                        <input type="text" id="targetHeight" value="1.3" inputmode="text" pattern="^-?[0-9]*\.?[0-9]*$">
-                        <span class="unit">m</span>
-                    </div>
-                </div>
-                <div class="form-group"><label>공기 밀도</label><div class="input-wrapper"><input type="number" id="airDensity" value="1.225" step="0.001"><span class="unit">kg/m³</span></div></div>
-            </div>
-        </div>
+    <!-- 2. 궁술/기법 패널 -->
+    <div id="panel-method" class="panel-content">
+      <div class="input-group">
+        <label for="angle">발사 수평각 (도, +위/-아래)</label>
+        <input type="number" id="angle" step="0.1" value="14.5">
+      </div>
+      <div class="input-group">
+        <label for="yawAngle">발사 편각 (도, +우/-좌)</label>
+        <input type="number" id="yawAngle" step="0.1" value="0.0">
+      </div>
+      <div class="input-group">
+        <label for="velocity">화살 초속 (m/s)</label>
+        <input type="number" id="velocity" step="1" value="55">
+      </div>
+      <div class="input-group">
+        <label for="launchHeight">발시 위치 높이 (m)</label>
+        <input type="number" id="launchHeight" step="0.1" value="1.6">
+      </div>
     </div>
 
-    <!-- [탭 4] 비행 결과 -->
-    <div class="fixed-panel" id="panel-result">
-        <div class="panel-card">
-            <div class="panel-title">비행 결과 분석</div>
-            <div class="form-grid">
-                <div class="form-group"><label>최대 거리</label><div class="result-value" id="resMaxDist">0.00 m</div></div>
-                <div class="form-group"><label>최대 높이</label><div class="result-value" id="resMaxHeight">0.00 m</div></div>
-                <div class="form-group"><label>측면 편차</label><div class="result-value" id="resSideDev">0.00 m</div></div>
-                <div class="form-group"><label>비행 시간</label><div class="result-value" id="resFlightTime">0.00 s</div></div>
-                <div class="form-group"><label>충돌 속도</label><div class="result-value" id="resImpactVel">0.00 m/s</div></div>
-                <div class="form-group"><label>충돌 에너지</label><div class="result-value" id="resImpactEnergy">0.00 J</div></div>
-            </div>
-        </div>
+    <!-- 3. 환경 변수 패널 -->
+    <div id="panel-env" class="panel-content">
+      <div class="input-group">
+        <label for="windX">종풍 풍속 (m/s, +맞바람/-뒷바람)</label>
+        <input type="number" id="windX" step="0.1" value="0.0">
+      </div>
+      <div class="input-group">
+        <label for="windY">횡풍 풍속 (m/s, +우풍/-좌풍)</label>
+        <input type="number" id="windY" step="0.1" value="0.0">
+      </div>
+      <div class="input-group">
+        <label for="targetHeight">과녁 상대 고도 (m)</label>
+        <input type="number" id="targetHeight" step="0.1" value="0.0">
+      </div>
+      <div class="input-group">
+        <label for="airDensity">대기 밀도 (kg/m³)</label>
+        <input type="number" id="airDensity" step="0.001" value="1.225">
+      </div>
     </div>
 
-</div>
+    <!-- 4. 결과 데이터 분석 패널 -->
+    <div id="panel-result" class="panel-content">
+      <div class="result-card">
+        <h3>최종 시뮬레이션 매트릭스</h3>
+        <p>최대 도달 거리: <span id="res-distance" class="stat-bold">-</span> m</p>
+        <p>최고 정점 고도: <span id="res-maxHeight" class="stat-bold">-</span> m</p>
+        <p>최종 탄착 편차: <span id="res-deviation" class="stat-bold">-</span> m</p>
+        <p>총 비행 시간: <span id="res-flightTime" class="stat-bold">-</span> 초</p>
+        <p>과녁 충돌 속도: <span id="res-impactVelocity" class="stat-bold">-</span> m/s</p>
+        <p>충돌 운동 에너지: <span id="res-energy" class="stat-bold">-</span> J</p>
+        <p class="target-status">과녁 적중 여부: <span id="res-hitStatus" class="status-badge">-</span></p>
+      </div>
+    </div>
 
-<!-- 💡 [위치 이동] 설정 패널 밖으로 완전히 탈출시켜 맨 아래 고정된 저작권 표시 영역 -->
-<div id="app-copyright">
-    Copyright © 2026 해현-활터왔소. All Rights Reserved.
-</div>
+  </div>
 
-<!-- 맨 하단 메뉴 전환 탭바 -->
-<div class="tab-bar">
-    <button class="tab-item active" onclick="switchPanel('arrow')"><span class="tab-icon">🎯</span><span>화살 설정</span></button>
-    <button class="tab-item" onclick="switchPanel('method')"><span class="tab-icon">🏹</span><span>사법 설정</span></button>
-    <button class="tab-item" onclick="switchPanel('env')"><span class="tab-icon">🐓</span><span>환경 설정</span></button>
-    <button class="tab-item" onclick="switchPanel('result')"><span class="tab-icon">📊</span><span>비행 결과</span></button>
-</div>
+  <!-- ========================================================================= -->
+  <!-- 💡 [조회수 카운터 배지 추가 영역] -->
+  <!-- 'YOUR_GITHUB_ID'와 'YOUR_REPO_NAME'을 본인의 값으로 매핑해 주세요. -->
+  <!-- ========================================================================= -->
+  <div class="counter-wrapper" style="text-align: center; margin: 10px 0; padding: 5px 0;">
+    <img src="https://seeyoufarm.com" alt="Hits / Page Views"/>
+  </div>
 
-<script src="ui.js"></script>
-<script src="physics.js"></script>
+  <!-- 하단 카피라이트 배너 -->
+  <div id="app-copyright">
+    Copyright © 2026. All Rights Reserved. 해현 활터왔소
+  </div>
+
+  <!-- 물리 해석엔진 및 인터페이스 제어 스크립트 로드 -->
+  <script src="physics.js"></script>
+  <script src="ui.js"></script>
 </body>
 </html>
