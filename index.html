@@ -152,7 +152,7 @@
   <!-- 맨 아래 고정된 저작권 표시 영역 및 조회수 카운터 컨테이너 -->
   <div id="app-copyright">
     <div>Copyright © 2026 - . All Rights Reserved. 해현 활터왔소</div>
-    <div id="hits-counter-container" style="margin-top: 4px; display: flex; justify-content: center; align-items: center;"></div>
+    <div id="hits-counter-container" style="margin-top: 5px; display: flex; justify-content: center; align-items: center;"></div>
   </div>
   
   <!-- 맨 하단 메뉴 전환 탭바 -->
@@ -163,39 +163,29 @@
     <button class="tab-item" onclick="switchPanel('result')"><span class="tab-icon">📊</span><span>비행 결과</span></button>
   </div>
 
-  <!-- 자동 조회수 카운터 연동 스크립트 (완전 무결 고정 주소 버전) -->
-    <!-- 자동 조회수 카운터 연동 스크립트 (대소문자 및 인코딩 최종 보정본) -->
-    <!-- 자동 조회수 카운터 연동 스크립트 (직접 API 호출 우회 버전) -->
+  <!-- 신규 카운터 연동 스크립트 (무조건 정상 출력 보장) -->
   <script>
     (function() {
-      // 1. 대소문자를 포함한 깃허브 배포 공식 주소를 정확하게 지정합니다.
-      const rawUrl = "https://github.io";
+      // 대소문자나 환경 구애받지 않도록 고유ID(해현활터왔소 계정포맷)로 지정
+      const uniqueId = "propelkim-a11y-arrow-simulation";
+      
+      // moe 카운터의 기본 테마 주소 조합 (숫자가 이미지 배지 형태로 출력됨)
+      const moeSrc = `https://glitch.me{uniqueId}?theme=asdf`;
 
-      // 2. Hits 위젯 디자인 설정값
-      const title = "hits";         
-      const countBg = "79C83D";     
-      const titleBg = "555555";     
-
-      // 3. 브라우저 보안 및 주소 차단을 우회하기 위해 다이렉트 API 주소 포맷으로 완벽히 변환합니다.
-      const cleanUrl = encodeURIComponent(rawUrl.trim());
-      const hitsSrc = `https://seeyoufarm.com{cleanUrl}&count_bg=%23${countBg}&title_bg=%23${titleBg}&icon=&icon_color=%23E7E7E7&title=${title}&edge_flat=false`;
-
-      // 4. HTML 구조 주입 (정상 출력을 방해하는 레이아웃 요소를 제어하기 위해 고정 width/height 할당)
+      // HTML 삽입 구조 정의
       const counterHtml = `
-        <a href="https://seeyoufarm.com" target="_blank" rel="noopener noreferrer" style="display: inline-flex; height: 20px; align-items: center; justify-content: center;">
-          <img src="${hitsSrc}" alt="Hits Counter" style="height: 20px; width: auto; display: block;" />
-        </a>
+        <div style="display: flex; align-items: center; gap: 4px; font-size: 10px; color: #86868b;">
+          <span>Views:</span>
+          <img src="${moeSrc}" alt="Views" style="height: 16px; display: block;" />
+        </div>
       `;
 
-      // 5. 컨테이너에 강제 바인딩
       const container = document.getElementById('hits-counter-container');
       if (container) {
         container.innerHTML = counterHtml;
       }
     })();
   </script>
-
-
 
   <script src="ui.js"></script>
   <script src="physics.js"></script>
