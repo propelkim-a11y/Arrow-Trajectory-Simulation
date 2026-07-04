@@ -75,10 +75,9 @@ canvas {
     display: block; 
 }
 
-/* 💡 [전면 개정] 버튼을 fixed로 변경하여 상하단 레이아웃 경계를 깨고 폰 화면 전체를 돌아다니게 설정 */
 .fire-btn { 
     position: fixed; 
-    top: 20vh; /* 초기 기동 시 적절한 우측 상단 배치 */
+    top: 20vh; 
     right: 24px; 
     width: 60px;
     height: 60px;
@@ -93,7 +92,7 @@ canvas {
     display: flex;
     align-items: center;
     justify-content: center;
-    z-index: 99999; /* 하단 탭바나 입력 자판보다 무조건 위에 오도록 레이어 순위 극대화 */
+    z-index: 99999; 
     user-select: none;
     touch-action: none; 
 }
@@ -102,11 +101,11 @@ canvas {
     background: #005bb5;
 }
 
+/* 설정판 배경을 지형과 분리하여 깔끔하게 배경 처리 */
 #panel-container { 
-    height: calc(40vh - 60px); 
-    background: #ffffff; 
-    border-top: 1px solid rgba(0,0,0,0.08); 
-    padding: 16px; 
+    height: calc(40vh - 86px); /* 저작권 바 영역 마진 확보 */
+    background: #f5f5f7; 
+    padding: 10px 16px; 
     overflow-y: auto; 
 }
 
@@ -119,8 +118,17 @@ canvas {
     display: block; 
 }
 
+/* 💡 [신설] 설정을 감싸는 세련된 라운드 카드 상자 디자인 */
+.panel-card {
+    background: #ffffff;
+    border-radius: 14px;
+    padding: 14px 16px;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.04);
+    border: 1px solid rgba(0, 0, 0, 0.03);
+}
+
 .panel-title { 
-    font-size: 15px; 
+    font-size: 14px; 
     font-weight: 700; 
     margin-bottom: 12px; 
     color: #1d1d1f; 
@@ -129,7 +137,7 @@ canvas {
 .form-grid { 
     display: grid; 
     grid-template-columns: 1fr 1fr; 
-    gap: 10px 16px; 
+    gap: 10px 12px; 
 }
 
 .form-group { 
@@ -139,7 +147,7 @@ canvas {
     background: #f5f5f7; 
     padding: 8px 12px; 
     border-radius: 8px; 
-    height: 40px; 
+    height: 38px; 
 }
 
 .form-group label { 
@@ -177,6 +185,19 @@ canvas {
     font-weight: 700; 
     color: #0071e3; 
     text-align: right; 
+}
+
+/* 💡 [신설] 설정판 밖, 맨 아래 탭바 바로 위에 부동으로 안착하는 저작권 레이아웃 스타일 */
+#app-copyright {
+    height: 26px;
+    background: #ffffff;
+    text-align: center;
+    font-size: 10px;
+    color: #86868b;
+    line-height: 26px;
+    border-top: 1px solid rgba(0, 0, 0, 0.05);
+    letter-spacing: -0.2px;
+    user-select: none;
 }
 
 .tab-bar { 
