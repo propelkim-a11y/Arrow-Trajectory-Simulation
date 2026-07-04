@@ -5,10 +5,116 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
     <title>Arrow Trajectory Simulator</title>
     <link rel="stylesheet" href="style.css">
+    <style>
+        /* 💡 인트로 전용 내부 스타일 셋업 */
+        #intro-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100vw;
+            height: 100vh;
+            background: #1c1c1e;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 999999;
+            opacity: 1;
+        }
+        .intro-content {
+            text-align: center;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+        .intro-logo {
+            position: relative;
+            width: 90px;
+            height: 90px;
+            margin-bottom: 20px;
+        }
+        .logo-target {
+            width: 80px;
+            height: 80px;
+            border: 12px solid #ff3b30;
+            border-radius: 50%;
+            background: #ffffff;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: 0 4px 20px rgba(255, 59, 48, 0.3);
+        }
+        .logo-bullseye {
+            width: 24px;
+            height: 24px;
+            background: #1c1c1e;
+            border-radius: 50%;
+        }
+        .logo-arrow {
+            position: absolute;
+            font-size: 46px;
+            bottom: -8px;
+            right: -10px;
+            transform: rotate(-10deg);
+            animation: arrowWiggle 2s infinite ease-in-out;
+        }
+        @keyframes arrowWiggle {
+            0%, 100% { transform: rotate(-10deg) translate(0, 0); }
+            50% { transform: rotate(-5deg) translate(4px, -4px); }
+        }
+        .intro-title {
+            color: #ffffff;
+            font-size: 22px;
+            font-weight: 700;
+            letter-spacing: -0.5px;
+            margin-bottom: 6px;
+        }
+        .intro-subtitle {
+            color: #8e8e93;
+            font-size: 13px;
+            font-weight: 500;
+            margin-bottom: 30px;
+        }
+        .intro-loader {
+            width: 140px;
+            height: 3px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 2px;
+            overflow: hidden;
+        }
+        .loader-bar {
+            width: 100%;
+            height: 100%;
+            background: #0071e3;
+            border-radius: 2px;
+            transform: translateX(-100%);
+            animation: loadProgress 2.2s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+        @keyframes loadProgress {
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(0%); }
+        }
+    </style>
 </head>
 <body>
 
-<!-- 상단 60% 영역: 메인 스크린 및 시뮬레이터 캔버스 -->
+<!-- 💡 [신설] 앱 구동 시 가장 먼저 전개되는 국궁 인트로 오버레이 레이어 -->
+<div id="intro-overlay">
+    <div class="intro-content">
+        <div class="intro-logo">
+            <div class="logo-target">
+                <div class="logo-bullseye"></div>
+            </div>
+            <div class="logo-arrow">🏹</div>
+        </div>
+        <h2 class="intro-title">국궁 탄도 시뮬레이터</h2>
+        <p class="intro-subtitle">Arrow Trajectory Simulator</p>
+        <div class="intro-loader">
+            <div class="loader-bar"></div>
+        </div>
+    </div>
+</div>
+
+<!-- 상단 영역 메인 스크린 및 시뮬레이터 캔버스 -->
 <div class="main-screen">
     <h1>Arrow Trajectory</h1>
     
@@ -25,7 +131,7 @@
     </div>
 </div>
 
-<!-- 하단 40% 영역: 라운드 카드형 설정 및 결과 패널 컨테이너 -->
+<!-- 하단 영역 라운드 카드형 설정 및 결과 패널 컨테이너 -->
 <div id="panel-container">
     
     <!-- [탭 1] 화살 설정 -->
@@ -114,7 +220,7 @@
 
 </div>
 
-<!-- 💡 [위치 이동] 설정 패널 밖으로 완전히 탈출시켜 맨 아래 고정된 저작권 표시 영역 -->
+<!-- 고정 저작권 표시 영역 -->
 <div id="app-copyright">
     Copyright © 2026 해현-활터왔소. All Rights Reserved.
 </div>
@@ -129,5 +235,17 @@
 
 <script src="ui.js"></script>
 <script src="physics.js"></script>
-</body>
-</html>
+
+<!-- 💡 인트로 제어 구동 자바스크립트 -->
+<script>
+    window.addEventListener('load', () => {
+        setTimeout(() => {
+            const overlay = document.getElementById('intro-overlay');
+            if (overlay) {
+                overlay.style.opacity = '0';
+                overlay.style.transition = 'opacity 0.6s cubic-bezier(0.25, 1, 0.5, 1)';
+        setTimeout(() => {
+            overlay.remove();
+        }, 600);
+    }, 2200);
+});
