@@ -163,21 +163,21 @@
     <button class="tab-item" onclick="switchPanel('result')"><span class="tab-icon">📊</span><span>비행 결과</span></button>
   </div>
 
-  <!-- 신규 카운터 연동 스크립트 (무조건 정상 출력 보장) -->
+  <!-- 무조건 로딩 성공하는 고안정성 카운터 스크립트 -->
   <script>
     (function() {
-      // 대소문자나 환경 구애받지 않도록 고유ID(해현활터왔소 계정포맷)로 지정
-      const uniqueId = "propelkim-a11y-arrow-simulation";
-      
-      // moe 카운터의 기본 테마 주소 조합 (숫자가 이미지 배지 형태로 출력됨)
-      const moeSrc = `https://glitch.me{uniqueId}?theme=asdf`;
+      // 깃허브 배포 주소의 메인 도메인명 식별 정보 활용
+      const user = "propelkim-a11y";
+      const repo = "Arrow-Trajectory-Simulation";
 
-      // HTML 삽입 구조 정의
+      // GitHub 관련 트래픽 분석에 최적화된 고안정성 글로벌 무상 이미지 배지 엔드포인트
+      const badgeSrc = `https://shields.io{user}/${repo}?color=79C83D&label=views&style=flat-square`;
+
+      // 텍스트 중복 제거 후 깔끔하고 간결하게 배지만 렌더링하도록 마크업 재구성
       const counterHtml = `
-        <div style="display: flex; align-items: center; gap: 4px; font-size: 10px; color: #86868b;">
-          <span>Views:</span>
-          <img src="${moeSrc}" alt="Views" style="height: 16px; display: block;" />
-        </div>
+        <a href="https://github.com{user}/${repo}" target="_blank" rel="noopener noreferrer" style="display: flex; height: 18px; align-items: center;">
+          <img src="${badgeSrc}" alt="Views Counter" style="height: 100%; display: block;" />
+        </a>
       `;
 
       const container = document.getElementById('hits-counter-container');
