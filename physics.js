@@ -79,21 +79,18 @@ function fireArrow() {
     const angleDeg = parseFloat(document.getElementById('angle').value) || 0;
     const yawDeg = parseFloat(document.getElementById('yawAngle').value) || 0;
     const launchH = parseFloat(document.getElementById('launchHeight').value) || 1.5;
+// 💡 아래 두 줄을 새로 추가하여 입력값을 읽어옵니다.
+    const launchX = parseFloat(document.getElementById('launchX').value) || 0;
+    const launchZ = parseFloat(document.getElementById('launchZ').value) || 0;
 
     const pitchRad = (angleDeg * Math.PI) / 180;
     const yawRad = (yawDeg * Math.PI) / 180;
-
-    arrowState.x = 0; 
-    arrowState.y = launchH; 
-    arrowState.z = 0;
     
-    arrowState.vx = v0 * Math.cos(pitchRad) * Math.cos(yawRad);
-    arrowState.vy = v0 * Math.sin(pitchRad);
-    arrowState.vz = v0 * Math.cos(pitchRad) * Math.sin(yawRad);
-    
-    arrowState.pitch = pitchRad; 
-    arrowState.yaw = yawRad;
-
+// 💡 0 대신 동적 변수로 출발 위치 강제 지정
+    arrowState.x = launchX;
+    arrowState.y = launchH;
+    arrowState.z = launchZ;
+  
     flightMetrics = { maxDistance: 0, maxHeight: launchH, sideDeviation: 0, flightTime: 0, impactVelocity: v0, impactEnergy: 0 };
     targetHitMetrics = { isHit: false, localZ: 0, localY: 0 };
     hasReachedTargetX = false;
@@ -444,10 +441,14 @@ setTimeout(() => {
   if (typeof loadSettings === 'function') loadSettings();
   resizeCanvas();
   
+  // 447라인 부근 setTimeout 내부
   const launchH = parseFloat(document.getElementById('launchHeight').value) || 1.5;
-  arrowState.x = 0; arrowState.y = launchH; arrowState.z = 0;
-  arrowState.pitch = (parseFloat(document.getElementById('angle').value) || 30) * Math.PI / 180;
-  arrowState.yaw = (parseFloat(document.getElementById('yawAngle').value) || 0) * Math.PI / 180;
+  // 💡 초기화 시점에도 값을 읽어옵니다.
+  const launchX = parseFloat(document.getElementById('launchX').value) || 0;
+  const launchZ = parseFloat(document.getElementById('launchZ').value) || 0;
   
-  drawScene();
+  arrowState.x = launchX; // 💡 0에서 변수로 변경
+  arrowState.y = launchH;
+  arrowState.z = launchZ; // 💡 0에서 변수로 변경
+
 }, 250);
