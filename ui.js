@@ -1,6 +1,7 @@
 const INPUT_IDS = [
   'weight', 'diameter', 'dragCoeff', 'liftCoeff',
   'angle', 'velocity', 'yawAngle', 'launchHeight',
+  'launchX', 'launchZ', // 💡 여기에 추가
   'windX', 'windY', 'targetHeight', 'airDensity'
 ];
 
@@ -55,8 +56,8 @@ function changeView(viewType, element) {
   currentView = viewType;
   if (typeof drawScene === 'function') drawScene();
 }
-
-const NEGATIVE_ALLOWED_IDS = ['angle', 'yawAngle', 'windX', 'windY', 'targetHeight'];
+// 59라인 수정: 사대를 뒤로 빼거나 좌우 편차를 마이너스로 줄 수 있도록 음수 허용
+const NEGATIVE_ALLOWED_IDS = ['angle', 'yawAngle', 'windX', 'windY', 'targetHeight', 'launchX', 'launchZ'];
 
 window.addEventListener('DOMContentLoaded', () => {
   loadSettings();
