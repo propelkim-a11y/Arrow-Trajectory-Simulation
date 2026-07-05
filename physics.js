@@ -83,8 +83,9 @@ function fireArrow() {
     const launchX = parseFloat(document.getElementById('launchX').value) || 0;
     const launchZ = parseFloat(document.getElementById('launchZ').value) || 0;
 
-    const pitchRad = (angleDeg * Math.PI) / 180;
-    const yawRad = (yawDeg * Math.PI) / 180;
+    arrowState.vx = v0 * Math.cos(pitchRad) * Math.cos(yawRad);
+    arrowState.vy = v0 * Math.sin(pitchRad); // 💡 마이너스(-) 기호가 있다면 완벽히 제거합니다.
+    arrowState.vz = v0 * Math.cos(pitchRad) * Math.sin(yawRad);
     
 // 💡 0 대신 동적 변수로 출발 위치 강제 지정
     arrowState.x = launchX;
