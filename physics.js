@@ -153,7 +153,7 @@ function animate() {
     if (!hasReachedTargetX) { flightMetrics.flightTime += dt; }
     if (arrowState.y > flightMetrics.maxHeight) { flightMetrics.maxHeight = arrowState.y; }
 
-    const nx = Math.cos(TGT_TILT); const ny = Math.sin(TGT_TILT);
+    const nx = Math.cos(TGT_TILT); const ny = -Math.sin(TGT_TILT);
     const distPrev = nx * (prevX - targetBaseX) + ny * (prevY - targetH);
     const distCurr = nx * (arrowState.x - targetBaseX) + ny * (arrowState.y - targetH);
 
