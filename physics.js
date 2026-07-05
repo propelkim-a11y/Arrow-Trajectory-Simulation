@@ -109,7 +109,11 @@ function animate() {
     const cd = parseFloat(document.getElementById('dragCoeff').value) || 0;
     const cl = parseFloat(document.getElementById('liftCoeff').value) || 0;
     const d = (parseFloat(document.getElementById('diameter').value) || 5.5) / 1000; 
-    const m = (parseFloat(document.getElementById('weight').value) || 25) / 1000;    
+// 입력값에서 'g'나 공백 등의 문자열을 강제로 제거하고 순수 숫자만 추출하여 계산합니다.
+    const weightInput = document.getElementById('weight').value;
+    const cleanWeight = parseFloat(weightInput.replace(/[^0-9.]/g, '')) || 25;
+    const m = cleanWeight / 1000; // kg 단위 변환
+    
     const rho = parseFloat(document.getElementById('airDensity').value) || 1.225;
     const windX = parseFloat(document.getElementById('windX').value) || 0; 
     const windZ = parseFloat(document.getElementById('windY').value) || 0; 
