@@ -86,7 +86,7 @@ function fireArrow() {
 
     arrowState.x = 0; 
     arrowState.y = launchH; 
-    arrowState.z = 0;
+    arrowState.z = launchZ;
     
     arrowState.vx = v0 * Math.cos(pitchRad) * Math.cos(yawRad);
     arrowState.vy = v0 * Math.sin(pitchRad);
