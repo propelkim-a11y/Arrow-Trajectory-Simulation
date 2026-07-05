@@ -74,31 +74,28 @@
                     </div>
                 </div>
                 <div class="form-group"><label>초기 속도</label><div class="input-wrapper"><input type="number" id="velocity" value="50"><span class="unit">m/s</span></div></div>
-                    <!-- 1. 수평 각도 입력창 -->
-                    <div class="form-group">
-                      <label>수평 각도</label>
-                      <div class="input-wrapper">
-                        <!-- inputmode를 decimal로 변경하고 pattern을 모바일 호환용으로 간소화했습니다 -->
-                        <input type="text" id="yawAngle" value="0" inputmode="decimal" pattern="-?[0-9]*\.?[0-9]*">
-                        <span class="unit">°</span>
-                      </div>
-                    </div>
-                         <div class="form-group">
-                      <label for="launchZ">사수 위치</label>
-                      <div class="input-wrapper">
-                        <!-- 수평 각도와 완전히 동일한 텍스트-데시멀 입력 방식으로 통일합니다 -->
-                        <input type="text" id="launchZ" value="0" inputmode="decimal" pattern="-?[0-9]*\.?[0-9]*">
-                        <span class="unit">m</span>
-                      </div>
-                    </div>
-
-                  <div class="form-group">
-                    <label for="launchZ">사수 위치</label>
+                <div class="form-group">
+                    <label>수평 각도</label>
                     <div class="input-wrapper">
-                      <input type="number" id="launchZ" value="0" min="-10" max="10" step="0.5">
-                      <span class="unit">m</span>
+                        <input type="text" id="yawAngle" value="0" inputmode="text" pattern="^-?[0-9]*\.?[0-9]*$">
+                        <span class="unit">°</span>
                     </div>
-                  </div>
+                </div>
+              <div class="form-group">
+  <label>발시 높이</label>
+  <div class="input-wrapper">
+    <input type="number" id="launchHeight" value="1.5" step="0.1">
+    <span class="unit">m</span>
+  </div>
+</div>
+
+<div class="form-group">
+  <label for="launchZ">사대 좌우 위치</label>
+  <div class="input-wrapper">
+    <input type="number" id="launchZ" value="0" min="-10" max="10" step="0.5">
+    <span class="unit">m</span>
+  </div>
+</div>
             </div>
         </div>
     </div>
