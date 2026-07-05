@@ -81,26 +81,23 @@
                         <span class="unit">°</span>
                     </div>
                 </div>
-              <div class="form-group">
-                    <label>발시 높이</label>
-                    <div class="input-wrapper">
-                      <input type="number" id="launchHeight" value="1.5" step="0.1">
-                      <span class="unit">m</span>
-                    </div>
-                  </div>
+                <div class="form-group">
+                   <label>발시높이 </label>
+                   <div class="input-wrapper">
+                   <input type="number" id="launchHeight" value="1.5" step="0.1">
+                   <span class="unit">m</span>
+                   </div>
+                   </div>
                   
-              <div class="form-group">
-                    <label for="launchZ">사수 위치</label>
-                    <div class="input-wrapper">
-                <!-- type을 text로 바꾸고 inputmode와 pattern을 지정하여 음수 입력을 허용합니다 -->
-                      <input type="text" id="launchZ" value="0" inputmode="decimal" pattern="-?[0-9]*\.?[0-9]*">
-                      <span class="unit">m</span>
-                    </div>
-             </div>
-
-            </div>
-            </div>
-        </div>
+                <div class="form-group">
+                   <label for="launchZ">사수위치 </label>
+                   <div class="input-wrapper">
+                   <input type="number" id="launchZ" value="0" min="-10" max="10" step="0.5">
+                   <span class="unit">m</span>
+                   </div>
+                </div>
+            </div> 
+      </div>
     </div>
 
     <!-- [탭 3] 환경 설정 -->
