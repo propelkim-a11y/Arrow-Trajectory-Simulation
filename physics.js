@@ -173,7 +173,28 @@ function animate() {
             targetHitMetrics.isHit = false;
         }
     }
+        // 💡 1. 과녁 평면과 교차했을 때 비행 상태 정리 및 UI 업데이트
+        hasReachedTargetX = true;
+        // 최종 과녁 도달 시점의 좌우 편차(Z좌표)를 기록합니다.
+        flightMetrics.sideDeviation = arrowState.z; 
+        flightMetrics.impactVelocity = Math.sqrt(arrowState.vx*arrowState.vx + arrowState.vy*arrowState.vy + arrowState.vz*arrowState.vz);
+        flightMetrics.impactEnergy = 0.5 * m * flightMetrics.impactVelocity * flightMetrics.impactVelocity;
+    }
 
+    // 💡 2. [핵심] 비행 종료 조건 체크 (과녁을 지나쳤거나 땅에 떨어졌을 때)
+    // 과녁 X 위치(예: 145m)를 넘었거나 화살이 바닥(0m) 이하로 떨어지면 비행을 멈춥니다.
+    if (arrowState.x > targetBaseX + 10 || arrowState.y <= 0) {
+        isFlying = false;
+        updateResultUI(); // 최종 비행 결과 갱신
+        if (typeof drawScene === "function") drawScene(); // 캔버스에 화살 궤적 그리기 강제 호출
+        return; // 애니메이션 루프 완전히 종료
+    }
+
+    // 💡 3. 아직 날아가는 중이라면 다음 프레임 예약
+    requestAnimationFrame(animate);
+}
+
+    
     if (!hasReachedTargetX && arrowState.x >= targetBaseX) { hasReachedTargetX = true; }
     if (!hasReachedTargetY && arrowState.vy <= 0 && prevY >= targetH && arrowState.y <= targetH) {
         hasReachedTargetY = true;
