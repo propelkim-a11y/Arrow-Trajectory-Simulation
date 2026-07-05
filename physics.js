@@ -79,19 +79,21 @@ function fireArrow() {
     const angleDeg = parseFloat(document.getElementById('angle').value) || 0;
     const yawDeg = parseFloat(document.getElementById('yawAngle').value) || 0;
     const launchH = parseFloat(document.getElementById('launchHeight').value) || 1.5;
-// 💡 아래 두 줄을 새로 추가하여 입력값을 읽어옵니다.
-    const launchX = parseFloat(document.getElementById('launchX').value) || 0;
-    const launchZ = parseFloat(document.getElementById('launchZ').value) || 0;
 
+    const pitchRad = (angleDeg * Math.PI) / 180;
+    const yawRad = (yawDeg * Math.PI) / 180;
+
+    arrowState.x = 0; 
+    arrowState.y = launchH; 
+    arrowState.z = 0;
+    
     arrowState.vx = v0 * Math.cos(pitchRad) * Math.cos(yawRad);
-    arrowState.vy = v0 * Math.sin(pitchRad); // 💡 마이너스(-) 기호가 있다면 완벽히 제거합니다.
+    arrowState.vy = v0 * Math.sin(pitchRad);
     arrowState.vz = v0 * Math.cos(pitchRad) * Math.sin(yawRad);
     
-// 💡 0 대신 동적 변수로 출발 위치 강제 지정
-    arrowState.x = launchX;
-    arrowState.y = launchH;
-    arrowState.z = launchZ;
-  
+    arrowState.pitch = pitchRad; 
+    arrowState.yaw = yawRad;
+
     flightMetrics = { maxDistance: 0, maxHeight: launchH, sideDeviation: 0, flightTime: 0, impactVelocity: v0, impactEnergy: 0 };
     targetHitMetrics = { isHit: false, localZ: 0, localY: 0 };
     hasReachedTargetX = false;
@@ -110,11 +112,7 @@ function animate() {
     const cd = parseFloat(document.getElementById('dragCoeff').value) || 0;
     const cl = parseFloat(document.getElementById('liftCoeff').value) || 0;
     const d = (parseFloat(document.getElementById('diameter').value) || 5.5) / 1000; 
-// 입력값에서 'g'나 공백 등의 문자열을 강제로 제거하고 순수 숫자만 추출하여 계산합니다.
-    const weightInput = document.getElementById('weight').value;
-    const cleanWeight = parseFloat(weightInput.replace(/[^0-9.]/g, '')) || 25;
-    const m = cleanWeight / 1000; // kg 단위 변환
-    
+    const m = (parseFloat(document.getElementById('weight').value) || 25) / 1000;    
     const rho = parseFloat(document.getElementById('airDensity').value) || 1.225;
     const windX = parseFloat(document.getElementById('windX').value) || 0; 
     const windZ = parseFloat(document.getElementById('windY').value) || 0; 
@@ -193,13 +191,7 @@ function animate() {
     }
 
     updateResultUI();
-    const launchX = parseFloat(document.getElementById('launchX').value) || 0;
-    if (arrowState.y <= 0 && arrowState.x > launchX + 0.5) { 
-    arrowState.y = 0; 
-    isFlying = false; 
-    updateResultUI(); 
-}
-    
+    if (arrowState.y <= 0) { arrowState.y = 0; isFlying = false; updateResultUI(); }
     if (arrowState.x > MAX_WORLD_X || arrowState.x < -10) { isFlying = false; }
 
     drawScene();
@@ -452,14 +444,10 @@ setTimeout(() => {
   if (typeof loadSettings === 'function') loadSettings();
   resizeCanvas();
   
-  // 447라인 부근 setTimeout 내부
   const launchH = parseFloat(document.getElementById('launchHeight').value) || 1.5;
-  // 💡 초기화 시점에도 값을 읽어옵니다.
-  const launchX = parseFloat(document.getElementById('launchX').value) || 0;
-  const launchZ = parseFloat(document.getElementById('launchZ').value) || 0;
+  arrowState.x = 0; arrowState.y = launchH; arrowState.z = 0;
+  arrowState.pitch = (parseFloat(document.getElementById('angle').value) || 30) * Math.PI / 180;
+  arrowState.yaw = (parseFloat(document.getElementById('yawAngle').value) || 0) * Math.PI / 180;
   
-  arrowState.x = launchX; // 💡 0에서 변수로 변경
-  arrowState.y = launchH;
-  arrowState.z = launchZ; // 💡 0에서 변수로 변경
-
+  drawScene();
 }, 250);
