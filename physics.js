@@ -85,7 +85,7 @@ function fireArrow() {
 
     arrowState.x = 0; 
     arrowState.y = launchH; 
-    arrowState.z = 0;
+    arrowState.z = playerZ; // 읽어온 사수 위치를 시작 Z 좌표로 지정!
     
     arrowState.vx = v0 * Math.cos(pitchRad) * Math.cos(yawRad);
     arrowState.vy = v0 * Math.sin(pitchRad);
@@ -94,7 +94,7 @@ function fireArrow() {
     arrowState.pitch = pitchRad; 
     arrowState.yaw = yawRad;
 
-    flightMetrics = { maxDistance: 0, maxHeight: launchH, sideDeviation: 0, flightTime: 0, impactVelocity: v0, impactEnergy: 0 };
+    flightMetrics = { maxDistance: 0, maxHeight: launchH, sideDeviation: playerZ, flightTime: 0, impactVelocity: v0, impactEnergy: 0 };
     targetHitMetrics = { isHit: false, localZ: 0, localY: 0 };
     hasReachedTargetX = false;
     hasReachedTargetY = false;
