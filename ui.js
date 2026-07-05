@@ -161,3 +161,14 @@ window.addEventListener('DOMContentLoaded', () => {
   window.addEventListener('mousemove', doDrag);
   window.addEventListener('mouseup', endDrag);
 });
+// 인트로 공지사항 모달 닫기 함수
+function closeIntro() {
+  const introModal = document.getElementById('introModal');
+  if (introModal) {
+    introModal.style.opacity = '0';
+    introModal.style.visibility = 'hidden';
+    setTimeout(() => {
+      introModal.style.display = 'none';
+    }, 300); // CSS transition 시간(0.3s)과 일치시켜 부드럽게 제거
+  }
+}
