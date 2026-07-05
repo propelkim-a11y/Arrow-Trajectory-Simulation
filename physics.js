@@ -79,7 +79,8 @@ function fireArrow() {
     const angleDeg = parseFloat(document.getElementById('angle').value) || 0;
     const yawDeg = parseFloat(document.getElementById('yawAngle').value) || 0;
     const launchH = parseFloat(document.getElementById('launchHeight').value) || 1.5;
-
+    const launchZ = parseFloat(document.getElementById('launchZ').value) || 0; 
+    
     const pitchRad = (angleDeg * Math.PI) / 180;
     const yawRad = (yawDeg * Math.PI) / 180;
 
@@ -441,13 +442,19 @@ ctx.lineWidth = 1.5;
 
 // 캔버스 초기 크기 반영 지연 제어
 setTimeout(() => {
-  if (typeof loadSettings === 'function') loadSettings();
-  resizeCanvas();
+    if (typeof loadSettings === 'function') loadSettings();
+    resizeCanvas();
   
-  const launchH = parseFloat(document.getElementById('launchHeight').value) || 1.5;
-  arrowState.x = 0; arrowState.y = launchH; arrowState.z = 0;
-  arrowState.pitch = (parseFloat(document.getElementById('angle').value) || 30) * Math.PI / 180;
-  arrowState.yaw = (parseFloat(document.getElementById('yawAngle').value) || 0) * Math.PI / 180;
+    const launchH = parseFloat(document.getElementById('launchHeight').value) || 1.5;
+// [추가] 초기 Z값 반영
+    const launchZ = parseFloat(document.getElementById('launchZ').value) || 0; 
+  
+    arrowState.x = 0; 
+    arrowState.y = launchH; 
+    arrowState.z = launchZ; // [수정] 기존 0에서 launchZ 변수로 변경!
+  
+    arrowState.pitch = (parseFloat(document.getElementById('angle').value) || 30) * Math.PI / 180;
+    arrowState.yaw = (parseFloat(document.getElementById('yawAngle').value) || 0) * Math.P
   
   drawScene();
 }, 250);
