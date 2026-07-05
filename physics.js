@@ -188,7 +188,13 @@ function animate() {
     }
 
     updateResultUI();
-    if (arrowState.y <= 0) { arrowState.y = 0; isFlying = false; updateResultUI(); }
+    const launchX = parseFloat(document.getElementById('launchX').value) || 0;
+    if (arrowState.y <= 0 && arrowState.x > launchX + 0.5) { 
+    arrowState.y = 0; 
+    isFlying = false; 
+    updateResultUI(); 
+}
+    
     if (arrowState.x > MAX_WORLD_X || arrowState.x < -10) { isFlying = false; }
 
     drawScene();
