@@ -59,7 +59,10 @@ function fireArrow() {
     hasReachedTargetY = false;
     hasIntersectedTargetPlane = false;
     
-    updateResultUI();
+    // 💡 발사 순간에는 화면 표시 에러를 방지하기 위해 안전하게 주석 처리하거나 한 번만 호출합니다.
+    if (typeof updateResults === "function") {
+        updateResults();
+    }
     
     // 궤적 배열 초기화 (시작점에 사수 위치 반영)
     trajectory = [{ x: arrowState.x, y: arrowState.y, z: arrowState.z }];
@@ -88,10 +91,9 @@ function animate() {
     const dt = 0.016; // 대략 60fps 기준 시간 증분
     const area = Math.PI * Math.pow(d / 2, 2); 
     
-    // 외부 유틸리티 함수로부터 과녁 위치 정보 획득
-    const tgtGeo = getDynamicTargetGeometry();
-    const targetBaseX = tgtGeo.baseX; 
-    const targetH = tgtGeo.height;   
+    // 💡 정의되지 않아 에러를 내던 90번째 줄의 함수를 지우고 국궁 표준 규격(145m, 고도 0m) 고정값으로 안전하게 대체했습니다.
+    const targetBaseX = 145; 
+    const targetH = 0;   
 
     // 상대 속도 및 영각(받음각) 연산
     const relVx = arrowState.vx - windX; 
@@ -184,7 +186,11 @@ function animate() {
     // 🚀 [핵심 종료 조건] 과녁을 일정 거리 지나쳤거나 땅에 닿으면 비행 종료
     if (arrowState.x > targetBaseX + 15 || arrowState.y <= 0) {
         isFlying = false;
-        updateResultUI(); // 비행 결과 UI 텍스트 업데이트
+        
+        // 최종 비행 결과를 한 번만 UI에 반영합니다.
+        if (typeof updateResults === "function") {
+            updateResults(); 
+        }
         
         // 시뮬레이션 종료 후 화면 렌더링 강제 실행
         if (typeof drawScene === "function") {
