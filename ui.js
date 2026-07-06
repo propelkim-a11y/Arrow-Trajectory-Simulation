@@ -1,6 +1,6 @@
 const INPUT_IDS = [
   'weight', 'diameter', 'dragCoeff', 'liftCoeff',
-  'angle', 'velocity', 'yawAngle', 'launchHeight',
+  'angle', 'velocity', 'yawAngle', 'launchHeight', 'launchZ',
   'windX', 'windY', 'targetHeight', 'airDensity'
 ];
 
