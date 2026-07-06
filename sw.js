@@ -1,16 +1,19 @@
-// 서비스 워커 설치 이벤트 (최초 앱 등록)
+// 서비스 워커 설치 및 활성화 이벤트 (기본 설정)
 self.addEventListener('install', (event) => {
-    // 기다리지 않고 즉시 활성화하여 PWA 자격 획득
-    self.skipWaiting();
+  self.skipWaiting();
 });
 
-// 서비스 워커 활성화 이벤트
 self.addEventListener('activate', (event) => {
-    event.waitUntil(self.clients.claim());
+  event.waitUntil(self.clients.claim());
 });
 
-// 실시간 네트워크 요청 가로채기 (오직 PWA 설치 조건 충족용 빈 패치)
+// 🔥 필수: 브라우저가 no-op으로 인식하지 않도록 실제 respondWith를 호출합니다
 self.addEventListener('fetch', (event) => {
-    // 필요한 경우 추후 오프라인 캐싱 로직을 여기에 작성할 수 있습니다.
+  event.respondWith(
+    fetch(event.request)
+      .catch(() => {
+        // 네트워크가 끊겼을 때(오프라인) 최소한의 기본 응답 처리
+        return new Response("오프라인 상태입니다. 네트워크 연결을 확인해주세요.");
+      })
+  );
 });
-
