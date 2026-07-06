@@ -18,7 +18,7 @@
       <h3>📢 시스템 공지사항</h3>
       <ul>
         <li><strong>버그 수정 완료:</strong> 측면 궤적과 과녁 확대도 판정이 일치하지 않던 기하학 오류를 수정했습니다.</li>
-        <li><strong>환경 설정 안내:</strong> 바람, 과녁 고도차, 사수의 위치를 변경하며 정밀한 조준점 변화를 테스트해 보세요.</li>
+        <li><strong>사용 안내:</strong> 바람, 과녁 고도차, 사수의 위치를 변경하며 정밀한 조준점 변화를 테스트해 보세요.</li>
         <li>본 프로그램은 국궁 표준 제원을 바탕으로 제작된 시뮬레이터입니다.</li>
       </ul>
     </div>
@@ -67,7 +67,7 @@
             <div class="panel-title">사법 설정</div>
             <div class="form-grid">
                 <div class="form-group">
-                    <label>발시 각도</label>
+                    <label>발시 고각</label>
                     <div class="input-wrapper">
                         <input type="text" id="angle" value="30" inputmode="text" pattern="^-?[0-9]*\.?[0-9]*$">
                         <span class="unit">°</span>
@@ -75,7 +75,7 @@
                 </div>
                 <div class="form-group"><label>초기 속도</label><div class="input-wrapper"><input type="number" id="velocity" value="50"><span class="unit">m/s</span></div></div>
                 <div class="form-group">
-                    <label>수평 각도</label>
+                    <label>앞뒤 각도</label>
                     <div class="input-wrapper">
                         <input type="text" id="yawAngle" value="0" inputmode="text" pattern="^-?[0-9]*\.?[0-9]*$">
                         <span class="unit">°</span>
@@ -90,7 +90,7 @@
                    </div>
                   
                 <div class="form-group">
-                   <label for="launchZ">사수 위치 </label>
+                   <label for="launchZ">궁사 위치 </label>
                    <div class="input-wrapper">
                    <input type="text" id="launchZ" value="0" min="-10" max="10" step="0.5">
                    <span class="unit">m</span>
