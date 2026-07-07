@@ -19,15 +19,14 @@
 <!-- 인트로 및 공지사항 모달 팝업 -->
 <div id="introModal" class="intro-modal">
   <div class="intro-content">
-              <!-- 💡 조회수 배지 우측 상단 배치 -->
-        <div style="position: absolute; top: 15px; right: 15px; z-index: 10;">
-            <a href="https://hits.sh/propelkim-a11y.github.io/Arrow-Trajectory-Simulation/">
-                <img alt="Hits" src="https://hits.sh/propelkim-a11y.github.io/Arrow-Trajectory-Simulation.svg?style=flat-square&label=Users&extraCount=97&color=0045c6"/>
-            </a>
-        </div>
-
-
-      
+  
+    <!-- 💡 조회수 배지 우측 상단 배치 -->
+       <div style="position: absolute; top: 15px; right: 15px; z-index: 10;">
+          <a href="https://hits.sh/propelkim-a11y.github.io/Arrow-Trajectory-Simulation/">
+             <img alt="Hits" src="https://hits.sh/propelkim-a11y.github.io/Arrow-Trajectory-Simulation.svg?style=flat-square&label=Users&extraCount=97&color=0045c6"/>
+          </a>
+       </div>
+   
     <div class="intro-header">
       <span class="intro-logo">🚀</span>
       <h2>국궁 탄도 시뮬레이터</h2>
@@ -85,7 +84,7 @@
             <div class="panel-title">사법 설정</div>
             <div class="form-grid">
                 <div class="form-group">
-                    <label>발시 각도</label>
+                    <label>발시 고각</label>
                     <div class="input-wrapper">
                         <input type="text" id="angle" value="30" inputmode="text" pattern="^-?[0-9]*\.?[0-9]*$">
                         <span class="unit">°</span>
@@ -93,7 +92,7 @@
                 </div>
                 <div class="form-group"><label>초기 속도</label><div class="input-wrapper"><input type="number" id="velocity" value="50"><span class="unit">m/s</span></div></div>
                 <div class="form-group">
-                    <label>수평 각도</label>
+                    <label>앞뒤 각도</label>
                     <div class="input-wrapper">
                         <input type="text" id="yawAngle" value="0" inputmode="text" pattern="^-?[0-9]*\.?[0-9]*$">
                         <span class="unit">°</span>
@@ -102,20 +101,45 @@
                 <div class="form-group">
                    <label>발시 높이 </label>
                    <div class="input-wrapper">
-                   <input type="number" id="launchHeight" value="1.5" step="0.1">
-                   <span class="unit">m</span>
+                        <input type="number" id="launchHeight" value="1.5" step="0.1">
+                        <span class="unit">m</span>
                    </div>
                    </div>
                   
                 <div class="form-group">
-                   <label for="launchZ">사수 위치 </label>
+                   <label for="launchZ">궁사 위치 </label>
                    <div class="input-wrapper">
-                   <input type="text" id="launchZ" value="0" min="-10" max="10" step="0.5">
-                   <span class="unit">m</span>
+                       <input type="text" id="launchZ" value="0" min="-10" max="10" step="0.5">
+                       <span class="unit">m</span>
                    </div>
                 </div>
+				
+                <div class="form-group" style="grid-column: span 2; background: rgba(0,113,227,0.05); margin-top: 5px;">
+                   <label style="color: #0071e3; font-weight: 700;">표보기 조준선 사용</label>
+                   <div class="input-wrapper">
+          <!-- 간단한 체크박스 또는 ON/OFF 표시용 (UI 스타일에 맞춤) -->
+                   <input type="checkbox" id="useLos" style="width: 20px; height: 20px; cursor: pointer;">
+                   </div>
+                </div>
+
+                <div class="form-group">
+                   <label>높이 Y</label>
+                   <div class="input-wrapper">
+                       <input type="text" id="losTargetY" value="1.3" inputmode="text">
+                       <span class="unit">m</span>
+                   </div>
+                </div>
+
+                <div class="form-group">
+                  <label>앞뒤 Z</label>
+                  <div class="input-wrapper">
+                    <input type="text" id="losTargetZ" value="0.0" inputmode="text">
+                    <span class="unit">m</span>
+                  </div>
+                </div>				
+				
             </div> 
-      </div>
+        </div>
     </div>
 
     <!-- [탭 3] 환경 설정 -->

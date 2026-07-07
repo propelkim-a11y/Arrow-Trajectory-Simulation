@@ -1,7 +1,8 @@
 const INPUT_IDS = [
   'weight', 'diameter', 'dragCoeff', 'liftCoeff',
   'angle', 'velocity', 'yawAngle', 'launchHeight', 'launchZ',
-  'windX', 'windY', 'targetHeight', 'airDensity'
+  'windX', 'windY', 'targetHeight', 'airDensity',
+  'losTargetY', 'losTargetZ' // 💡 LOS 수동 입력 ID 추가 (useLos는 체크박스이므로 별도 처리하거나 제외)
 ];
 
 function saveSettings() {
@@ -9,6 +10,8 @@ function saveSettings() {
     const el = document.getElementById(id);
     if (el) localStorage.setItem('arrow_sim_' + id, el.value);
   });
+    const useLosEl = document.getElementById('useLos');
+    if (useLosEl) localStorage.setItem('arrow_sim_useLos', useLosEl.checked ? 'true' : 'false');
 }
 
 function loadSettings() {
@@ -19,6 +22,9 @@ function loadSettings() {
       el.value = savedValue;
     }
   });
+    const useLosEl = document.getElementById('useLos');
+    const savedLos = localStorage.getItem('arrow_sim_useLos');
+    if (useLosEl && savedLos !== null) useLosEl.checked = (savedLos === 'true');   
 }
 
 function switchPanel(type) {
@@ -56,10 +62,18 @@ function changeView(viewType, element) {
   if (typeof drawScene === 'function') drawScene();
 }
 
-const NEGATIVE_ALLOWED_IDS = ['angle', 'yawAngle', 'windX', 'windY', 'targetHeight'];
+const NEGATIVE_ALLOWED_IDS = ['angle', 'yawAngle', 'windX', 'windY', 'targetHeight', 'losTargetY', 'losTargetZ'];
 
 window.addEventListener('DOMContentLoaded', () => {
   loadSettings();
+    const useLosEl = document.getElementById('useLos');
+    if (useLosEl) {
+        useLosEl.addEventListener('change', () => {
+           if (typeof saveSettings === 'function') saveSettings();
+           if (typeof drawScene === 'function') drawScene();
+  });
+}
+    
   INPUT_IDS.forEach(id => {
     const el = document.getElementById(id);
     if (el) {
@@ -160,6 +174,20 @@ window.addEventListener('DOMContentLoaded', () => {
   dragBtn.addEventListener('mousedown', startDrag);
   window.addEventListener('mousemove', doDrag);
   window.addEventListener('mouseup', endDrag);
+ 
+  const useLosCheck = document.getElementById('useLos');
+  if (useLosCheck) {
+    // 로컬스토리지에서 기존 상태 복원
+    const savedLos = localStorage.getItem('arrow_sim_useLos');
+    useLosCheck.checked = (savedLos === 'true');
+
+    // 변경될 때마다 저장하고 화면 리드로우
+    useLosCheck.addEventListener('change', () => {
+      localStorage.setItem('arrow_sim_useLos', useLosCheck.checked);
+      if (typeof drawScene === 'function') drawScene();
+    });
+  }  
+  
 });
 // 인트로 공지사항 모달 닫기 함수
 function closeIntro() {
@@ -171,4 +199,102 @@ function closeIntro() {
       introModal.style.display = 'none';
     }, 300); // CSS transition 시간(0.3s)과 일치시켜 부드럽게 제거
   }
+}
+
+// =========================================================
+// 🎯 과녁도 표보기 조준점 실시간 터치/마우스 드래그 제어 시스템 (오류 수정 버전)
+// =========================================================
+let isTargetDragging = false;
+
+// 1. 캔버스 엘리먼트에 직접 이벤트 바인딩
+const simCanvasEl = document.getElementById('simCanvas');
+
+if (simCanvasEl) {
+    simCanvasEl.addEventListener('mousedown', startTargetDrag);
+    simCanvasEl.addEventListener('touchstart', startTargetDrag, { passive: false });
+}
+
+// 2. 브라우저 창 전역에서 드래그 및 해제 추적
+window.addEventListener('mousemove', doTargetDrag);
+window.addEventListener('touchmove', doTargetDrag, { passive: false });
+window.addEventListener('mouseup', endTargetDrag);
+window.addEventListener('touchend', endTargetDrag);
+
+function startTargetDrag(e) {
+    if (typeof currentView !== 'undefined' && currentView !== 'target') return;
+    if (e.touches) e.preventDefault(); // 스크롤 바운스 방지
+    
+    isTargetDragging = true;
+    updateTargetCoords(e);
+}
+
+function doTargetDrag(e) {
+    if (!isTargetDragging) return;
+    if (typeof currentView !== 'undefined' && currentView !== 'target') return;
+    if (e.touches) e.preventDefault();
+    
+    updateTargetCoords(e);
+}
+
+function endTargetDrag(e) {
+    if (isTargetDragging) {
+        isTargetDragging = false;
+    }
+}
+
+// 변수 충돌 없는 좌표 역산 처리 핵심 함수
+function updateTargetCoords(e) {
+    const canvasEl = document.getElementById('simCanvas');
+    if (!canvasEl) return;
+    
+    const rect = canvasEl.getBoundingClientRect();
+    let clientX, clientY;
+    
+    if (e.touches && e.touches.length > 0) {
+        clientX = e.touches[0].clientX;
+        clientY = e.touches[0].clientY;
+    } else {
+        clientX = e.clientX;
+        clientY = e.clientY;
+    }
+    
+    // 1. [핵심 패치] ui.js 내부에서 직접 안전하게 Canvas 해상도 너비/높이 확보
+    const currentDprWidth = canvasEl.width / (window.devicePixelRatio || 1);
+    const currentDprHeight = canvasEl.height / (window.devicePixelRatio || 1);
+    
+    // 2. 마우스 CSS 픽셀 위치 환산
+    const canvasX = clientX - rect.left;
+    const canvasY = clientY - rect.top;
+    
+    // 3. physics.js 물리 레이아웃 비례 연산 동기화
+    const tBottomY = currentDprHeight * 0.65;
+    const targetViewScale = Math.min(currentDprWidth, currentDprHeight) / 5.5;
+    
+    // 4. 월드 공간 미터 수치 역산
+    const calculatedZ = (canvasX - (currentDprWidth / 2)) / targetViewScale;
+    const calculatedY = (tBottomY - canvasY) / targetViewScale;
+    
+    // 5. DOM 엘리먼트 값 주입 및 전파
+    const losYEl = document.getElementById('losTargetY');
+    const losZEl = document.getElementById('losTargetZ');
+    const useLosEl = document.getElementById('useLos');
+    
+    if (losYEl && losZEl) {
+        losYEl.value = calculatedY.toFixed(2);
+        losZEl.value = calculatedZ.toFixed(2);
+        
+        if (useLosEl && !useLosEl.checked) {
+            useLosEl.checked = true;
+            localStorage.setItem('arrow_sim_useLos', 'true');
+        }
+        
+        // 브라우저에 값이 바뀌었음을 강제 전파하여 스토리지 저장 작동 유도
+        const intTrigger = new Event('input', { bubbles: true });
+        losYEl.dispatchEvent(intTrigger);
+        losZEl.dispatchEvent(intTrigger);
+
+        // 실시간 강제 드로잉 호출
+        if (typeof saveSettings === 'function') saveSettings();
+        if (typeof drawScene === 'function') drawScene();
+    }
 }

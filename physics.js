@@ -401,6 +401,35 @@ ctx.lineWidth = 1.5;
         ctx.fillText(`❌ 불중 (오차: 좌우 ${targetHitMetrics.localZ.toFixed(2)}m, 바닥높이 ${localYFromBottom.toFixed(2)}m)`, dprWidth / 2, tTopY - 14);
       }
     }
+ // ==========================================
+ // 🎯 [여기에 코드가 추가되었습니다] 표보기 조준 원 그리기
+ // ==========================================
+ const useLosCheck = document.getElementById('useLos');
+ if (useLosCheck && useLosCheck.checked) {
+     const losY = parseFloat(document.getElementById('losTargetY').value) || 1.3;
+     const losZ = parseFloat(document.getElementById('losTargetZ').value) || 0.0;
+
+     const losScreenX = (dprWidth / 2) + (losZ * targetViewScale);
+     const losScreenY = tBottomY - (losY * targetViewScale);
+
+     ctx.save();
+     ctx.strokeStyle = '#ff9500'; // 주황색
+     ctx.lineWidth = 1.5;
+
+     // 조준선 위치 표시용 외부 원
+     ctx.beginPath();
+     ctx.arc(losScreenX, losScreenY, 6, 0, Math.PI * 2);
+     ctx.stroke();
+
+     // 중앙 핵심 점
+     ctx.fillStyle = '#ff9500';
+     ctx.beginPath();
+     ctx.arc(losScreenX, losScreenY, 1.5, 0, Math.PI * 2);
+     ctx.fill();
+     
+     ctx.restore();
+ }
+ // ==========================================      
   }
 
   // 지면 지지기둥 기선 드로잉
