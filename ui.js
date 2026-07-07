@@ -298,3 +298,63 @@ function updateTargetCoords(e) {
         if (typeof drawScene === 'function') drawScene();
     }
 }
+// =========================================================================
+// 📱 [신설] 설정 패널 하단 좌우 터치 슬라이드(스와이프) 전환 제어 시스템
+// =========================================================================
+window.addEventListener('DOMContentLoaded', () => {
+  const panelContainer = document.getElementById('panel-container');
+  if (!panelContainer) return;
+
+  // 슬라이드 작동을 위한 터치 좌표 기억 변수
+  let touchStartX = 0;
+  let touchStartY = 0;
+  let touchEndX = 0;
+  let touchEndY = 0;
+
+  // 순서대로 배치된 탭 리스트 정의
+  const tabOrder = ['arrow', 'method', 'env', 'result'];
+
+  // 현재 활성화된 패널의 ID를 찾는 함수
+  function getCurrentActiveTab() {
+    for (let i = 0; i < tabOrder.length; i++) {
+      const el = document.getElementById('panel-' + tabOrder[i]);
+      if (el && el.classList.contains('active')) {
+        return tabOrder[i];
+      }
+    }
+    return 'arrow';
+  }
+
+  // 터치 시작 이벤트 탐지
+  panelContainer.addEventListener('touchstart', (e) => {
+    touchStartX = e.touches[0].clientX;
+    touchStartY = e.touches[0].clientY;
+  }, { passive: true });
+
+  // 터치 종료 및 슬라이드 방향 계산 판정
+  panelContainer.addEventListener('touchend', (e) => {
+    touchEndX = e.changedTouches[0].clientX;
+    touchEndY = e.changedTouches[0].clientY;
+
+    const deltaX = touchEndX - touchStartX;
+    const deltaY = touchEndY - touchStartY;
+
+    // 수평 이동 거리가 수직 이동 거리보다 크고, 최소 60px 이상 움직였을 때만 슬라이드로 인정
+    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 60) {
+      const currentTab = getCurrentActiveTab();
+      let currentIndex = tabOrder.indexOf(currentTab);
+
+      if (deltaX < 0) {
+        // ⬅️ 왼쪽으로 슬라이드: 다음 탭으로 이동 (오른쪽 패널 불러오기)
+        if (currentIndex < tabOrder.length - 1) {
+          switchPanel(tabOrder[currentIndex + 1]);
+        }
+      } else {
+        // ➡️ 오른쪽으로 슬라이드: 이전 탭으로 이동 (왼쪽 패널 불러오기)
+        if (currentIndex > 0) {
+          switchPanel(tabOrder[currentIndex - 1]);
+        }
+      }
+    }
+  }, { passive: true });
+});
