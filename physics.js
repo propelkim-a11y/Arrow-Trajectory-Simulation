@@ -467,35 +467,50 @@ ctx.lineWidth = 1.5;
     ctx.fillStyle = '#ff9500'; ctx.beginPath(); ctx.moveTo(-20, 0); ctx.lineTo(-16, -4); ctx.lineTo(-10, -4); ctx.lineTo(-14, 0); ctx.fill();
     ctx.restore();
   }
-     const useLosCheck = document.getElementById('useLos');
- if (useLosCheck && useLosCheck.checked && currentView !== 'target') {
-     ctx.save();
-     const startX = 0;
-     const startY = parseFloat(document.getElementById('launchHeight').value) || 1.5;
-     const startZ = parseFloat(document.getElementById('launchZ').value) || 0;
-     const losY = parseFloat(document.getElementById('losTargetY').value) || 1.3;
-     const losZ = parseFloat(document.getElementById('losTargetZ').value) || 0.0;
-     const targetBaseX = getDynamicTargetGeometry().baseX;
-     
-     const screenStart = toScreen(startX, startY, startZ);
-     const screenEnd = toScreen(targetBaseX, losY, losZ);
-     
-     ctx.strokeStyle = '#ff9500'; // 주황색
-     ctx.lineWidth = 1.2;
-     ctx.setLineDash([4, 4]); // 점선 스타일 적용
-     
-     ctx.beginPath();
-     ctx.moveTo(screenStart.x, screenStart.y);
-     ctx.lineTo(screenEnd.x, screenEnd.y);
-     ctx.stroke();
-     
-     ctx.setLineDash([]); // 스타일 리셋
-     ctx.fillStyle = '#ff9500';
-     ctx.beginPath();
-     ctx.arc(screenEnd.x, screenEnd.y, 2.5, 0, Math.PI * 2);
-     ctx.fill();
-     ctx.restore();
- }
+// =========================================================================
+// 🎯 과녁 고도차를 완벽 보정한 3D 공간 표보기 가이드선 (최종본)
+// =========================================================================
+const useLosCheck = document.getElementById('useLos');
+if (useLosCheck && useLosCheck.checked && currentView !== 'target') {
+    ctx.save();
+    
+    const startX = 0;
+    const startY = parseFloat(document.getElementById('launchHeight').value) || 1.5;
+    const startZ = parseFloat(document.getElementById('launchZ').value) || 0;
+    
+    const tgtGeo = getDynamicTargetGeometry();
+    const targetBaseX = tgtGeo.baseX;
+    const safeTargetH = tgtGeo.height; // 과녁 자체의 지형 높이 고도차
+    
+    const losY = parseFloat(document.getElementById('losTargetY').value) || 1.3;
+    const losZ = parseFloat(document.getElementById('losTargetZ').value) || 0.0;
+    
+    // 🔥 과녁도 상대 높이(losY)에 지형 고도(safeTargetH)를 더해 절대 높이 완벽 정렬!
+    const absoluteLosY = safeTargetH + losY; 
+    
+    const screenStart = toScreen(startX, startY, startZ);
+    const screenEnd = toScreen(targetBaseX, absoluteLosY, losZ); 
+    
+    ctx.strokeStyle = '#ff9500'; // 표보기 전용 주황색
+    ctx.lineWidth = 1.5;
+    ctx.setLineDash([4, 4]); // 점선 스타일 적용
+    
+    ctx.beginPath();
+    ctx.moveTo(screenStart.x, screenStart.y);
+    ctx.lineTo(screenEnd.x, screenEnd.y);
+    ctx.stroke();
+    
+    ctx.setLineDash([]); // 스타일 리셋
+    
+    ctx.fillStyle = '#ff9500';
+    ctx.beginPath();
+    ctx.arc(screenEnd.x, screenEnd.y, 3, 0, Math.PI * 2);
+    ctx.fill();
+    
+    ctx.restore();
+}
+
+
 }
 
 // 캔버스 초기 크기 반영 지연 제어

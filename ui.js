@@ -202,11 +202,9 @@ function closeIntro() {
 }
 
 // =========================================================
-// 🎯 과녁도 표보기 조준점 실시간 터치/마우스 드래그 제어 시스템 (오류 수정 버전)
+// 🎯 과녁도 표보기 조준점 실시간 터치/마우스 드래그 시스템 (최종 검증 완결본)
 // =========================================================
 let isTargetDragging = false;
-
-// 1. 캔버스 엘리먼트에 직접 이벤트 바인딩
 const simCanvasEl = document.getElementById('simCanvas');
 
 if (simCanvasEl) {
@@ -214,7 +212,6 @@ if (simCanvasEl) {
     simCanvasEl.addEventListener('touchstart', startTargetDrag, { passive: false });
 }
 
-// 2. 브라우저 창 전역에서 드래그 및 해제 추적
 window.addEventListener('mousemove', doTargetDrag);
 window.addEventListener('touchmove', doTargetDrag, { passive: false });
 window.addEventListener('mouseup', endTargetDrag);
@@ -222,8 +219,7 @@ window.addEventListener('touchend', endTargetDrag);
 
 function startTargetDrag(e) {
     if (typeof currentView !== 'undefined' && currentView !== 'target') return;
-    if (e.touches) e.preventDefault(); // 스크롤 바운스 방지
-    
+    if (e.touches) e.preventDefault(); 
     isTargetDragging = true;
     updateTargetCoords(e);
 }
@@ -232,24 +228,20 @@ function doTargetDrag(e) {
     if (!isTargetDragging) return;
     if (typeof currentView !== 'undefined' && currentView !== 'target') return;
     if (e.touches) e.preventDefault();
-    
     updateTargetCoords(e);
 }
 
 function endTargetDrag(e) {
-    if (isTargetDragging) {
-        isTargetDragging = false;
-    }
+    isTargetDragging = false;
 }
 
-// 변수 충돌 없는 좌표 역산 처리 핵심 함수
 function updateTargetCoords(e) {
     const canvasEl = document.getElementById('simCanvas');
     if (!canvasEl) return;
-    
+
     const rect = canvasEl.getBoundingClientRect();
     let clientX, clientY;
-    
+
     if (e.touches && e.touches.length > 0) {
         clientX = e.touches[0].clientX;
         clientY = e.touches[0].clientY;
@@ -257,104 +249,49 @@ function updateTargetCoords(e) {
         clientX = e.clientX;
         clientY = e.clientY;
     }
-    
-    // 1. [핵심 패치] ui.js 내부에서 직접 안전하게 Canvas 해상도 너비/높이 확보
+
     const currentDprWidth = canvasEl.width / (window.devicePixelRatio || 1);
     const currentDprHeight = canvasEl.height / (window.devicePixelRatio || 1);
-    
-    // 2. 마우스 CSS 픽셀 위치 환산
+
     const canvasX = clientX - rect.left;
     const canvasY = clientY - rect.top;
-    
-    // 3. physics.js 물리 레이아웃 비례 연산 동기화
+
     const tBottomY = currentDprHeight * 0.65;
     const targetViewScale = Math.min(currentDprWidth, currentDprHeight) / 5.5;
-    
-    // 4. 월드 공간 미터 수치 역산
+
     const calculatedZ = (canvasX - (currentDprWidth / 2)) / targetViewScale;
     const calculatedY = (tBottomY - canvasY) / targetViewScale;
-    
-    // 5. DOM 엘리먼트 값 주입 및 전파
+
     const losYEl = document.getElementById('losTargetY');
     const losZEl = document.getElementById('losTargetZ');
     const useLosEl = document.getElementById('useLos');
-    
+
     if (losYEl && losZEl) {
         losYEl.value = calculatedY.toFixed(2);
         losZEl.value = calculatedZ.toFixed(2);
-        
+
         if (useLosEl && !useLosEl.checked) {
             useLosEl.checked = true;
-            localStorage.setItem('arrow_sim_useLos', 'true');
         }
-        
-        // 브라우저에 값이 바뀌었음을 강제 전파하여 스토리지 저장 작동 유도
-        const intTrigger = new Event('input', { bubbles: true });
-        losYEl.dispatchEvent(intTrigger);
-        losZEl.dispatchEvent(intTrigger);
 
-        // 실시간 강제 드로잉 호출
-        if (typeof saveSettings === 'function') saveSettings();
-        if (typeof drawScene === 'function') drawScene();
+        localStorage.setItem('arrow_sim_losTargetY', losYEl.value);
+        localStorage.setItem('arrow_sim_losTargetZ', losZEl.value);
+        localStorage.setItem('arrow_sim_useLos', 'true');
+
+        if (typeof drawScene === 'function') {
+            window.requestAnimationFrame(drawScene);
+        }
     }
 }
-// =========================================================================
-// 📱 [신설] 설정 패널 하단 좌우 터치 슬라이드(스와이프) 전환 제어 시스템
-// =========================================================================
-window.addEventListener('DOMContentLoaded', () => {
-  const panelContainer = document.getElementById('panel-container');
-  if (!panelContainer) return;
 
-  // 슬라이드 작동을 위한 터치 좌표 기억 변수
-  let touchStartX = 0;
-  let touchStartY = 0;
-  let touchEndX = 0;
-  let touchEndY = 0;
-
-  // 순서대로 배치된 탭 리스트 정의
-  const tabOrder = ['arrow', 'method', 'env', 'result'];
-
-  // 현재 활성화된 패널의 ID를 찾는 함수
-  function getCurrentActiveTab() {
-    for (let i = 0; i < tabOrder.length; i++) {
-      const el = document.getElementById('panel-' + tabOrder[i]);
-      if (el && el.classList.contains('active')) {
-        return tabOrder[i];
-      }
+// 인트로 공지사항 모달 닫기 함수 (안전 재배치)
+function closeIntro() {
+    const introModal = document.getElementById('introModal');
+    if (introModal) {
+        introModal.style.opacity = '0';
+        introModal.style.visibility = 'hidden';
+        setTimeout(() => {
+            introModal.style.display = 'none';
+        }, 300);
     }
-    return 'arrow';
-  }
-
-  // 터치 시작 이벤트 탐지
-  panelContainer.addEventListener('touchstart', (e) => {
-    touchStartX = e.touches[0].clientX;
-    touchStartY = e.touches[0].clientY;
-  }, { passive: true });
-
-  // 터치 종료 및 슬라이드 방향 계산 판정
-  panelContainer.addEventListener('touchend', (e) => {
-    touchEndX = e.changedTouches[0].clientX;
-    touchEndY = e.changedTouches[0].clientY;
-
-    const deltaX = touchEndX - touchStartX;
-    const deltaY = touchEndY - touchStartY;
-
-    // 수평 이동 거리가 수직 이동 거리보다 크고, 최소 60px 이상 움직였을 때만 슬라이드로 인정
-    if (Math.abs(deltaX) > Math.abs(deltaY) && Math.abs(deltaX) > 60) {
-      const currentTab = getCurrentActiveTab();
-      let currentIndex = tabOrder.indexOf(currentTab);
-
-      if (deltaX < 0) {
-        // ⬅️ 왼쪽으로 슬라이드: 다음 탭으로 이동 (오른쪽 패널 불러오기)
-        if (currentIndex < tabOrder.length - 1) {
-          switchPanel(tabOrder[currentIndex + 1]);
-        }
-      } else {
-        // ➡️ 오른쪽으로 슬라이드: 이전 탭으로 이동 (왼쪽 패널 불러오기)
-        if (currentIndex > 0) {
-          switchPanel(tabOrder[currentIndex - 1]);
-        }
-      }
-    }
-  }, { passive: true });
-});
+}
