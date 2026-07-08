@@ -225,7 +225,25 @@ const topScaleSide = (dprWidth - 20) / (MAX_WORLD_Z * 2);
 const frontScaleZ = (dprWidth - ORIGIN_X_OFFSET - 20) / (MAX_WORLD_Z * 2); 
 const frontScaleY = availH / MAX_WORLD_Y;
 const targetViewScale = Math.min(dprWidth, dprHeight) / 5.5;
+// 📐 [1단계 수식 주입 완료] 고도에 따른 동적 세로 계산식
+const launchH = parseFloat(document.getElementById('launchHeight').value) || 1.5;
+const hDist = Math.sqrt(Math.pow(TARGET_SLANT_R, 2) - Math.pow(safeTargetH, 2)); 
+const losPitchRad = Math.atan2(safeTargetH - launchH, hDist); 
+const dynamicTgtProjH = TGT_H * Math.cos(losPitchRad + TGT_TILT);
+const finalProjH = isNaN(dynamicTgtProjH) ? TGT_PROJ_H : Math.min(TGT_H, dynamicTgtProjH);
+window.currentDynamicTgtProjH = finalProjH;
 
+// 🌐 [2단계 신규 추가] 사수 좌우 위치에 따른 동적 가로 너비 연산
+const launchZ = parseFloat(document.getElementById('launchZ').value) || 0;
+// 사수의 좌우 시선 편각(라디안) 구하기 (과녁의 기준 전방 거리 targetBaseX 대비 좌우 치우침)
+const losYawRad = Math.atan2(launchZ, targetBaseX);
+// 좌우로 치우칠수록 cos 값이 작아져 가로가 홀쭉해지는 압축 수식
+const dynamicTgtProjW = TGT_W * Math.cos(losYawRad);
+// 에러 방지 안전장치 및 ui.js 공유용 글로벌 세팅
+const finalProjW = isNaN(dynamicTgtProjW) ? TGT_W : Math.min(TGT_W, dynamicTgtProjW);
+window.currentDynamicTgtProjW = finalProjW;
+
+    
 function toScreen(pX, pY, pZ) {
   if (currentView === 'side') {
     return { x: ORIGIN_X_OFFSET + (pX * scaleX), y: dprHeight - GROUND_Y_OFFSET - (pY * scaleY) };
@@ -349,15 +367,28 @@ ctx.lineWidth = 1.5;
     const leftX = toScreen(targetBaseX, safeTargetH, -TGT_W / 2).x; 
     const rightX = toScreen(targetBaseX, safeTargetH, TGT_W / 2).x;
     const bottomY = toScreen(targetBaseX, safeTargetH, 0).y; 
-    const topY = toScreen(targetBaseX, safeTargetH + TGT_PROJ_H, 0).y;
+    const topY = toScreen(targetBaseX, safeTargetH + finalProjH, 0).y;
     const w = rightX - leftX; 
     const h = bottomY - topY;
 
+       // [1단계-보완] 내부 요소 세로 압축 비율 연동 처리
     ctx.fillStyle = '#ffffff'; ctx.fillRect(leftX, topY, w, h);
     ctx.strokeStyle = '#1d1d1f'; ctx.lineWidth = 1.5; ctx.strokeRect(leftX, topY, w, h);
     ctx.fillStyle = '#1d1d1f'; ctx.fillRect(leftX + w * 0.1, topY + h * 0.08, w * 0.8, h * 0.15);
     ctx.fillRect(leftX + w * 0.1, topY + h * 0.3, w * 0.8, h * 0.62);
-    ctx.fillStyle = '#ff3b30'; ctx.beginPath(); ctx.arc(leftX + w * 0.5, (topY + h * 0.3) + (h * 0.62) * 0.5, w * 0.23, 0, Math.PI * 2); ctx.fill();
+      
+      // 빨간 원을 타원(ellipse) 구조로 변경하여 세로 압축률 반영
+    ctx.fillStyle = '#ff3b30'; 
+    ctx.beginPath(); 
+    ctx.ellipse(
+      leftX + w * 0.5, 
+      (topY + h * 0.3) + (h * 0.62) * 0.5, 
+      w * 0.23, 
+      (w * 0.23) * (finalProjH / TGT_H),
+      0, 0, Math.PI * 2
+    ); 
+    ctx.fill();
+
 
   } else if (currentView === 'top') {
     const projTopX = targetBaseX + TGT_H * Math.sin(TGT_TILT); 
@@ -371,18 +402,29 @@ ctx.lineWidth = 1.5;
     ctx.strokeStyle = '#1d1d1f'; ctx.lineWidth = 1.5; ctx.stroke();
 
   } else if (currentView === 'target') {
-    const tLeftX = (dprWidth / 2) - (TGT_W / 2 * targetViewScale); 
-    const tRightX = (dprWidth / 2) + (TGT_W / 2 * targetViewScale);
+    const tLeftX = (dprWidth / 2) - (finalProjW / 2 * targetViewScale);  
+    const tRightX = (dprWidth / 2) + (finalProjW / 2 * targetViewScale);
     const tBottomY = dprHeight * 0.75; 
-    const tTopY = tBottomY - (TGT_PROJ_H * targetViewScale);
+    const tTopY = tBottomY - (dynamicTgtProjH * targetViewScale); // 🔥 동적 높이 변수로 교체 
     const w = tRightX - tLeftX; 
     const h = tBottomY - tTopY;
 
-    ctx.fillStyle = '#ffffff'; ctx.fillRect(tLeftX, tTopY, w, h);
+        ctx.fillStyle = '#ffffff'; ctx.fillRect(tLeftX, tTopY, w, h);
     ctx.strokeStyle = '#1d1d1f'; ctx.lineWidth = 2; ctx.strokeRect(tLeftX, tTopY, w, h);
     ctx.fillStyle = '#1d1d1f'; ctx.fillRect(tLeftX + w * 0.1, tTopY + h * 0.08, w * 0.8, h * 0.15);
     ctx.fillRect(tLeftX + w * 0.1, tTopY + h * 0.3, w * 0.8, h * 0.62);
-    ctx.fillStyle = '#ff3b30'; ctx.beginPath(); ctx.arc(tLeftX + w * 0.5, (tTopY + h * 0.3) + (h * 0.62) * 0.5, w * 0.23, 0, Math.PI * 2); ctx.fill();
+    
+    // 과녁도 역시 동일한 압축률을 적용하여 정면도와 100% 같은 모양의 타원으로 표현
+    ctx.fillStyle = '#ff3b30'; 
+    ctx.beginPath(); 
+    ctx.ellipse(
+      tLeftX + w * 0.5, 
+      (tTopY + h * 0.3) + (h * 0.62) * 0.5, 
+      (w * 0.23) * (finalProjW / TGT_W), // 🔥 사수 좌우 위치에 따른 가로 압축 공식 결합!
+      (w * 0.23) * (finalProjH / TGT_H),
+      0, 0, Math.PI * 2
+    ); 
+    ctx.fill();
 
     if (hasIntersectedTargetPlane) {
       const localYFromBottom = targetHitMetrics.localY + (TGT_PROJ_H / 2);
@@ -409,8 +451,12 @@ ctx.lineWidth = 1.5;
      const losY = parseFloat(document.getElementById('losTargetY').value) || 1.3;
      const losZ = parseFloat(document.getElementById('losTargetZ').value) || 0.0;
 
-     const losScreenX = (dprWidth / 2) + (losZ * targetViewScale);
-     const losScreenY = tBottomY - (losY * targetViewScale);
+     //const losScreenX = (dprWidth / 2) + (losZ * targetViewScale);
+     //const losScreenY = tBottomY - (losY * targetViewScale);
+     // 💡 과녁의 찌그러진 가로/세로 비율(finalProjW / TGT_W 등)을 곱해주어, 
+     // 눈에 보이는 압축된 과녁 모양과 조준선의 위치를 완벽하게 정렬합니다.
+     const losScreenX = (dprWidth / 2) + ((losZ / TGT_W) * finalProjW * targetViewScale);
+     const losScreenY = tBottomY - ((losY / TGT_H) * finalProjH * targetViewScale);
 
      ctx.save();
      ctx.strokeStyle = '#ff9500'; // 주황색
