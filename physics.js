@@ -304,7 +304,7 @@ if (currentView === 'side') {
 
 // 4. 과녁 확대도 (Target View) 정밀 격자 렌더링
 } else if (currentView === 'target') {
-  const tBottomY = dprHeight * 0.65;
+  const tBottomY = dprHeight * 0.75;
   // 색상 전이 현상 방지를 위해 격자선 컬러 명시적 재할당 및 두께 미세화
   ctx.strokeStyle = '#e5e5ea'; 
   ctx.lineWidth = 0.8; 
@@ -373,7 +373,7 @@ ctx.lineWidth = 1.5;
   } else if (currentView === 'target') {
     const tLeftX = (dprWidth / 2) - (TGT_W / 2 * targetViewScale); 
     const tRightX = (dprWidth / 2) + (TGT_W / 2 * targetViewScale);
-    const tBottomY = dprHeight * 0.65; 
+    const tBottomY = dprHeight * 0.75; 
     const tTopY = tBottomY - (TGT_PROJ_H * targetViewScale);
     const w = tRightX - tLeftX; 
     const h = tBottomY - tTopY;
