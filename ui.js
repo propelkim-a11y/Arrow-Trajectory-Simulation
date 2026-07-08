@@ -256,7 +256,7 @@ function updateTargetCoords(e) {
     const canvasX = clientX - rect.left;
     const canvasY = clientY - rect.top;
 
-    const tBottomY = currentDprHeight * 0.65;
+    const tBottomY = currentDprHeight * 0.75;
     const targetViewScale = Math.min(currentDprWidth, currentDprHeight) / 5.5;
 
     const calculatedZ = (canvasX - (currentDprWidth / 2)) / targetViewScale;
