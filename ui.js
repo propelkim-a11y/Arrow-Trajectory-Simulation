@@ -295,3 +295,121 @@ function closeIntro() {
         }, 300);
     }
 }
+// =========================================================
+// 🎯 하단 설정 카드 좌우 스와이프(밀기) 전환 시스템 추가
+// =========================================================
+const panelContainer = document.getElementById('panel-container');
+
+if (panelContainer) {
+    let touchStartX = 0;
+    let touchStartY = 0;
+    let touchEndX = 0;
+    let touchEndY = 0;
+
+    // 탭 순서 정의
+    const tabsOrder = ['arrow', 'method', 'env', 'result'];
+
+    panelContainer.addEventListener('touchstart', (e) => {
+        touchStartX = e.touches[0].clientX;
+        touchStartY = e.touches[0].clientY;
+    }, { passive: true });
+
+    panelContainer.addEventListener('touchend', (e) => {
+        touchEndX = e.changedTouches[0].clientX;
+        touchEndY = e.changedTouches[0].clientY;
+        handleSwipe();
+    }, { passive: true });
+
+    function handleSwipe() {
+        const deltaX = touchEndX - touchStartX;
+        const deltaY = touchEndY - touchStartY;
+
+        // 수평 스와이프 조건 (대각선 오작동 방지: 수평 이동이 수직 이동보다 커야 함)
+        if (Math.abs(deltaX) > 60 && Math.abs(deltaX) > Math.abs(deltaY)) {
+            // 현재 활성화된 패널 찾기
+            const activePanel = document.querySelector('.fixed-panel.active');
+            if (!activePanel) return;
+            
+            const currentType = activePanel.id.replace('panel-', '');
+            const currentIndex = tabsOrder.indexOf(currentType);
+
+            if (deltaX < 0) {
+                // ◀ 왼쪽으로 밀기 (다음 패널로 이동)
+                if (currentIndex < tabsOrder.length - 1) {
+                    switchPanel(tabsOrder[currentIndex + 1]);
+                }
+            } else {
+                // ▶ 오른쪽으로 밀기 (이전 패널로 이동)
+                if (currentIndex > 0) {
+                    switchPanel(tabsOrder[currentIndex - 1]);
+                }
+            }
+        }
+    }
+}
+// =========================================================
+// 🎯 상단 시뮬레이터 화면 좌우 스와이프(밀기) 뷰 전환 시스템 추가
+// =========================================================
+const simContainer = document.querySelector('.sim-container');
+
+if (simContainer) {
+    let simTouchStartX = 0;
+    let simTouchStartY = 0;
+    let simTouchEndX = 0;
+    let simTouchEndY = 0;
+
+    // 뷰 순서 정의 (정면 -> 측면 -> 평면 -> 과녁)
+    const viewsOrder = ['front', 'side', 'top', 'target'];
+
+    simContainer.addEventListener('touchstart', (e) => {
+        // 발시 버튼 드래그와 충돌 방지 (발시 버튼 터치 시 스와이프 무시)
+        if (e.target.id === 'draggableFireBtn') return;
+        
+        simTouchStartX = e.touches[0].clientX;
+        simTouchStartY = e.touches[0].clientY;
+    }, { passive: true });
+
+    simContainer.addEventListener('touchend', (e) => {
+        if (e.target.id === 'draggableFireBtn') return;
+        
+        simTouchEndX = e.changedTouches[0].clientX;
+        simTouchEndY = e.changedTouches[0].clientY;
+        handleSimSwipe();
+    }, { passive: true });
+
+    function handleSimSwipe() {
+        const deltaX = simTouchEndX - simTouchStartX;
+        const deltaY = simTouchEndY - simTouchStartY;
+
+        // 수평 스와이프 조건 (민감도 60px 기준, 수평 이동이 수직 이동보다 커야 함)
+        if (Math.abs(deltaX) > 60 && Math.abs(deltaX) > Math.abs(deltaY)) {
+            // 현재 활성화된 뷰(currentView)의 인덱스 찾기
+            // 단, index.html 구조상 버튼 엘리먼트도 함께 넘겨주어야 스타일이 바뀝니다.
+            if (typeof currentView === 'undefined') return;
+            
+            const currentIndex = viewsOrder.indexOf(currentView);
+            let targetView = '';
+
+            if (deltaX < 0) {
+                // ◀ 왼쪽으로 밀기 (다음 뷰로 이동: 정면 -> 측면 -> 평면 -> 과녁)
+                if (currentIndex < viewsOrder.length - 1) {
+                    targetView = viewsOrder[currentIndex + 1];
+                }
+            } else {
+                // ▶ 오른쪽으로 밀기 (이전 뷰로 이동: 과녁 -> 평면 -> 측면 -> 정면)
+                if (currentIndex > 0) {
+                    targetView = viewsOrder[currentIndex - 1];
+                }
+            }
+
+            // 변경할 뷰가 결정되었다면, 상단 세그먼트 버튼 엘리먼트를 찾아서 함께 전달
+            if (targetView) {
+                const btnSelector = `.segmented-control .segment-btn[onclick*="${targetView}"]`;
+                const targetBtnEl = document.querySelector(btnSelector);
+                
+                // 기존 changeView 함수 호출
+                changeView(targetView, targetBtnEl);
+            }
+        }
+    }
+}
