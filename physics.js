@@ -172,11 +172,20 @@ function animate() {
         targetHitMetrics.localZ = interZ;
         targetHitMetrics.localY = (interY - centerWorldY) / Math.cos(TGT_TILT);
 
-        if (Math.abs(targetHitMetrics.localZ) <= TGT_W / 2 && Math.abs(targetHitMetrics.localY) <= TGT_H / 2) {
-            targetHitMetrics.isHit = true;
-        } else {
-            targetHitMetrics.isHit = false;
+    if (Math.abs(targetHitMetrics.localZ) <= TGT_W / 2 && Math.abs(targetHitMetrics.localY) <= TGT_H / 2) {
+    targetHitMetrics.isHit = true;
+    
+    // 🎯 관중 시 진동 알림 기능 주입
+    const useVibrateCheck = document.getElementById('useVibrate');
+    if (useVibrateCheck && useVibrateCheck.checked) {
+        if ('vibrate' in navigator) {
+            // 패턴 진동: 200ms 진동 -> 100ms 휴식 -> 200ms 진동
+            navigator.vibrate([200, 000, 000]);
         }
+    }
+    } else {
+        targetHitMetrics.isHit = false;
+    }
     }
 
     if (!hasReachedTargetX && arrowState.x >= targetBaseX) { hasReachedTargetX = true; }
