@@ -6,25 +6,35 @@ const INPUT_IDS = [
 ];
 
 function saveSettings() {
-  INPUT_IDS.forEach(id => {
-    const el = document.getElementById(id);
-    if (el) localStorage.setItem('arrow_sim_' + id, el.value);
-  });
+  try {
+    INPUT_IDS.forEach(id => {
+      const el = document.getElementById(id);
+      if (el) localStorage.setItem('arrow_sim_' + id, el.value);
+    });
     const useLosEl = document.getElementById('useLos');
     if (useLosEl) localStorage.setItem('arrow_sim_useLos', useLosEl.checked ? 'true' : 'false');
+  } catch (e) {
+    // 시크릿 모드 등 브라우저 저장소가 차단된 경우 에러를 무시하고 진행
+    console.warn("Storage access denied. Running in volatile memory.", e);
+  }
 }
 
 function loadSettings() {
-  INPUT_IDS.forEach(id => {
-    const savedValue = localStorage.getItem('arrow_sim_' + id);
-    const el = document.getElementById(id);
-    if (el && savedValue !== null) {
-      el.value = savedValue;
-    }
-  });
+  try {
+    INPUT_IDS.forEach(id => {
+      const savedValue = localStorage.getItem('arrow_sim_' + id);
+      const el = document.getElementById(id);
+      if (el && savedValue !== null) {
+        el.value = savedValue;
+      }
+    });
     const useLosEl = document.getElementById('useLos');
     const savedLos = localStorage.getItem('arrow_sim_useLos');
-    if (useLosEl && savedLos !== null) useLosEl.checked = (savedLos === 'true');   
+    if (useLosEl && savedLos !== null) useLosEl.checked = (savedLos === 'true');
+  } catch (e) {
+    // 저장된 값을 읽지 못해도 기본값으로 캔버스가 켜지도록 예외 처리
+    console.warn("Storage load failed. Using app defaults.", e);
+  }
 }
 
 function switchPanel(type) {

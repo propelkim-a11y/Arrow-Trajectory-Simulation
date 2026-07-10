@@ -73,7 +73,11 @@ function getDynamicTargetGeometry() {
 
 function fireArrow() {
     if (isFlying) cancelAnimationFrame(animationFrameId);
-    if (typeof saveSettings === 'function') saveSettings();
+    try {
+       if (typeof saveSettings === 'function') saveSettings();
+     } catch (e) {
+       console.warn("시크릿 모드이므로 자동 저장을 건너뜁니다.");
+     }
 
     const v0 = parseFloat(document.getElementById('velocity').value) || 50;
     const angleDeg = parseFloat(document.getElementById('angle').value) || 0;
