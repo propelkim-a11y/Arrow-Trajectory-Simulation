@@ -98,12 +98,37 @@
 					<input type="number" id="launchHeight" value="1.5" step="0.1"><span class="unit">m</span></div></div>
                 <div class="form-group"><label for="launchZ">궁사 위치 </label><div class="input-wrapper">
 					<input type="text" id="launchZ" value="0" min="-10" max="10" step="0.5"><span class="unit">m</span></div></div>
-				<div class="form-group" style="grid-column: span 2; background: rgba(0,113,227,0.05); margin-top: 5px;">
-					<label style="color: #0071e3; font-weight: 700;">표보기 조준선 사용</label><div class="input-wrapper">
-					<input type="checkbox" id="useLos" style="width: 20px; height: 20px; cursor: pointer;">
-                    <label for="lockLos" style="margin-left: 15px; font-size: 14px; cursor: pointer; vertical-align: middle;">🔒</label>
-                    <input type="checkbox" id="lockLos" style="width: 20px; height: 20px; cursor: pointer; vertical-align: middle;"></div></div>
-                <div class="form-group"><label>높이 Y</label><div class="input-wrapper">
+
+				<!--  지운 자리에 이 코드를 그대로 넣으세요 -->
+<div class="form-group-toggle" style="grid-column: span 2; display: flex; flex-direction: column; gap: 8px; margin-top: 6px; padding: 4px 0;">
+    
+    <!-- 1. 관중 시 진동 알림 -->
+    <div style="display: flex; justify-content: space-between; align-items: center; background: #ffffff; border: 1px solid rgba(0,0,0,0.06); padding: 10px 14px; border-radius: 10px;">
+        <span style="font-size: 13px; font-weight: 600; color: #1d1d1f; display: flex; align-items: center; gap: 6px;">🎯 관중 시 진동 알림</span>
+        <input type="checkbox" id="useVibrate" style="width: 18px; height: 18px; cursor: pointer; accent-color: #0071e3;">
+    </div>
+
+    <!-- 2. 표보기 조준선 사용 & 잠금 복합 행 -->
+    <div style="display: flex; justify-content: space-between; align-items: center; background: #ffffff; border: 1px solid rgba(0,0,0,0.06); padding: 10px 14px; border-radius: 10px;">
+        <span style="font-size: 13px; font-weight: 600; color: #1d1d1f;">👁️ 표보기 조준선 사용</span>
+        <div style="display: flex; align-items: center; gap: 14px;">
+            <!-- 조준선 잠금 -->
+            <label for="lockLos" style="display: flex; align-items: center; gap: 4px; font-size: 12px; font-weight: 500; color: #666; cursor: pointer; user-select: none;">
+                <span style="font-size: 13px; vertical-align: middle;">🔒</span> 잠금
+            </label>
+            <input type="checkbox" id="lockLos" style="width: 18px; height: 18px; cursor: pointer; accent-color: #0071e3;">
+            
+            <!-- 구분 수직선 -->
+            <div style="width: 1px; height: 14px; background: #e5e5ea;"></div>
+            
+            <!-- 활성화 체크박스 -->
+            <input type="checkbox" id="useLos" style="width: 18px; height: 18px; cursor: pointer; accent-color: #0071e3;">
+        </div>
+    </div>
+
+</div>
+
+				<div class="form-group"><label>높이 Y</label><div class="input-wrapper">
 					<input type="text" id="losTargetY" value="1.3" inputmode="text"><span class="unit">m</span></div></div>
                 <div class="form-group"><label>앞뒤 Z</label><div class="input-wrapper">
 					<input type="text" id="losTargetZ" value="0.0" inputmode="text"><span class="unit">m</span></div></div>				
