@@ -1,0 +1,412 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no, viewport-fit=cover">
+    <meta name="theme-color" content="#0071e3">
+    <title>화살시뮬</title>
+    <meta name="app-version" content="4.12">
+    <link rel="stylesheet" href="style.css?v=4.12">
+    <link rel="manifest" href="manifest.json">
+    <link rel="icon" href="icon-192-v316.png" type="image/png">
+ <script>
+   if ('serviceWorker' in navigator) {
+     let isReloadingForUpdate = false;
+     let hadController = Boolean(navigator.serviceWorker.controller);
+     const reloadForUpdate = () => {
+       if (isReloadingForUpdate) return;
+       isReloadingForUpdate = true;
+       window.location.reload();
+     };
+     const showUpdateNotice = () => {
+       const notice = document.getElementById('appUpdateNotice');
+       if (!notice) return setTimeout(reloadForUpdate, 1200);
+       notice.classList.add('is-visible');
+       notice.setAttribute('aria-hidden', 'false');
+       const reloadButton = notice.querySelector('[data-update-reload]');
+       if (reloadButton) reloadButton.onclick = reloadForUpdate;
+       window.setTimeout(reloadForUpdate, 2600);
+     };
+     navigator.serviceWorker.register('sw.js', { updateViaCache: 'none' })
+       .then((registration) => {
+         console.log("서비스 워커 등록 완료");
+         // 앱을 다시 열지 않아도 현재 실행 중인 PWA가 새 버전을 확인하도록 합니다.
+         registration.update();
+         window.addEventListener('pageshow', () => registration.update());
+         document.addEventListener('visibilitychange', () => {
+           if (document.visibilityState === 'visible') registration.update();
+         });
+       })
+       .catch(err => console.error("서비스 워커 등록 실패", err));
+
+     // 새 워커가 활성화되면 이전 화면을 한 번만 자동 새로고침합니다.
+     navigator.serviceWorker.addEventListener('controllerchange', () => {
+       if (!hadController) {
+         hadController = true;
+         reloadForUpdate();
+         return;
+       }
+       showUpdateNotice();
+     });
+   }
+ </script>
+</head>
+	
+<body>
+<!-- 인트로 및 공지사항 모달 팝업 -->
+<div id="introModal" class="intro-modal">
+  <div class="intro-content">
+  
+    <!-- 💡 조회수 배지 우측 상단 배치 -->
+       <div style="position: absolute; top: 15px; right: 15px; z-index: 10;">
+          <a href="https://hits.sh/propelkim-a11y.github.io/Arrow-Trajectory-Simulation/">
+             <img alt="Hits" src="https://hits.sh/propelkim-a11y.github.io/Arrow-Trajectory-Simulation.svg?style=flat-square&label=Users&extraCount=97&color=0045c6"/>
+          </a>
+       </div>
+   
+    <div class="intro-header">
+      <span class="intro-logo">🚀</span>
+      <h2>화살시뮬</h2>
+    </div>
+    <div class="intro-body">
+      <h3>📢 시스템 공지사항</h3>
+      <ul>
+        <li><strong>기능 추가:</strong> 과녁도에서 표보기를 추가했습니다. </li>
+        <li><strong>사용 안내:</strong> 바람, 과녁 고도차, 사수의 위치를 변경하며 정밀한 조준점 변화를 테스트해 보세요.</li>
+        <li>본 프로그램은 국궁 표준 제원을 바탕으로 제작된 시뮬레이터입니다.</li>
+      </ul>
+    </div>
+    <div class="intro-footer">
+      <button class="intro-close-btn" onclick="closeIntro()">시뮬레이터 시작하기</button>
+    </div>
+  </div>
+</div>
+
+<!-- 상단 60% 영역: 메인 스크린 및 시뮬레이터 캔버스 -->
+<div class="main-screen">
+    <div class="segmented-control">
+        <button class="segment-btn" onclick="changeView('front', this)">정면</button>
+        <button class="segment-btn active" onclick="changeView('side', this)">측면</button>
+        <button class="segment-btn" onclick="changeView('top', this)">평면</button>
+        <button class="segment-btn" onclick="changeView('target', this)">과녁</button>
+    </div>
+    
+	    <div class="sim-container">
+	        <canvas id="simCanvas"></canvas>
+	        <button id="draggableFireBtn" class="fire-btn">발시</button>
+	    </div>
+</div>
+
+<!-- 하단 40% 영역: 라운드 카드형 설정 및 결과 패널 컨테이너 -->
+<div id="panel-container">
+  
+    <!-- [탭 1] 화살 설정 -->
+    <div class="fixed-panel active" id="panel-arrow">
+        <div class="panel-card">
+            <div class="panel-title">화살 설정</div>
+            <div class="form-grid">
+                <div class="form-group hint-group weight-group"><label for="weight">화살 무게</label><div class="input-wrapper">
+                            <input type="number" id="weight" value="26.25" aria-describedby="weightHelp"><span class="unit">g</span></div>
+                    <div id="weightHelp" class="coefficient-help field-help weight-help" role="tooltip">
+                        <strong>화살 무게 안내</strong>
+                        <span>5돈: 18.75, 5.5돈: 20.625</span>
+                        <span>6돈: 22.5, 6.5돈: 24.375</span>
+                        <span>7돈: 26.25, 7.5돈: 28.125</span>
+                        <span>8돈: 30</span>
+                    </div>
+                </div>
+                <div class="form-group"><label>화살 직경</label><div class="input-wrapper">
+						<input type="number" id="diameter" value="8.5" step="0.1"><span class="unit">mm</span></div></div>
+                <div class="form-group coefficient-group"><label for="dragCoeff">항력 계수</label><div class="input-wrapper">
+						<input type="number" id="dragCoeff" value="0.35" step="0.01" aria-describedby="dragCoeffHelp"><span class="unit">cd</span></div>
+                    <div id="dragCoeffHelp" class="coefficient-help" role="tooltip">
+                        <strong>화살 종류별 항력계수 범위</strong>
+                        <span>개량시: <b>0.2~0.5</b></span>
+                        <span>죽시: <b>0.9~1.5</b></span>
+                        <span>자동차: <b>0.2~0.6</b></span>
+                    </div>
+                </div>
+                <div class="form-group"><label>양력 계수</label><div class="input-wrapper">
+						<input type="number" id="liftCoeff" value="0.03" step="0.01"><span class="unit">cl</span></div></div>
+            </div>
+            <div class="arrow-follow-toggle" style="display: flex; justify-content: space-between; align-items: center; background: #f5f5f7; border: 1px solid rgba(0,0,0,0.06); padding: 10px 14px; border-radius: 10px; margin-top: 10px;">
+                <span style="font-size: 13px; font-weight: 600; color: #1d1d1f;">🧭 발시 중 화살 따라가기</span>
+                <input type="checkbox" id="followArrow" checked aria-label="발시 중 화살 따라가기" style="width: 18px; height: 18px; cursor: pointer; accent-color: #0071e3;">
+            </div>
+        </div>
+    </div>
+
+    <!-- [탭 2] 사법 설정 -->
+    <div class="fixed-panel" id="panel-method">
+        <div class="panel-card">
+            <div class="panel-title">사법 설정</div>
+            <div class="panel-scroll-hint" aria-label="아래로 스크롤하여 추가 메뉴 보기"><span>↓</span> 아래로 스크롤하면 추가 메뉴가 있습니다</div>
+            <div class="form-grid">
+                <div class="form-group"><label>발시 고각</label><div class="input-wrapper">
+						<input type="text" id="angle" value="15.5" inputmode="text" pattern="^-?[0-9]*\.?[0-9]*$"><span class="unit">°</span></div></div>
+                <div class="form-group"><label>초기 속도</label><div class="input-wrapper">
+						<input type="number" id="velocity" value="60.3"><span class="unit">m/s</span></div></div>
+                <div class="form-group"><label>앞뒤 각도</label><div class="input-wrapper">
+						<input type="text" id="yawAngle" value="1.58" inputmode="text" pattern="^-?[0-9]*\.?[0-9]*$"><span class="unit">°</span></div></div>
+                <div class="form-group hint-group"><label for="launchHeight">발시 높이 </label><div class="input-wrapper">
+							<input type="number" id="launchHeight" value="1.7" step="0.1" aria-describedby="launchHeightHelp"><span class="unit">m</span></div>
+                    <div id="launchHeightHelp" class="coefficient-help field-help" role="tooltip">
+                        <strong>발시 높이 안내</strong>
+                        <span>만작시 촉의 높이로</span>
+                    </div>
+                </div>
+                <div class="form-group hint-group"><label for="launchZ">궁사 위치 (좌우·오뉘+/촉-) </label><div class="input-wrapper">
+							<input type="text" id="launchZ" value="-3" min="-10" max="10" step="0.5" aria-describedby="launchZHelp"><span class="unit">m</span></div>
+                    <div id="launchZHelp" class="coefficient-help field-help" role="tooltip">
+                        <strong>궁사 위치 안내</strong>
+                        <span>사대 중앙 기준 좌우 위치입니다. 오뉘(+)·촉(-)으로 입력합니다.</span>
+                        <span>사대 1번 -3, 2번 -2, 3번 -1, 4번 0, 5번 +1, 6번 +2, 7번 +3</span>
+                    </div>
+                </div>
+
+					<div class="los-settings-card">
+						<div class="los-card-heading">
+							<div class="los-card-title"><span class="los-card-icon">👁️</span><span><strong>표보기 조준선</strong><small>사수가 보는 기준점을 설정합니다</small></span></div>
+							<div class="los-toggle-row">
+								<label class="los-toggle" for="useLos"><input type="checkbox" id="useLos" checked><span>사용</span></label>
+								<label class="los-toggle" for="lockLos"><input type="checkbox" id="lockLos" checked><span>🔒 잠금</span></label>
+							</div>
+						</div>
+						<div class="los-target-grid">
+							<div class="form-group"><label for="losTargetY">높이 Y</label><div class="input-wrapper">
+								<input type="text" id="losTargetY" value="2.67" inputmode="text"><span class="unit">m</span></div></div>
+							<div class="form-group"><label for="losTargetZ">앞뒤 Z</label><div class="input-wrapper">
+								<input type="text" id="losTargetZ" value="-1" inputmode="text"><span class="unit">m</span></div></div>
+						</div>
+						<div class="los-angle-readout">
+							<span class="los-angle-title"><span>⌖</span> 사수 시점 각도</span>
+							<div class="los-angle-values">
+								<div><small>고각</small><b id="losPitchDisplay">0.00°</b></div>
+								<div><small>편각</small><b id="losYawDisplay">0.00°</b></div>
+							</div>
+						</div>
+					</div>
+					</div> 
+        </div>
+    </div>
+
+    <!-- [탭 3] 환경 설정 -->
+ 	    <div class="fixed-panel" id="panel-env">
+	        <div class="panel-card">
+	            <div class="panel-title">환경 설정</div>
+	            <div class="range-weather-card">
+                <div class="range-weather-heading"><span>📍 활터·현지 날씨</span></div>
+                <input type="search" id="archeryRangeSearch" class="range-search" placeholder="활터명 또는 지역 검색" autocomplete="off">
+	                <div id="archeryRangeSearchResults" class="range-search-results" role="listbox" aria-label="활터 검색 결과"></div>
+                <label class="range-select-label" for="archeryRangeSelect">활터 선택</label>
+                <select id="archeryRangeSelect" class="range-select">
+                    <option value="">등록된 활터 없음</option>
+                </select>
+                <button type="button" id="loadRangeProfileBtn" class="range-profile-load-btn">선택한 활터 저장 데이터 불러오기</button>
+                <p id="rangeDataNotice" class="range-data-notice">GPS 자료를 등록하면 해당 활터의 날씨를 조회할 수 있습니다.</p>
+                <div class="weather-status-row">
+                    <div id="weatherStatus" class="weather-status" role="status" aria-live="polite">활터를 선택하면 날씨를 불러옵니다.</div>
+                    <button type="button" id="refreshWeatherBtn" class="weather-refresh-btn">새로고침</button>
+                </div>
+                <div class="weather-ballistic-grid" aria-label="활터 탄도 계산 설정">
+	                    <div class="weather-input-cell"><small>종풍</small><div class="weather-inline-input"><input type="text" id="windX" value="0" inputmode="text" pattern="^-?[0-9]*\.?[0-9]*$" aria-label="종풍"><span>m/s</span></div></div>
+	                    <div class="weather-input-cell"><small>횡풍</small><div class="weather-inline-input"><input type="text" id="windY" value="-1" inputmode="text" pattern="^-?[0-9]*\.?[0-9]*$" aria-label="횡풍"><span>m/s</span></div></div>
+	                    <div class="weather-input-cell"><small>공기 밀도</small><div class="weather-inline-input"><input type="number" id="airDensity" value="1.225" step="0.001" aria-label="공기 밀도"><span>kg/m³</span></div></div>
+	                    <div class="weather-input-cell"><small>과녁 방위각</small><div class="weather-inline-input"><input type="number" id="targetBearing" value="0" min="0" max="360" step="0.1" aria-label="과녁 방위각"><span>°</span></div></div>
+	                    <div class="weather-input-cell"><small>과녁 거리</small><div class="weather-inline-input"><input type="number" id="targetDistance" value="145" min="1" max="200" step="0.1" aria-label="과녁 거리"><span>m</span></div></div>
+	                    <div class="weather-input-cell"><small>과녁 고도차</small><div class="weather-inline-input"><input type="text" id="targetHeight" value="6" inputmode="text" pattern="^-?[0-9]*\.?[0-9]*$" aria-label="과녁 고도차"><span>m</span></div></div>
+	                </div>
+	            </div>
+	            <div class="current-location-weather-card">
+	                <div class="range-weather-heading"><span>📍 현재 위치 날씨</span><button type="button" id="currentLocationWeatherBtn" class="weather-refresh-btn">현재 위치 조회</button></div>
+	                <div id="currentLocationRangeName" class="current-location-range-name">현재 위치의 등록 활터를 확인합니다.</div>
+	                <div id="currentLocationWeatherStatus" class="weather-status" role="status" aria-live="polite">검색한 활터와 독립적으로 현재 위치를 조회합니다.</div>
+	                <div class="weather-grid current-weather-grid" aria-label="현재 위치 날씨 정보">
+	                    <div><small>온도</small><strong id="currentWeatherTemperature">-</strong></div>
+	                    <div><small>습도</small><strong id="currentWeatherHumidity">-</strong></div>
+	                    <div><small>강우량</small><strong id="currentWeatherPrecipitation">-</strong></div>
+	                    <div><small>바람</small><strong id="currentWeatherWind">-</strong></div>
+	                    <div><small>풍향</small><strong id="currentWeatherWindDirection">-</strong></div>
+	                    <div><small>공기 밀도</small><strong id="currentWeatherAirDensity">-</strong></div>
+	                </div>
+	            </div>
+        </div>
+    </div>
+
+    <!-- [탭 4] 비행 결과 -->
+    <div class="fixed-panel" id="panel-result">
+        <div class="panel-card">
+            <div class="panel-title">비행 결과 분석</div>
+            <div class="form-grid">
+                <div class="form-group"><label>최대 거리</label><div class="result-value" id="resMaxDist">0.00 m</div></div>
+                <div class="form-group"><label>최대 높이</label><div class="result-value" id="resMaxHeight">0.00 m</div></div>
+                <div class="form-group"><label>측면 편차</label><div class="result-value" id="resSideDev">0.00 m</div></div>
+                <div class="form-group"><label>비행 시간</label><div class="result-value" id="resFlightTime">0.00 s</div></div>
+                <div class="form-group"><label>충돌 속도</label><div class="result-value" id="resImpactVel">0.00 m/s</div></div>
+                <div class="form-group hint-group impact-energy-group" tabindex="0" role="button" aria-describedby="impactEnergyHelp">
+                    <label>충격 에너지</label><div class="result-value" id="resImpactEnergy">0.00 J</div>
+                    <div id="impactEnergyHelp" class="coefficient-help field-help impact-energy-help" role="tooltip">
+                        <strong>충격에너지 기준 안내</strong>
+                        <span>9mm 권총탄 기준: <b>500J</b></span>
+                        <span>K2 소총 기준: <b>1,700J</b></span>
+                        <span>살상력 기준: <b>20J</b></span>
+                    </div>
+                </div>
+	            <div class="form-group"><label>비행 고각(Pitch)</label><div class="result-value" id="resImpactPitch">0.00 °</div></div>
+                <div class="form-group"><label>비행 편각(Yaw)</label><div class="result-value" id="resImpactYaw">0.00 °</div></div>
+            </div>
+        </div>
+    </div> 
+
+    <!-- [탭 5] 설정관리 -->
+  	    <div class="fixed-panel" id="panel-settings-file">
+	        <div class="panel-card">
+	            <div class="panel-title">설정관리</div>
+	            <div class="settings-file-content">
+	                <div class="settings-tabs" role="tablist" aria-label="설정관리 메뉴">
+	                    <button type="button" class="settings-tab active" role="tab" aria-selected="true" aria-controls="settings-panel-display" data-settings-tab="display">화면</button>
+	                    <button type="button" class="settings-tab" role="tab" aria-selected="false" aria-controls="settings-panel-photo" data-settings-tab="photo">사진</button>
+	                    <button type="button" class="settings-tab" role="tab" aria-selected="false" aria-controls="settings-panel-file" data-settings-tab="file">파일</button>
+	                    <button type="button" class="settings-tab" role="tab" aria-selected="false" aria-controls="settings-panel-preset" data-settings-tab="preset">프리셋</button>
+	                </div>
+
+                <section id="settings-panel-display" class="settings-tab-panel active" role="tabpanel" data-settings-panel="display">
+	                    <div class="settings-tool-heading">도면 화면</div>
+	                    <div class="diagram-size-control">
+                        <div class="diagram-size-heading"><label for="diagramAreaHeight">도면 영역 크기</label><output id="diagramAreaHeightValue" for="diagramAreaHeight">60%</output></div>
+                        <input type="range" id="diagramAreaHeight" min="35" max="78" step="1" value="60" aria-label="도면 영역 크기">
+                        <small>위·아래 경계선을 움직여 스마트폰 화면에 맞춥니다.</small>
+                    </div>
+
+                    <div class="display-option-card">
+                        <div class="display-option-row">
+                            <div><strong>🎯 관중 시 진동 알림</strong><small>과녁에 맞으면 휴대폰이 진동합니다.</small></div>
+                            <input type="checkbox" id="useVibrate" checked aria-label="관중 시 진동 알림">
+                        </div>
+                        <div class="display-option-row">
+                            <div><strong>🚦 관중등 색상</strong><small>정면도 왼쪽 아래에 표시되는 관중등입니다.</small></div>
+                            <select id="spectatorLightColor" aria-label="관중등 색상">
+                                <option value="red">빨강</option>
+                                <option value="yellow">노랑</option>
+                                <option value="green">녹색</option>
+                            </select>
+                        </div>
+                        <div class="display-option-row">
+                            <div><strong>⏱ 관중등 점등시간</strong><small>3회 점멸이 진행되는 전체 시간입니다.</small></div>
+                            <div class="spectator-duration-control">
+                                <input type="number" id="spectatorLightDuration" min="0.1" max="10" step="0.1" value="1.1" aria-label="관중등 점등시간">
+                                <span>초</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div class="range-profile-card">
+                        <div class="range-profile-heading">📍 현재 활터 프로필</div>
+                        <div id="settingsRangeProfileName" class="range-profile-name">환경 설정에서 활터를 선택하세요.</div>
+                        <div class="range-profile-grid">
+                            <label>과녁 방위각<input type="number" id="profileTargetBearing" min="0" max="360" step="0.1"><span>°</span></label>
+                            <label>과녁 거리<input type="number" id="profileTargetDistance" min="1" max="200" step="0.1"><span>m</span></label>
+                            <label>과녁 고도차<input type="text" id="profileTargetHeight" inputmode="decimal"><span>m</span></label>
+                        </div>
+                        <button type="button" id="saveRangeProfileBtn" class="range-profile-save">현재 활터 설정 저장</button>
+                        <small class="range-profile-help">활터를 선택하면 저장된 값과 도면별 배경사진이 자동 적용됩니다. 배경사진은 설정관리의 사진 탭에서 현재 활터별로 편집합니다.</small>
+                    </div>
+
+                    <div id="viewZoomControls" class="view-zoom-controls" aria-label="화면 동일 배율 확대 축소">
+                        <div class="axis-zoom-row"><label for="zoomRange">배율</label><input type="range" id="zoomRange" min="0.25" max="8" step="0.05" value="1" aria-label="현재 도면 배율"><input type="number" id="zoomNumber" min="25" max="800" step="5" value="100" aria-label="현재 도면 배율 숫자 입력"><span>%</span></div>
+                        <small class="shared-scale-note">사진·과녁·계산 결과에 동일 적용</small>
+	                        <button type="button" id="zoomReset" class="zoom-reset" aria-label="현재 화면 배율 초기화">초기화</button>
+	                    </div>
+                </section>
+
+                <section id="settings-panel-photo" class="settings-tab-panel" role="tabpanel" data-settings-panel="photo" hidden>
+                    <div class="settings-tool-heading">도면별 독립 배경</div>
+                    <div id="backgroundControls" class="background-controls">
+                        <div class="background-view-row">
+                            <label for="backgroundViewSelect">배경사진 도면</label>
+                            <select id="backgroundViewSelect" aria-label="배경을 편집할 도면">
+                                <option value="target">과녁도</option>
+                            </select>
+                        </div>
+                        <div class="background-file-row">
+                            <button type="button" id="backgroundFileButton" class="front-photo-file-label">📷 선택 도면 배경 불러오기</button>
+                            <input type="file" id="backgroundFileInput" accept="image/*" hidden>
+                            <button type="button" id="backgroundToggle" aria-pressed="true">배경 숨김</button>
+                        </div>
+                        <button type="button" id="backgroundCanvasEditToggle" class="background-canvas-edit-toggle" aria-pressed="false">화면에서 배경사진 조작</button>
+                        <button type="button" id="backgroundResultLockToggle" class="background-result-lock-toggle" aria-pressed="false">사진·결과 잠금</button>
+                        <div class="background-control-row"><label for="backgroundOpacity">투명도</label><input type="range" id="backgroundOpacity" min="0.05" max="1" step="0.05" value="0.55" aria-label="선택 도면 배경 투명도"><input type="number" id="backgroundOpacityNumber" min="5" max="100" step="5" value="55" aria-label="배경 투명도 숫자 입력"><span>%</span></div>
+                        <div class="background-control-row"><label for="backgroundScale">배경 배율</label><input type="range" id="backgroundScale" min="0.05" max="12" step="0.05" value="1" aria-label="선택 도면 배경 배율"><input type="number" id="backgroundScaleNumber" min="5" max="1200" step="5" value="100" aria-label="배경 배율 숫자 입력"><span>%</span></div>
+                        <div class="background-control-row"><label for="backgroundRotation">회전</label><input type="range" id="backgroundRotation" min="-180" max="180" step="0.5" value="0" aria-label="선택 도면 배경 회전"><input type="number" id="backgroundRotationNumber" min="-180" max="180" step="0.5" value="0" aria-label="배경 회전 숫자 입력"><span>°</span></div>
+                        <div class="background-offset-card">
+                            <div class="background-offset-heading"><span>정밀 이동</span><small>버튼 1회마다 0.5px · 이동 제한 없음</small></div>
+                            <div class="background-offset-values"><label>좌우 <input type="number" id="backgroundOffsetX" value="0" step="0.5" inputmode="decimal" aria-label="선택 도면 배경 좌우 위치"><span>px</span></label><label>상하 <input type="number" id="backgroundOffsetY" value="0" step="0.5" inputmode="decimal" aria-label="선택 도면 배경 상하 위치"><span>px</span></label></div>
+                            <div class="background-nudge-grid" role="group" aria-label="선택 도면 배경 0.5픽셀 이동">
+                                <span></span><button type="button" data-background-nudge="up" aria-label="배경 위로 0.5픽셀 이동">↑</button><span></span>
+                                <button type="button" data-background-nudge="left" aria-label="배경 왼쪽으로 0.5픽셀 이동">←</button><button type="button" data-background-nudge="center" aria-label="배경 위치 수치 초기화">●</button><button type="button" data-background-nudge="right" aria-label="배경 오른쪽으로 0.5픽셀 이동">→</button>
+                                <span></span><button type="button" data-background-nudge="down" aria-label="배경 아래로 0.5픽셀 이동">↓</button><span></span>
+                            </div>
+                        </div>
+                        <p id="backgroundFileNotice" class="background-file-notice">배경과 과녁을 맞춘 뒤 사진·결과 잠금을 켜면 화면 배율·패닝·도면 영역 크기 변경에도 정렬을 유지합니다.</p>
+                    </div>
+                </section>
+
+                <section id="settings-panel-file" class="settings-tab-panel" role="tabpanel" data-settings-panel="file" hidden>
+                    <p class="settings-file-description">
+                        입력 수치, 조준선 상태, 화면 배율 프리셋을 파일로 백업하거나 다른 기기에서 불러올 수 있습니다.
+                    </p>
+	                <div class="settings-actions" role="group" aria-label="설정 파일 작업">
+	                    <button type="button" id="saveSettingsBtn" class="settings-action-btn settings-save-btn"><span class="settings-action-icon">💾</span><span>설정 파일 저장</span></button>
+	                    <button type="button" id="loadSettingsBtn" class="settings-action-btn settings-load-btn"><span class="settings-action-icon">📂</span><span>설정 파일 열기</span></button>
+	                </div>
+	                <!-- 실제 파일 선택 창 (숨김) -->
+	                <input type="file" id="settingsFileInput" accept=".json" hidden>
+	                </section>
+
+	                <section id="settings-panel-preset" class="settings-tab-panel" role="tabpanel" data-settings-panel="preset" hidden>
+	                <div class="zoom-preset-box">
+	                    <div class="zoom-preset-heading"><div class="zoom-preset-title"><span>📐</span><span>화면 배율 프리셋</span></div><span class="zoom-preset-badge">4개 화면</span></div>
+	                    <p class="zoom-preset-help">정면·측면·평면·과녁도의 동일 배율을 이름별로 저장하고 불러옵니다.</p>
+	                    <div class="zoom-preset-save-row">
+	                        <label class="sr-only" for="zoomPresetName">저장할 프리셋 이름</label><input type="text" id="zoomPresetName" placeholder="프리셋 이름 입력" maxlength="30" aria-label="배율 프리셋 이름">
+	                        <button type="button" id="saveZoomPresetBtn"><span>저장</span></button>
+	                    </div>
+                    <div class="zoom-preset-load-row">
+                        <select id="zoomPresetSelect" aria-label="불러올 배율 프리셋">
+                            <option value="">저장된 프리셋 없음</option>
+                        </select>
+	                        <button type="button" id="loadZoomPresetBtn">불러오기</button><button type="button" id="deleteZoomPresetBtn" class="preset-delete-btn">삭제</button>
+	                    </div>
+	                    <p class="zoom-preset-note">저장된 프리셋은 이 기기의 브라우저에 보관됩니다.</p>
+                </div>
+	                </section>
+            </div>
+        </div>
+    </div>		
+</div>
+
+<div id="appUpdateNotice" class="app-update-notice" role="status" aria-live="polite" aria-hidden="true">
+    <div class="app-update-copy"><strong>새 버전이 업데이트되었습니다</strong><span>잠시 후 최신 버전으로 새로고침합니다.</span></div>
+    <button type="button" data-update-reload>지금 적용</button>
+</div>
+
+<div id="impactEnergyOverlay" class="impact-energy-overlay" aria-hidden="true"></div>
+
+<!-- 💡 [위치 이동] 설정 패널 밖으로 완전히 탈출시켜 맨 아래 고정된 저작권 표시 영역 -->
+<div id="app-copyright">
+    Copyright © 2026 해현. All Rights Reserved.
+</div>
+
+<!-- 맨 하단 메뉴 전환 탭바 -->
+<div class="tab-bar">
+    <button class="tab-item active" onclick="switchPanel('arrow')"><span class="tab-icon">🚀</span><span>화살 설정</span></button>
+    <button class="tab-item" onclick="switchPanel('method')"><span class="tab-icon">🏹</span><span>사법 설정</span></button>
+    <button class="tab-item" onclick="switchPanel('env')"><span class="tab-icon">🐓</span><span>환경 설정</span></button>
+    <button class="tab-item" onclick="switchPanel('result')"><span class="tab-icon">📊</span><span>비행 결과</span></button>
+    <button class="tab-item" onclick="switchPanel('settings-file')"><span class="tab-icon">⚙️</span><span>설정관리</span></button>
+</div>
+
+<script src="ui.js?v=4.12"></script>
+<script src="physics.js?v=4.12"></script>
+</body>
+</html>

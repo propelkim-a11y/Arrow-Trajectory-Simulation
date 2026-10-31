@@ -1,0 +1,25 @@
+{
+  "id": "./index.html",
+  "short_name": "화살시뮬",
+  "name": "화살시뮬",
+  "icons": [
+    {
+      "src": "icon-192-v316.png",
+      "sizes": "192x192",
+      "type": "image/png",
+      "purpose": "any maskable"
+    },
+    {
+      "src": "icon-512-v316.png",
+      "sizes": "512x512",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ],
+  "start_url": "./index.html?v=4.12",
+  "scope": "./",
+  "background_color": "#0071e3",
+  "theme_color": "#0071e3",
+  "display": "standalone",
+  "orientation": "portrait"
+}
